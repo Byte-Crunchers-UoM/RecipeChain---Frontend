@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import RootClientLayout from "./RootClientLayout";
 
 export const metadata: Metadata = {
   title: "RecipeChain",
@@ -15,9 +14,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-[#F2F2F2]">
-        <RootClientLayout>
-          {children}
-        </RootClientLayout>
+        {children}
       </body>
     </html>
   );
