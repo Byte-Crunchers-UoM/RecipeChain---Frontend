@@ -8,31 +8,56 @@ import Image from 'next/image';
 
 export default function LoginPage() {
   const [error, setError] = useState<string>('');
-  const [isConnected, setIsConnected] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
-  const { login, setSelectedRole, isWeb3AuthInitialized, userInfo } = useWeb3Auth();
+  const [loadingStage, setLoadingStage] = useState<string>('');
+  const { login, setSelectedRole, isWeb3AuthInitialized, user, isUserExist } = useWeb3Auth();
   const router = useRouter();
 
   useEffect(() => {
     // If user is already logged in, redirect to dashboard
-    if (userInfo && isConnected) {
-      router.push('/seller/dashboard');
+    if (user && user.role) {
+      if (user.role === 'seller') {
+        router.push('/seller/dashboard');
+      } else if (user.role === 'buyer') {
+        router.push('/buyer/dashboard');
+      } else if (user.role === 'admin') {
+        router.push('/admin/dashboard');
+      }
     }
-  }, [isConnected, userInfo, router]);
+  }, [user, router]);
 
   const handleLogin = async () => {
     try {
       setError('');
       setConnectLoading(true);
-      setSelectedRole('seller');
-      
-      // Call the actual Web3Auth login
-      await login();
-      setIsConnected(true);
+      setLoadingStage('Checking account...');
+
+      // Check if user is an existing user
+      const userExists = isUserExist();
+
+      if (userExists) {
+        // Existing user - get their role and redirect to appropriate dashboard
+        const storedRole = localStorage.getItem('recipechain_role');
+        setSelectedRole(storedRole as 'seller' | 'buyer' | 'admin' || 'buyer');
+        
+        setLoadingStage('Opening Web3Auth modal...');
+        // Call the actual Web3Auth login
+        await login();
+        
+        setLoadingStage('Login successful!');
+        // The useEffect will handle the redirect based on user.role
+      } else {
+        // New user - redirect to signup page
+        setLoadingStage('Redirecting to signup...');
+        router.push('/signup');
+        setConnectLoading(false);
+      }
     } catch (err) {
       console.error('Login failed:', err);
-      setError('Failed to connect with Web3Auth. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to connect with Web3Auth. Please try again.';
+      setError(errorMessage);
       setConnectLoading(false);
+      setLoadingStage('');
     }
   };
 
@@ -75,7 +100,7 @@ export default function LoginPage() {
             {/* Login Button */}
             <button
               onClick={handleLogin}
-              disabled={connectLoading}
+              disabled={connectLoading || !isWeb3AuthInitialized}
               className="w-full py-3 px-6 bg-[#0d9488] text-white rounded-xl font-semibold hover:bg-[#0f766e] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
               {connectLoading ? (
@@ -84,12 +109,23 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                   </svg>
-                  Connecting...
+                  <span>{loadingStage || 'Connecting...'}</span>
                 </span>
               ) : (
                 'Connect with Web3Auth'
               )}
             </button>
+
+            {/* Signup Link */}
+            <div className="text-center pt-4 border-t border-[#e5e7eb]">
+              <p className="text-[#6b7280] text-sm mb-2">Don't have an account?</p>
+              <Link 
+                href="/signup" 
+                className="text-[#0d9488] font-semibold hover:text-[#0f766e] transition-colors text-sm"
+              >
+                Create an account →
+              </Link>
+            </div>
 
             {/* Admin Login Link */}
             <div className="text-center pt-2">
@@ -100,42 +136,6 @@ export default function LoginPage() {
                 Login as Admin →
               </Link>
             </div>
-
-            {/* Sign Up Link */}
-            <div className="text-center pt-4 border-t border-[#e5e7eb]">
-              <p className="text-[#6b7280] text-sm">
-                Don&apos;t have an account?{' '}
-                <Link 
-                  href="/signup" 
-                  className="text-[#0d9488] font-semibold hover:underline"
-                >
-                  Sign up
-                </Link>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer Links */}
-        <div className="space-y-4">
-          {/* Security Footer */}
-          <div className="text-center">
-            <p className="text-[#9ca3af] text-xs">
-              No password required • Secured by Web3Auth
-            </p>
-          </div>
-
-          {/* Terms and Conditions */}
-          <div className="text-center">
-            <p className="text-[#9ca3af] text-xs">
-              <Link href="#" className="hover:text-[#0d9488] transition-colors">
-                Terms of Service
-              </Link>
-              {' '} • {' '}
-              <Link href="#" className="hover:text-[#0d9488] transition-colors">
-                Privacy Policy
-              </Link>
-            </p>
           </div>
         </div>
       </div>

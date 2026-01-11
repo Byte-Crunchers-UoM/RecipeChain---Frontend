@@ -1,6 +1,6 @@
 "use client";
 
-import { useWeb3Auth } from '@/contexts/Web3AuthContext';
+import { useWeb3Auth } from '@/app/lib/web3/Web3AuthProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -15,23 +15,23 @@ const navItems = [
 ];
 
 export default function AdminDashboard() {
-  const { user, logout, isLoading } = useWeb3Auth();
+  const { user, logout, isWeb3AuthInitialized } = useWeb3Auth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     // Check if user is authorized
-    if (!isLoading && (!user || user.role !== 'admin')) {
+    if (isWeb3AuthInitialized && (!user || user.role !== 'admin')) {
       router.push('/login');
     }
-  }, [user, isLoading, router]);
+  }, [user, isWeb3AuthInitialized, router]);
 
   const handleLogout = async () => {
     await logout();
     router.push('/login');
   };
 
-  if (isLoading) {
+  if (!isWeb3AuthInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F2F2F2]">
         <div className="animate-spin h-8 w-8 border-4 border-[#111827] border-t-transparent rounded-full"></div>

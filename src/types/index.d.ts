@@ -1,13 +1,13 @@
-export type UserRole = 'admin' | 'seller' | 'driver';
+export type UserRole = 'admin' | 'seller' | 'buyer';
 
 export interface User {
   id: string;
-  walletAddress: string;
+  walletAddress?: string;
   email?: string;
   name?: string;
   role: UserRole;
   isVerified?: boolean;
-  createdAt: Date;
+  createdAt?: Date;
 }
 
 export interface AuthState {

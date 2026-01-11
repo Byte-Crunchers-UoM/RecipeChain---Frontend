@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useWeb3Auth } from '@/app/lib/web3/Web3AuthProvider';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function BuyerDetailsPage() {
   const router = useRouter();
+  const { user } = useWeb3Auth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -15,6 +18,13 @@ export default function BuyerDetailsPage() {
     cuisinePreferences: [] as string[],
     allergies: '',
   });
+
+  // Check if user selected buyer role before accessing this page
+  useEffect(() => {
+    if (user && user.role !== 'buyer') {
+      router.push('/role-select');
+    }
+  }, [user, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

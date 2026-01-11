@@ -3,24 +3,30 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWeb3Auth } from '@/app/lib/web3/Web3AuthProvider';
-import { UserRole } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function SignupPage() {
   const [error, setError] = useState<string>('');
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
-  const { setSelectedRole: setContextRole, login, isWeb3AuthInitialized, userInfo } = useWeb3Auth();
+  const [isWeb3Connected, setIsWeb3Connected] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<string>('');
+  const { setSelectedRole, login, isWeb3AuthInitialized, user } = useWeb3Auth();
   const router = useRouter();
 
   useEffect(() => {
-    if (isConnected) {
-      // Redirect to role selection page after signup
+    console.log('Signup page - Web3Auth initialized:', isWeb3AuthInitialized);
+  }, [isWeb3AuthInitialized]);
+
+  useEffect(() => {
+    // If user has completed web3Auth signup, redirect to role selection
+    if (user && user.id && isWeb3Connected) {
+      // Redirect to role selection page after successful Web3Auth
+      console.log('Redirecting to role selection after Web3Auth');
       router.push('/role-select');
     }
-  }, [isConnected, router]);
+  }, [user, isWeb3Connected, router]);
 
   const handleSignup = async () => {
     if (!acceptTerms) {
@@ -31,14 +37,23 @@ export default function SignupPage() {
     try {
       setError('');
       setConnectLoading(true);
-      setContextRole('seller');
-      // Call the actual Web3Auth login
+      setLoadingStage('Opening Web3Auth modal...');
+
+      // First step: Connect with Web3Auth (required before role selection)
+      console.log('Starting Web3Auth login...');
       await login();
-      setIsConnected(true);
+      console.log('Web3Auth login successful');
+      
+      setLoadingStage('Web3Auth connection successful!');
+      setIsWeb3Connected(true);
+      
+      // The user will now see the role selection page via the useEffect redirect
     } catch (err) {
-      console.error('Signup failed:', err);
-      setError('Failed to create account. Please try again.');
+      console.error('Web3Auth signup failed:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to connect with Web3Auth. Please try again.';
+      setError(errorMessage);
       setConnectLoading(false);
+      setLoadingStage('');
     }
   };
 
@@ -67,8 +82,9 @@ export default function SignupPage() {
             {/* Onboarding Info */}
             <div className="p-4 rounded-lg bg-[#d1fae5] border border-[#a7f3d0]">
               <p className="text-[#047857] text-sm">
-                After connecting your Web3 wallet, choose your preferred role — Seller or Buyer — to continue.
-                Next, you'll be guided through a brief, role-specific onboarding form to provide the key details needed to personalize your experience.
+                <strong>Step 1:</strong> Connect your Web3 wallet. <br/>
+                <strong>Step 2:</strong> Choose your preferred role — Seller or Buyer. <br/>
+                <strong>Step 3:</strong> Complete your profile with role-specific details.
               </p>
             </div>
 
@@ -103,57 +119,35 @@ export default function SignupPage() {
             {/* Signup Button */}
             <button
               onClick={handleSignup}
-              disabled={connectLoading || !acceptTerms}
+              disabled={connectLoading || !isWeb3AuthInitialized}
+              title={!isWeb3AuthInitialized ? "Web3Auth is initializing..." : ""}
               className="w-full py-3 px-6 bg-[#0d9488] text-white rounded-xl font-semibold hover:bg-[#0f766e] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
-              {connectLoading ? (
+            {connectLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                   </svg>
-                  Creating Account...
+                  <span>{loadingStage || 'Connecting...'}</span>
                 </span>
-              ) : (
+              ) : isWeb3AuthInitialized ? (
                 'Sign Up with Web3Auth'
+              ) : (
+                'Initializing Web3Auth...'
               )}
             </button>
 
             {/* Login Link */}
             <div className="text-center pt-4 border-t border-[#e5e7eb]">
-              <p className="text-[#6b7280] text-sm">
-                Already have an account?{' '}
-                <Link 
-                  href="/login" 
-                  className="text-[#0d9488] font-semibold hover:underline"
-                >
-                  Sign in
-                </Link>
-              </p>
+              <p className="text-[#6b7280] text-sm mb-2">Already have an account?</p>
+              <Link 
+                href="/login" 
+                className="text-[#0d9488] font-semibold hover:text-[#0f766e] transition-colors text-sm"
+              >
+                Login here →
+              </Link>
             </div>
-          </div>
-        </div>
-
-        {/* Footer Links */}
-        <div className="space-y-4">
-          {/* Security Footer */}
-          <div className="text-center">
-            <p className="text-[#9ca3af] text-xs">
-              No password required • Secured by Web3Auth
-            </p>
-          </div>
-
-          {/* Terms and Conditions */}
-          <div className="text-center">
-            <p className="text-[#9ca3af] text-xs">
-              <Link href="#" className="hover:text-[#0d9488] transition-colors">
-                Terms of Service
-              </Link>
-              {' '} • {' '}
-              <Link href="#" className="hover:text-[#0d9488] transition-colors">
-                Privacy Policy
-              </Link>
-            </p>
           </div>
         </div>
       </div>

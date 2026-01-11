@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { useWeb3Auth } from '@/contexts/Web3AuthContext';
+import { useWeb3Auth } from '@/app/lib/web3/Web3AuthProvider';
 import { useState } from 'react';
 import Image from 'next/image';
 
@@ -13,9 +13,6 @@ export default function HomePage() {
   const handleLogout = async () => {
     try {
       await logout();
-      localStorage.removeItem('park_chain_role');
-      localStorage.removeItem('park_chain_auth');
-      document.cookie = 'park_chain_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
       router.push('/login');
     } catch (error) {
       console.error('Logout failed:', error);
