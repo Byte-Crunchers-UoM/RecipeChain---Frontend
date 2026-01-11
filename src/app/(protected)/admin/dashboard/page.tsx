@@ -15,23 +15,23 @@ const navItems = [
 ];
 
 export default function AdminDashboard() {
-  const { user, logout, isWeb3AuthInitialized } = useWeb3Auth();
+  const { user, logout, isLoading } = useWeb3Auth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     // Check if user is authorized
-    if (isWeb3AuthInitialized && (!user || user.role !== 'admin')) {
+    if (!isLoading && (!user || user.role !== 'admin')) {
       router.push('/login');
     }
-  }, [user, isWeb3AuthInitialized, router]);
+  }, [user, isLoading, router]);
 
   const handleLogout = async () => {
     await logout();
     router.push('/login');
   };
 
-  if (!isWeb3AuthInitialized) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F2F2F2]">
         <div className="animate-spin h-8 w-8 border-4 border-[#111827] border-t-transparent rounded-full"></div>

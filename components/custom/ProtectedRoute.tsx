@@ -11,11 +11,11 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { user, isWeb3AuthInitialized } = useWeb3Auth();
+  const { user, isLoading } = useWeb3Auth();
   const router = useRouter();
 
   useEffect(() => {
-    if (isWeb3AuthInitialized) {
+    if (!isLoading) {
       if (!user || !user.id) {
         // Not authenticated, redirect to login
         router.push('/login');
@@ -32,9 +32,9 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
         }
       }
     }
-  }, [isWeb3AuthInitialized, user, requiredRole, router]);
+  }, [isLoading, user, requiredRole, router]);
 
-  if (!isWeb3AuthInitialized) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafb]">
         <div className="text-center">

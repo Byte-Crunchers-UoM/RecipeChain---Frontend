@@ -10,12 +10,22 @@ export default function LoginPage() {
   const [error, setError] = useState<string>('');
   const [connectLoading, setConnectLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState<string>('');
-  const { login, setSelectedRole, isWeb3AuthInitialized, user, isUserExist } = useWeb3Auth();
+  const { login, setSelectedRole, isLoading, user, checkAndRestoreSession } = useWeb3Auth();
   const router = useRouter();
+
+  useEffect(() => {
+    // On login page, try to restore existing session
+    console.log('Login page mounted - checking for existing session');
+    const hasSession = checkAndRestoreSession();
+    if (hasSession) {
+      console.log('Existing session found, will redirect to dashboard');
+    }
+  }, []);
 
   useEffect(() => {
     // If user is already logged in, redirect to dashboard
     if (user && user.role) {
+      console.log('User already has role, redirecting to dashboard:', user.role);
       if (user.role === 'seller') {
         router.push('/seller/dashboard');
       } else if (user.role === 'buyer') {
@@ -27,30 +37,52 @@ export default function LoginPage() {
   }, [user, router]);
 
   const handleLogin = async () => {
+    setConnectLoading(true);
+    setLoadingStage('Checking login status...');
+    setError('');
+
     try {
-      setError('');
-      setConnectLoading(true);
-      setLoadingStage('Checking account...');
-
-      // Check if user is an existing user
-      const userExists = isUserExist();
-
-      if (userExists) {
-        // Existing user - get their role and redirect to appropriate dashboard
-        const storedRole = localStorage.getItem('recipechain_role');
-        setSelectedRole(storedRole as 'seller' | 'buyer' | 'admin' || 'buyer');
+      console.log('Starting login flow...');
+      
+      // Attempt login with Web3Auth
+      const result = await login();
+      console.log('Web3Auth authentication result:', result);
+      
+      if (result && result.id) {
+        console.log('Web3Auth authentication successful, checking if user is new or existing');
+        setLoadingStage('Checking user status...');
         
-        setLoadingStage('Opening Web3Auth modal...');
-        // Call the actual Web3Auth login
-        await login();
+        // Check if user has a role stored
+        const storedRole = localStorage.getItem("recipechain_role");
+        const storedAuth = localStorage.getItem("recipechain_auth");
         
-        setLoadingStage('Login successful!');
-        // The useEffect will handle the redirect based on user.role
+        if (storedRole && storedAuth) {
+          // Existing user with role
+          console.log('Existing user detected with role:', storedRole);
+          setLoadingStage('Redirecting to dashboard...');
+          setConnectLoading(false);
+          
+          // Redirect to dashboard based on role
+          if (storedRole === 'seller') {
+            router.push('/seller/dashboard');
+          } else if (storedRole === 'buyer') {
+            router.push('/buyer/dashboard');
+          } else if (storedRole === 'admin') {
+            router.push('/admin/dashboard');
+          }
+        } else {
+          // New user - send to signup page
+          console.log('New user detected, redirecting to signup page');
+          setLoadingStage('Redirecting to signup...');
+          setConnectLoading(false);
+          setTimeout(() => {
+            router.push('/signup');
+          }, 1000);
+        }
       } else {
-        // New user - redirect to signup page
-        setLoadingStage('Redirecting to signup...');
-        router.push('/signup');
+        console.log('Login returned null, check if redirect mode...');
         setConnectLoading(false);
+        setLoadingStage('');
       }
     } catch (err) {
       console.error('Login failed:', err);
@@ -72,7 +104,6 @@ export default function LoginPage() {
               alt="RecipeChain Logo" 
               width={120} 
               height={120}
-              priority
               className="w-28 h-28 object-contain"
             />
           </div>
@@ -100,7 +131,7 @@ export default function LoginPage() {
             {/* Login Button */}
             <button
               onClick={handleLogin}
-              disabled={connectLoading || !isWeb3AuthInitialized}
+              disabled={connectLoading || isLoading}
               className="w-full py-3 px-6 bg-[#0d9488] text-white rounded-xl font-semibold hover:bg-[#0f766e] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
               {connectLoading ? (

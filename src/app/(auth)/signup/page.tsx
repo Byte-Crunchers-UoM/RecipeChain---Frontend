@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWeb3Auth } from '@/app/lib/web3/Web3AuthProvider';
 import Link from 'next/link';
@@ -10,23 +10,9 @@ export default function SignupPage() {
   const [error, setError] = useState<string>('');
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [connectLoading, setConnectLoading] = useState(false);
-  const [isWeb3Connected, setIsWeb3Connected] = useState(false);
   const [loadingStage, setLoadingStage] = useState<string>('');
-  const { setSelectedRole, login, isWeb3AuthInitialized, user } = useWeb3Auth();
+  const { signup, isLoading, user } = useWeb3Auth();
   const router = useRouter();
-
-  useEffect(() => {
-    console.log('Signup page - Web3Auth initialized:', isWeb3AuthInitialized);
-  }, [isWeb3AuthInitialized]);
-
-  useEffect(() => {
-    // If user has completed web3Auth signup, redirect to role selection
-    if (user && user.id && isWeb3Connected) {
-      // Redirect to role selection page after successful Web3Auth
-      console.log('Redirecting to role selection after Web3Auth');
-      router.push('/role-select');
-    }
-  }, [user, isWeb3Connected, router]);
 
   const handleSignup = async () => {
     if (!acceptTerms) {
@@ -34,23 +20,34 @@ export default function SignupPage() {
       return;
     }
 
-    try {
-      setError('');
-      setConnectLoading(true);
-      setLoadingStage('Opening Web3Auth modal...');
+    setConnectLoading(true);
+    setLoadingStage('Opening Web3Auth modal...');
+    setError('');
 
-      // First step: Connect with Web3Auth (required before role selection)
-      console.log('Starting Web3Auth login...');
-      await login();
-      console.log('Web3Auth login successful');
+    try {
+      // Signup with Web3Auth - includes wallet address retrieval
+      console.log('Starting Web3Auth signup...');
+      const result = await signup();
+      console.log('Web3Auth signup result:', result);
       
-      setLoadingStage('Web3Auth connection successful!');
-      setIsWeb3Connected(true);
-      
-      // The user will now see the role selection page via the useEffect redirect
+      if (result && result.id) {
+        console.log('Web3Auth signup successful, user:', result);
+        setLoadingStage('Web3Auth signup successful!');
+        setConnectLoading(false);
+        
+        // Redirect to role selection after successful signup with wallet
+        console.log('Redirecting to role selection...');
+        setTimeout(() => {
+          router.push('/role-select');
+        }, 1000);
+      } else {
+        console.log('Web3Auth signup in redirect mode or failed...');
+        setConnectLoading(false);
+        setLoadingStage('');
+      }
     } catch (err) {
       console.error('Web3Auth signup failed:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to connect with Web3Auth. Please try again.';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sign up with Web3Auth. Please try again.';
       setError(errorMessage);
       setConnectLoading(false);
       setLoadingStage('');
@@ -68,7 +65,6 @@ export default function SignupPage() {
               alt="RecipeChain Logo" 
               width={120} 
               height={120}
-              priority
               className="w-28 h-28 object-contain"
             />
           </div>
@@ -119,8 +115,8 @@ export default function SignupPage() {
             {/* Signup Button */}
             <button
               onClick={handleSignup}
-              disabled={connectLoading || !isWeb3AuthInitialized}
-              title={!isWeb3AuthInitialized ? "Web3Auth is initializing..." : ""}
+              disabled={connectLoading || isLoading}
+              title={isLoading ? "Web3Auth is initializing..." : ""}
               className="w-full py-3 px-6 bg-[#0d9488] text-white rounded-xl font-semibold hover:bg-[#0f766e] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
             {connectLoading ? (
@@ -131,7 +127,7 @@ export default function SignupPage() {
                   </svg>
                   <span>{loadingStage || 'Connecting...'}</span>
                 </span>
-              ) : isWeb3AuthInitialized ? (
+              ) : !isLoading ? (
                 'Sign Up with Web3Auth'
               ) : (
                 'Initializing Web3Auth...'

@@ -61,7 +61,6 @@ export default function RoleSelectPage() {
               alt="RecipeChain Logo" 
               width={100} 
               height={100}
-              priority
               className="w-24 h-24 object-contain"
             />
           </div>
