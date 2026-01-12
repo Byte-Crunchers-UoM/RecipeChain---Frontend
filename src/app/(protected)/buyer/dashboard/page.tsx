@@ -8,7 +8,7 @@ export default function BuyerDashboard() {
           Buyer Dashboard 👤
         </h2>
         <p className="text-gray-600">
-          Browse and book available parking slots in your area.
+          Browse and order your favorite recipes.
         </p>
       </div>
     </div>

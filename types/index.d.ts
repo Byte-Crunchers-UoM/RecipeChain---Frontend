@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'seller' | 'driver';
+export type UserRole = 'admin' | 'seller' | 'buyer';
 
 export interface User {
   id: string;
@@ -16,16 +16,18 @@ export interface AuthState {
   isAuthenticated: boolean;
 }
 
-export interface SellerProfile extends User {
+export interface ChefProfile extends User {
   role: 'seller';
   documents?: {
-    nic?: string;
-    policeReport?: string;
-    ownershipClearance?: string;
+    certification?: string;
+    portfolio?: string;
+    verification?: string;
   };
   verificationStatus: 'pending' | 'approved' | 'rejected';
   earnings: number;
-  totalBookings: number;
+  recipesCount: number;
+  averageRating: number;
+  totalOrders: number;
 }
 
 export interface AdminProfile extends User {
@@ -33,21 +35,27 @@ export interface AdminProfile extends User {
   permissions: string[];
 }
 
-export interface ParkingSlot {
+export interface Recipe {
   id: string;
-  sellerId: string;
-  name: string;
+  chefId: string;
+  title: string;
   description: string;
-  location: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
-  pricePerHour: number;
-  isAvailable: boolean;
+  category: string;
+  preparationTime: number;
+  servings: number;
+  price: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  ingredients: {
+    name: string;
+    quantity: string;
+  }[];
+  instructions: string[];
   images?: string[];
-  features: string[];
-  lastBookedAt?: Date;
+  ratings: {
+    average: number;
+    count: number;
+  };
+  tags: string[];
   createdAt: Date;
   updatedAt: Date;
 }

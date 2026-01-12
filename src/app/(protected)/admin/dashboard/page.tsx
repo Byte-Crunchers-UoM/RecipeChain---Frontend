@@ -8,7 +8,7 @@ export default function AdminDashboard() {
           Admin Dashboard 👨‍💼
         </h2>
         <p className="text-gray-600">
-          Welcome to the admin dashboard. Manage users, parking slots, and more.
+          Welcome to the admin dashboard. Manage users, recipes, and more.
         </p>
       </div>
     </div>

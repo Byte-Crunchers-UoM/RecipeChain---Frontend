@@ -17,8 +17,8 @@ export default function SignupPage() {
   useEffect(() => {
     if (isConnected) {
       // Save role to cookies and localStorage (always seller for signup)
-      localStorage.setItem('park_chain_role', 'seller');
-      document.cookie = `park_chain_role=seller; path=/; max-age=86400; SameSite=Lax`;
+      localStorage.setItem('recipe_chain_role', 'seller');
+      document.cookie = `recipe_chain_role=seller; path=/; max-age=86400; SameSite=Lax`;
       
       // Redirect to seller dashboard
       router.push('/seller/dashboard');
@@ -48,29 +48,27 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#111827] py-12">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12">
       <div className="w-full max-w-md p-8 space-y-8">
         {/* Logo */}
         <div className="text-center">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
-              <svg className="w-8 h-8 text-[#111827]" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-              </svg>
-            </div>
+          <div className="flex items-center justify-center mb-4">
+            <img src="/images/recipechain_logo_green.png" alt="RecipeChain" className="h-20 w-auto" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Join Park Chain</h1>
-          <p className="text-[#D8D8D8] text-sm">Create your account to get started</p>
+          <h1 className="text-4xl font-bold text-teal-700 mb-2">RecipeChain</h1>
+          <p className="text-gray-600 text-base">Create your account to get started</p>
         </div>
 
         {/* Signup Card */}
-        <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10">
+        <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
           <div className="space-y-6">
-            {/* Seller Info */}
-            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <p className="text-blue-300 text-sm">
-                <span className="font-semibold">Note:</span> You&apos;re creating a Seller account. You&apos;ll need to complete KYC verification with documents before listing parking slots.
-              </p>
+            {/* Steps Info Box */}
+            <div className="p-4 rounded-lg bg-teal-50 border border-teal-200">
+              <div className="text-teal-700 text-sm space-y-2">
+                <p><span className="font-semibold">Step 1:</span> Connect your Web3 wallet.</p>
+                <p><span className="font-semibold">Step 2:</span> Choose your preferred role — Seller or Buyer.</p>
+                <p><span className="font-semibold">Step 3:</span> Complete your profile with role-specific details.</p>
+              </div>
             </div>
 
             {/* Terms and Conditions */}
@@ -80,15 +78,15 @@ export default function SignupPage() {
                 id="terms"
                 checked={acceptTerms}
                 onChange={(e) => setAcceptTerms(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-white focus:ring-2 focus:ring-white"
+                className="mt-1 w-4 h-4 rounded border-gray-300 bg-white text-teal-600 focus:ring-teal-500"
               />
-              <label htmlFor="terms" className="text-[#D8D8D8] text-sm">
+              <label htmlFor="terms" className="text-gray-700 text-sm">
                 I agree to the{' '}
-                <Link href="/terms" className="text-white hover:underline">
+                <Link href="/terms" className="text-teal-600 font-semibold hover:text-teal-700">
                   Terms and Conditions
                 </Link>{' '}
                 and{' '}
-                <Link href="/privacy" className="text-white hover:underline">
+                <Link href="/privacy" className="text-teal-600 font-semibold hover:text-teal-700">
                   Privacy Policy
                 </Link>
               </label>
@@ -96,8 +94,8 @@ export default function SignupPage() {
 
             {/* Error Message */}
             {error && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                <p className="text-red-400 text-sm">{error}</p>
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                <p className="text-red-600 text-sm">{error}</p>
               </div>
             )}
 
@@ -105,7 +103,7 @@ export default function SignupPage() {
             <button
               onClick={handleSignup}
               disabled={connectLoading || !acceptTerms}
-              className="w-full py-4 px-6 bg-white text-[#111827] rounded-xl font-semibold hover:bg-[#F2F2F2] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              className="w-full py-3 px-6 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {connectLoading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -121,25 +119,18 @@ export default function SignupPage() {
             </button>
 
             {/* Login Link */}
-            <div className="text-center pt-4 border-t border-white/10">
-              <p className="text-[#D8D8D8] text-sm">
+            <div className="text-center pt-4 border-t border-gray-200">
+              <p className="text-gray-600 text-sm">
                 Already have an account?{' '}
                 <Link 
                   href="/login" 
-                  className="text-white font-medium hover:underline"
+                  className="text-teal-600 font-semibold hover:text-teal-700 transition-colors"
                 >
-                  Sign in
+                  Login here →
                 </Link>
               </p>
             </div>
           </div>
-        </div>
-
-        {/* Additional Info */}
-        <div className="text-center">
-          <p className="text-[#D8D8D8] text-xs">
-            Secured with Web3Auth • XRPL Blockchain
-          </p>
         </div>
       </div>
     </div>

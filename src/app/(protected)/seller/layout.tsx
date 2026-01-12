@@ -6,11 +6,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { name: 'Dashboard', href: '/seller/dashboard', icon: '📊' },
-  { name: 'Spot Management', href: '/seller/spots', icon: '🅿️' },
-  { name: 'Bookings', href: '/seller/bookings', icon: '📅' },
-  { name: 'Approvals', href: '/seller/approvals', icon: '✅' },
+  { name: 'Dashboard', href: '/seller/dashboard', icon: '�‍🍳' },
+  { name: 'Recipes', href: '/seller/recipes', icon: '📖' },
+  { name: 'Orders', href: '/seller/orders', icon: '📦' },
   { name: 'Reviews', href: '/seller/reviews', icon: '⭐' },
+  { name: 'Earnings', href: '/seller/earnings', icon: '💰' },
 ];
 
 export default function SellerLayout({
@@ -36,18 +36,14 @@ export default function SellerLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#F2F2F2] flex">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#A0A0A0] shadow-lg flex flex-col">
+      <aside className="w-64 bg-white shadow-lg flex flex-col border-r border-gray-200">
         {/* Logo */}
-        <div className="p-6 bg-[#8C8C8C]">
+        <div className="p-6 bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-[#111827]" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-              </svg>
-            </div>
-            <span className="text-[#111827] font-bold text-lg">Park Chain</span>
+            <img src="/images/recipechain_logo_green.png" alt="RecipeChain" className="h-10 w-auto" />
+            <span className="text-teal-700 font-bold text-lg">RecipeChain</span>
           </div>
         </div>
 
@@ -61,8 +57,8 @@ export default function SellerLayout({
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   isActive
-                    ? 'bg-[#D8D8D8] text-[#111827] font-semibold shadow-md'
-                    : 'text-[#111827] hover:bg-[#8C8C8C]'
+                    ? 'bg-teal-100 text-teal-700 font-semibold'
+                    : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 <span className="text-xl">{item.icon}</span>
@@ -73,13 +69,13 @@ export default function SellerLayout({
         </nav>
 
         {/* Account & Settings */}
-        <div className="p-4 border-t border-[#8C8C8C]">
+        <div className="p-4 border-t border-gray-200">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg w-full text-[#111827] hover:bg-[#8C8C8C] transition-all"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg w-full text-gray-700 hover:bg-gray-100 transition-all"
           >
             <span className="text-xl">⚙️</span>
-            <span>Account & Settings</span>
+            <span>Settings</span>
           </button>
         </div>
       </aside>
@@ -87,16 +83,16 @@ export default function SellerLayout({
       {/* Main Content */}
       <main className="flex-1 flex flex-col">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-[#D8D8D8]">
+        <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="px-8 py-4 flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-[#111827]">Seller Dashboard</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Chef Dashboard</h1>
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-sm text-[#111827] font-medium">{user?.name || 'Seller'}</p>
-                <p className="text-xs text-gray-500">{user?.email || user?.walletAddress?.slice(0, 10) + '...'}</p>
+                <p className="text-sm text-gray-900 font-medium">Chef</p>
+                <p className="text-xs text-gray-500">{user?.email || user?.walletAddress?.slice(0, 10) + '...' || 'undefined...'}</p>
               </div>
-              <div className="w-10 h-10 bg-[#111827] rounded-full flex items-center justify-center text-white font-bold">
-                {user?.name?.[0] || 'S'}
+              <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center text-white font-bold">
+                {user?.name?.[0] || 'C'}
               </div>
             </div>
           </div>

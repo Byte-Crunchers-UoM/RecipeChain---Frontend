@@ -43,7 +43,7 @@ export const useWeb3Auth = () => {
 export const Web3AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const logout = async () => {

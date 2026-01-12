@@ -7,9 +7,9 @@ import { usePathname } from 'next/navigation';
 
 const navItems = [
   { name: 'Dashboard', href: '/buyer/dashboard', icon: '📊' },
-  { name: 'Browse Spots', href: '/buyer/spots', icon: '🔍' },
-  { name: 'My Bookings', href: '/buyer/bookings', icon: '📅' },
-  { name: 'My Favorites', href: '/buyer/favorites', icon: '❤️' },
+  { name: 'Browse Recipes', href: '/buyer/recipes', icon: '📖' },
+  { name: 'My Orders', href: '/buyer/orders', icon: '📦' },
+  { name: 'Favorites', href: '/buyer/favorites', icon: '❤️' },
   { name: 'Reviews', href: '/buyer/reviews', icon: '⭐' },
 ];
 
@@ -36,16 +36,14 @@ export default function BuyerLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#F2F2F2] flex">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#A0A0A0] shadow-lg flex flex-col">
+      <aside className="w-64 bg-white shadow-lg flex flex-col border-r border-gray-200">
         {/* Logo */}
-        <div className="p-6 bg-[#8C8C8C]">
+        <div className="p-6 bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-[#111827] font-bold">PC</span>
-            </div>
-            <span className="text-[#111827] font-bold text-lg">Park Chain</span>
+            <img src="/images/recipechain_logo_green.png" alt="RecipeChain" className="h-10 w-auto" />
+            <span className="text-teal-700 font-bold text-lg">RecipeChain</span>
           </div>
         </div>
 
@@ -59,8 +57,8 @@ export default function BuyerLayout({
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   isActive
-                    ? 'bg-white text-[#111827] font-semibold'
-                    : 'text-[#111827] hover:bg-white hover:bg-opacity-20'
+                    ? 'bg-teal-100 text-teal-700 font-semibold'
+                    : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 <span className="text-xl">{item.icon}</span>
@@ -71,10 +69,10 @@ export default function BuyerLayout({
         </nav>
 
         {/* User Profile */}
-        <div className="p-6 bg-[#8C8C8C] border-t border-[#999]">
+        <div className="p-6 bg-white border-t border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="font-semibold text-[#111827] text-sm">{user?.name || 'Buyer'}</p>
+              <p className="font-semibold text-gray-900 text-sm">{user?.name || 'Buyer'}</p>
               <p className="text-xs text-gray-500">{user?.email || user?.walletAddress?.slice(0, 10) + '...'}</p>
             </div>
           </div>
