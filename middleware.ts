@@ -10,7 +10,7 @@ export function middleware(request: NextRequest) {
   const isProtectedRoute = isAdminRoute || isSellerRoute;
 
   // Get user role from cookie or header (in production, use proper JWT validation)
-  const userRole = request.cookies.get('recipe_chain_role')?.value;
+  const userRole = request.cookies.get('park_chain_role')?.value;
 
   // If accessing protected route without authentication, redirect to login
   if (isProtectedRoute && !userRole) {

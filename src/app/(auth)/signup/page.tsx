@@ -1,35 +1,18 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useWeb3Auth } from '@/lib/web3/Web3AuthProvider';
-import { useWeb3AuthConnect } from "@web3auth/modal/react";
-import { UserRole } from '@/types';
+import { useWeb3Auth } from '@/app/lib/web3/Web3AuthProvider';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function SignupPage() {
   const [error, setError] = useState<string>('');
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const { setSelectedRole: setContextRole } = useWeb3Auth();
-  const { connect, isConnected, loading: connectLoading, error: connectError } = useWeb3AuthConnect();
+  const [connectLoading, setConnectLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<string>('');
+  const { signup, isLoading, user } = useWeb3Auth();
   const router = useRouter();
-
-  useEffect(() => {
-    if (isConnected) {
-      // Save role to cookies and localStorage (always seller for signup)
-      localStorage.setItem('recipe_chain_role', 'seller');
-      document.cookie = `recipe_chain_role=seller; path=/; max-age=86400; SameSite=Lax`;
-      
-      // Redirect to seller dashboard
-      router.push('/seller/dashboard');
-    }
-  }, [isConnected, router]);
-
-  useEffect(() => {
-    if (connectError) {
-      setError('Failed to create account. Please try again.');
-    }
-  }, [connectError]);
 
   const handleSignup = async () => {
     if (!acceptTerms) {
@@ -37,38 +20,68 @@ export default function SignupPage() {
       return;
     }
 
+    setConnectLoading(true);
+    setLoadingStage('Opening Web3Auth modal...');
+    setError('');
+
     try {
-      setError('');
-      setContextRole('seller');
-      await connect();
+      // Signup with Web3Auth - includes wallet address retrieval
+      console.log('Starting Web3Auth signup...');
+      const result = await signup();
+      console.log('Web3Auth signup result:', result);
+      
+      if (result && result.id) {
+        console.log('Web3Auth signup successful, user:', result);
+        setLoadingStage('Web3Auth signup successful!');
+        setConnectLoading(false);
+        
+        // Redirect to role selection after successful signup with wallet
+        console.log('Redirecting to role selection...');
+        setTimeout(() => {
+          router.push('/role-select');
+        }, 1000);
+      } else {
+        console.log('Web3Auth signup in redirect mode or failed...');
+        setConnectLoading(false);
+        setLoadingStage('');
+      }
     } catch (err) {
-      console.error('Signup failed:', err);
-      setError('Failed to create account. Please try again.');
+      console.error('Web3Auth signup failed:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sign up with Web3Auth. Please try again.';
+      setError(errorMessage);
+      setConnectLoading(false);
+      setLoadingStage('');
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-[#f8fafb] py-12">
       <div className="w-full max-w-md p-8 space-y-8">
         {/* Logo */}
         <div className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <img src="/images/recipechain_logo_green.png" alt="RecipeChain" className="h-20 w-auto" />
+            <Image 
+              src="/images/recipechain_logo_green.png" 
+              alt="RecipeChain Logo" 
+              width={120} 
+              height={120}
+              className="w-28 h-28 object-contain"
+            />
           </div>
-          <h1 className="text-4xl font-bold text-teal-700 mb-2">RecipeChain</h1>
-          <p className="text-gray-600 text-base">Create your account to get started</p>
+          <h1 className="text-4xl font-bold text-[#0d9488] mb-2">RecipeChain</h1>
+          <p className="text-[#4b5563] text-base font-medium">Create your account to get started</p>
         </div>
 
         {/* Signup Card */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-2xl p-8 border border-[#e5e7eb] shadow-sm">
           <div className="space-y-6">
-            {/* Steps Info Box */}
-            <div className="p-4 rounded-lg bg-teal-50 border border-teal-200">
-              <div className="text-teal-700 text-sm space-y-2">
-                <p><span className="font-semibold">Step 1:</span> Connect your Web3 wallet.</p>
-                <p><span className="font-semibold">Step 2:</span> Choose your preferred role — Seller or Buyer.</p>
-                <p><span className="font-semibold">Step 3:</span> Complete your profile with role-specific details.</p>
-              </div>
+            {/* Onboarding Info */}
+            <div className="p-4 rounded-lg bg-[#d1fae5] border border-[#a7f3d0]">
+              <p className="text-[#047857] text-sm">
+                <strong>Step 1:</strong> Connect your Web3 wallet. <br/>
+                <strong>Step 2:</strong> Choose your preferred role — Seller or Buyer. <br/>
+                <strong>Step 3:</strong> Complete your profile with role-specific details.
+              </p>
             </div>
 
             {/* Terms and Conditions */}
@@ -78,15 +91,15 @@ export default function SignupPage() {
                 id="terms"
                 checked={acceptTerms}
                 onChange={(e) => setAcceptTerms(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded border-gray-300 bg-white text-teal-600 focus:ring-teal-500"
+                className="mt-1 w-4 h-4 rounded border-[#d1d5db] bg-white text-[#0d9488] focus:ring-2 focus:ring-[#0d9488]"
               />
-              <label htmlFor="terms" className="text-gray-700 text-sm">
+              <label htmlFor="terms" className="text-[#6b7280] text-sm">
                 I agree to the{' '}
-                <Link href="/terms" className="text-teal-600 font-semibold hover:text-teal-700">
+                <Link href="/terms" className="text-[#0d9488] hover:underline font-medium">
                   Terms and Conditions
                 </Link>{' '}
                 and{' '}
-                <Link href="/privacy" className="text-teal-600 font-semibold hover:text-teal-700">
+                <Link href="/privacy" className="text-[#0d9488] hover:underline font-medium">
                   Privacy Policy
                 </Link>
               </label>
@@ -94,41 +107,42 @@ export default function SignupPage() {
 
             {/* Error Message */}
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-                <p className="text-red-600 text-sm">{error}</p>
+              <div className="p-3 rounded-lg bg-[#fee2e2] border border-[#fecaca]">
+                <p className="text-[#dc2626] text-sm">{error}</p>
               </div>
             )}
 
             {/* Signup Button */}
             <button
               onClick={handleSignup}
-              disabled={connectLoading || !acceptTerms}
-              className="w-full py-3 px-6 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={connectLoading || isLoading}
+              title={isLoading ? "Web3Auth is initializing..." : ""}
+              className="w-full py-3 px-6 bg-[#0d9488] text-white rounded-xl font-semibold hover:bg-[#0f766e] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
-              {connectLoading ? (
+            {connectLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                   </svg>
-                  Creating Account...
+                  <span>{loadingStage || 'Connecting...'}</span>
                 </span>
-              ) : (
+              ) : !isLoading ? (
                 'Sign Up with Web3Auth'
+              ) : (
+                'Initializing Web3Auth...'
               )}
             </button>
 
             {/* Login Link */}
-            <div className="text-center pt-4 border-t border-gray-200">
-              <p className="text-gray-600 text-sm">
-                Already have an account?{' '}
-                <Link 
-                  href="/login" 
-                  className="text-teal-600 font-semibold hover:text-teal-700 transition-colors"
-                >
-                  Login here →
-                </Link>
-              </p>
+            <div className="text-center pt-4 border-t border-[#e5e7eb]">
+              <p className="text-[#6b7280] text-sm mb-2">Already have an account?</p>
+              <Link 
+                href="/login" 
+                className="text-[#0d9488] font-semibold hover:text-[#0f766e] transition-colors text-sm"
+              >
+                Login here →
+              </Link>
             </div>
           </div>
         </div>

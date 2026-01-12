@@ -1,6 +1,6 @@
 "use client";
 
-import { useWeb3Auth } from '@/lib/web3/Web3AuthProvider';
+import { useWeb3Auth } from '@/app/lib/web3/Web3AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { UserRole } from '@/types';
@@ -11,38 +11,41 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { isLoading, isAuthenticated, user } = useWeb3Auth();
+  const { user, isLoading } = useWeb3Auth();
   const router = useRouter();
 
   useEffect(() => {
     if (!isLoading) {
-      if (!isAuthenticated) {
+      if (!user || !user.id) {
+        // Not authenticated, redirect to login
         router.push('/login');
-      } else if (requiredRole && user?.role !== requiredRole) {
-        // Redirect to appropriate dashboard based on user role
-        if (user?.role === 'admin') {
+      } else if (requiredRole && user.role !== requiredRole) {
+        // User doesn't have the required role
+        if (user.role === 'admin') {
           router.push('/admin/dashboard');
-        } else if (user?.role === 'seller') {
+        } else if (user.role === 'seller') {
           router.push('/seller/dashboard');
+        } else if (user.role === 'buyer') {
+          router.push('/buyer/dashboard');
         } else {
           router.push('/login');
         }
       }
     }
-  }, [isLoading, isAuthenticated, user, requiredRole, router]);
+  }, [isLoading, user, requiredRole, router]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F2F2F2]">
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafb]">
         <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-[#111827] border-t-transparent rounded-full mx-auto"></div>
-          <p className="text-[#111827] mt-4">Loading...</p>
+          <div className="animate-spin h-12 w-12 border-4 border-[#0d9488] border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-[#111827] font-medium">Initializing...</p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated || (requiredRole && user?.role !== requiredRole)) {
+  if (!user || !user.id || (requiredRole && user.role !== requiredRole)) {
     return null;
   }
 
