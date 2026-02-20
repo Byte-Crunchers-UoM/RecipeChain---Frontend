@@ -16,13 +16,13 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 
 export function RecipeCard({ recipe }: RecipeCardProps) {
   
-  const badgeColor = DIFFICULTY_COLORS[recipe.difficulty.toLowerCase()] || DIFFICULTY_COLORS.default;
-
+const difficulty = recipe.difficulty_level?.toLowerCase() || 'default';
+const badgeColor = DIFFICULTY_COLORS[difficulty] || DIFFICULTY_COLORS.default;
   return (
     <article className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden flex flex-col h-full relative">
       
       
-      <Link href={`/recipe/${recipe.id}`} className="absolute inset-0 z-10">
+      <Link href={`/recipe/${recipe.recipe_id}`} className="absolute inset-0 z-10">
         <span className="sr-only">View recipe for {recipe.title}</span>
       </Link>
 
@@ -40,7 +40,7 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
         {/* Badges */}
         <div className="absolute top-4 left-4 z-20">
           <span className={`${badgeColor} text-white text-[10px] font-bold uppercase tracking-wide px-3 py-1 rounded-full shadow-sm`}>
-            {recipe.difficulty}
+            {recipe.difficulty_level}
           </span>
         </div>
 
@@ -60,7 +60,7 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
         {/* Chef Info */}
         <div className="flex items-center gap-2 mb-6 text-sm text-gray-500">
           <ChefHat className="w-4 h-4 text-gray-400" />
-          <span className="font-medium text-gray-700">{recipe.chefName}</span>
+          <span className="font-medium text-gray-700">{recipe.chef_name}</span>
           <span className="text-gray-300">•</span>
           <span className="text-gray-400 text-xs">{recipe.reviewsCount} reviews</span>
         </div>
@@ -70,7 +70,7 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
           <div className="flex gap-4 text-xs text-gray-500 font-medium">
             <div className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-emerald-500" />
-              {recipe.timeInMins} mins
+              {recipe.prep_time} mins
             </div>
             <div className="flex items-center gap-1.5">
               <Users className="w-4 h-4 text-emerald-500" />

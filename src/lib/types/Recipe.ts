@@ -1,13 +1,32 @@
 export interface Recipe {
-    id: string;
+    difficulty_level: any;
+    recipe_id: string;
     title: string;
-    chefName: string;
+    chef_name: string;
     rating: number;
+    ingredients: Ingredient[];
+    instructions: Instructions[];
     reviewsCount: number;
-    timeInMins: number;
-    servings:number;
-    difficulty:'Easy'|'Medium'|'Hard'
+    prep_time: number;
+    servings: number;
+    difficdifficulty_level?: string;
     imageUrl: string;
-    priceXrp?:number;
+    priceXrp?: number;
     blockchainHash?: string;
+}
+
+export interface RecipeApiResponsed {
+    success: boolean;
+    message: string;
+    data: Recipe[]
+}
+export interface Ingredient {
+  name: string;
+  quantity: string;
+  unit: string;
+}
+export interface Instructions {
+  id: string;
+  step: string;
+  description: string;
 }
