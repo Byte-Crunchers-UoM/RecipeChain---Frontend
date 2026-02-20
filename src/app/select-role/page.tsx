@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import type { UserRole } from "@/types";
@@ -9,6 +9,9 @@ import type { UserRole } from "@/types";
 export default function SelectRolePage() {
   const router = useRouter();
   const { setRole, isAuthenticated, isLoading, role } = useAuth();
+
+  // UI-only selected state (does NOT affect auth logic until confirm)
+  const [selected, setSelected] = useState<UserRole>("seller");
 
   // Guard: must be logged in to select role
   useEffect(() => {
@@ -20,14 +23,46 @@ export default function SelectRolePage() {
       return;
     }
 
-    // Already has role -> skip select-role
-    if (role === "seller") router.replace("/seller/dashboard");
-    if (role === "buyer") router.replace("/buyer/dashboard");
+    // Already has role -> skip select-role (UPDATED per your request)
+    if (role === "seller") {
+      router.replace("/seller/kyc");
+      return;
+    }
+    if (role === "buyer") {
+      router.replace("/marketplace");
+      return;
+    }
   }, [isLoading, isAuthenticated, role, router]);
 
-  const chooseRole = (newRole: UserRole) => {
-    setRole(newRole);
-    router.replace(newRole === "seller" ? "/seller/dashboard" : "/buyer/dashboard");
+  const buyerCapabilities = useMemo(
+    () => [
+      "Purchase exclusive digital recipes",
+      "Save recipes to your cookbook",
+      "Track transaction history",
+      "Earn buyer achievements",
+      "Review and rate purchased recipes",
+    ],
+    []
+  );
+
+  const sellerCapabilities = useMemo(
+    () => [
+      "Upload and mint recipes",
+      "Earn revenue in cryptocurrency",
+      "Access sales analytics",
+      "Build culinary reputation",
+      "Unlock creator achievements",
+    ],
+    []
+  );
+
+  const goNext = (chosen: UserRole) => {
+    // Keep: store role in context
+    setRole(chosen);
+
+    // UPDATED routes (buyer -> marketplace, seller -> kyc)
+    if (chosen === "buyer") router.replace("/marketplace");
+    else router.replace("/seller/kyc");
   };
 
   if (isLoading) {
@@ -39,43 +74,152 @@ export default function SelectRolePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
-      <div className="w-full max-w-xl">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-10 text-center">
-          <div className="flex justify-center mb-6">
-            <Image src="/Logo.png" alt="RecipeChain Logo" width={90} height={90} priority />
+    <div className="min-h-screen bg-gray-50 px-4 py-10">
+      <div className="mx-auto w-full max-w-3xl">
+        {/* Top bar: back + logo */}
+        <div className="mb-8 flex items-start justify-between">
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition"
+          >
+            <span className="text-lg">←</span> Back
+          </button>
+
+          <div className="flex flex-col items-center">
+            <Image
+              src="/Logo.png"
+              alt="RecipeChain Logo"
+              width={70}
+              height={70}
+              priority
+            />
+            
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-900">Select your role</h1>
-          <p className="text-gray-500 mt-1">Continue as Seller (Chef) or Buyer</p>
+          <div className="w-[72px]" />
+        </div>
 
-          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              onClick={() => chooseRole("seller")}
-              className="rounded-2xl border border-gray-200 p-6 text-left hover:shadow-md transition"
-            >
-              <div className="text-3xl">👨‍🍳</div>
-              <div className="mt-3 font-semibold text-gray-900">Seller (Chef)</div>
-              <div className="mt-1 text-sm text-gray-500">
-                Create recipes, sell recipes, manage your dashboard.
-              </div>
-            </button>
-
-            <button
-              onClick={() => chooseRole("buyer")}
-              className="rounded-2xl border border-gray-200 p-6 text-left hover:shadow-md transition"
-            >
-              <div className="text-3xl">🧑‍💻</div>
-              <div className="mt-3 font-semibold text-gray-900">Buyer</div>
-              <div className="mt-1 text-sm text-gray-500">
-                Browse marketplace, buy/unlock recipes, manage profile.
-              </div>
-            </button>
+        {/* Progress */}
+        <div className="mx-auto max-w-2xl">
+          <div className="text-sm text-gray-500">Account Setup</div>
+          <div className="mt-2 h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+            <div className="h-full w-full bg-teal-600 rounded-full" />
           </div>
 
-          <p className="mt-8 text-xs text-gray-400">You can change this later from Settings.</p>
+          <h1 className="mt-8 text-center text-2xl font-extrabold text-gray-900">
+            Select Your Account Role
+          </h1>
+          <p className="mt-3 text-center text-gray-500 leading-relaxed">
+            Choose how you will participate in the RecipeChain marketplace.
+            <br />
+            Your role determines your permissions and cannot be changed later.
+          </p>
+
+          {/* Cards */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <RoleCard
+              title="Buyer"
+              description="Purchase and collect blockchain-secured recipes from chefs worldwide."
+              icon="🛒"
+              capabilities={buyerCapabilities}
+              active={selected === "buyer"}
+              onClick={() => setSelected("buyer")}
+            />
+
+            <RoleCard
+              title="Seller (Chef)"
+              description="Create, mint, and sell your recipes as digital assets on the blockchain."
+              icon="👨‍🍳"
+              capabilities={sellerCapabilities}
+              active={selected === "seller"}
+              onClick={() => setSelected("seller")}
+            />
+          </div>
+
+          {/* Warning box */}
+          <div className="mt-8 rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 flex items-start gap-3">
+            <span className="mt-0.5">⚠️</span>
+            <div>
+              This selection is permanent. Your account role cannot be changed after
+              confirmation.
+            </div>
+          </div>
+
+          {/* Confirm button */}
+          <div className="mt-8 flex justify-center">
+            <button
+              onClick={() => goNext(selected)}
+              className="rounded-xl bg-teal-700 px-10 py-4 text-white font-semibold hover:bg-teal-800 transition shadow-sm"
+            >
+              Confirm Role &amp; Continue
+            </button>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function RoleCard({
+  title,
+  description,
+  icon,
+  capabilities,
+  active,
+  onClick,
+}: {
+  title: string;
+  description: string;
+  icon: string;
+  capabilities: string[];
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "relative text-left rounded-2xl border p-5 transition shadow-sm",
+        active
+          ? "border-teal-700 bg-teal-50"
+          : "border-gray-200 bg-white hover:shadow-md",
+      ].join(" ")}
+    >
+      {/* Check mark */}
+      {active && (
+        <div className="absolute top-4 right-4 h-7 w-7 rounded-full bg-teal-700 text-white flex items-center justify-center text-sm">
+          ✓
+        </div>
+      )}
+
+      {/* Icon */}
+      <div
+        className={[
+          "h-12 w-12 rounded-xl flex items-center justify-center text-xl",
+          active ? "bg-white" : "bg-gray-50",
+        ].join(" ")}
+      >
+        {icon}
+      </div>
+
+      <div className="mt-5 text-xl font-bold text-gray-900">{title}</div>
+      <div className="mt-2 text-sm text-gray-500 leading-relaxed">
+        {description}
+      </div>
+
+      <div className="mt-6 text-xs font-semibold tracking-wider text-gray-500">
+        CAPABILITIES
+      </div>
+
+      <ul className="mt-3 space-y-2 text-sm text-gray-600">
+        {capabilities.map((cap) => (
+          <li key={cap} className="flex items-start gap-2">
+            <span className="mt-1 text-teal-700">•</span>
+            <span>{cap}</span>
+          </li>
+        ))}
+      </ul>
+    </button>
   );
 }
