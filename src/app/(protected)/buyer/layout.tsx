@@ -35,7 +35,7 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
   const [cartOpen, setCartOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
-  // topbar search
+  // topbar search (ONLY used on cookbook)
   const [topSearch, setTopSearch] = useState("");
 
   // outside click refs
@@ -64,7 +64,7 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
       { label: "Market Place", href: "/marketplace", icon: LayoutGrid },
       { label: "Trending Recipes", href: "/recipes", icon: TrendingUp },
       { label: "My Cookbook", href: "/buyer/cookbook", icon: BookOpen },
-      { label: "Favorites", href: "/buyer/cookbook?tab=favorites", icon: Heart },
+      //{ label: "Favorites", href: "/buyer/cookbook?tab=favorites", icon: Heart },
       { label: "Profile", href: "/buyer/profile", icon: UserIcon },
     ],
     []
@@ -75,7 +75,7 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
     router.replace("/login");
   };
 
-  // Dummy data (replace with backend later)
+  // Dummy data (replace later with backend)
   const notifications = [
     { id: "n1", title: "New recipe approved", time: "2m ago" },
     { id: "n2", title: "Order update", time: "1h ago" },
@@ -89,15 +89,13 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
   const displayName = user?.name || "John Doe";
   const avatarText = (displayName?.[0] || "U").toUpperCase();
 
-  // highlight only My Cookbook in cookbook page
-  const isCookbookPage = pathname === "/buyer/cookbook";
-
   const runTopSearch = () => {
-    // ✅ You can wire this to global search later.
-    // For now, just route to cookbook with query param:
     const q = topSearch.trim();
     router.push(q ? `/buyer/cookbook?q=${encodeURIComponent(q)}` : "/buyer/cookbook");
   };
+
+  const isCookbookPage = pathname === "/buyer/cookbook";
+  const isProfilePage = pathname === "/buyer/profile";
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -113,7 +111,12 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
         <nav className="px-4 py-6 space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = item.label === "My Cookbook" && isCookbookPage;
+
+            // ✅ Active highlight for the exact current page
+            // (works for /buyer/profile and /buyer/cookbook and others)
+            const active =
+              pathname === item.href ||
+              (pathname === "/buyer/cookbook" && item.href.startsWith("/buyer/cookbook"));
 
             return (
               <Link
@@ -121,13 +124,20 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
                 href={item.href}
                 className={[
                   "relative flex items-center gap-4 px-4 py-3 rounded-2xl text-[16px] transition",
-                  active ? "bg-teal-50 text-teal-700 font-semibold" : "text-slate-600 hover:bg-slate-50",
+                  active
+                    ? "bg-teal-50 text-teal-700 font-semibold"
+                    : "text-slate-600 hover:bg-slate-50",
                 ].join(" ")}
               >
+                {/* left highlight bar like your screenshot */}
                 {active && (
                   <span className="absolute left-0 top-2 bottom-2 w-2 rounded-r-xl bg-teal-700" />
                 )}
-                <Icon size={22} className={active ? "text-teal-700" : "text-slate-500"} />
+
+                <Icon
+                  size={22}
+                  className={active ? "text-teal-700" : "text-slate-500"}
+                />
                 <span>{item.label}</span>
               </Link>
             );
@@ -150,30 +160,43 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
       <div className="flex-1 min-w-0">
         {/* Topbar */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-5">
-          {/* Search bar with RIGHT icon clickable */}
-          <div className="flex-1 max-w-2xl">
-            <div className="flex items-center gap-3 px-4 py-2 rounded-xl border border-gray-200 bg-gray-50">
-              <input
-                value={topSearch}
-                onChange={(e) => setTopSearch(e.target.value)}
-                placeholder="Search your cookbook"
-                className="w-full bg-transparent outline-none text-sm text-gray-700"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") runTopSearch();
-                }}
-              />
+          {/* ✅ Only show search bar on My Cookbook.
+              ✅ On Profile show title + subtitle like your screenshot. */}
+          {isCookbookPage ? (
+            <div className="flex-1 max-w-2xl">
+              <div className="flex items-center gap-3 px-4 py-2 rounded-xl border border-gray-200 bg-gray-50">
+                <input
+                  value={topSearch}
+                  onChange={(e) => setTopSearch(e.target.value)}
+                  placeholder="Search your cookbook"
+                  className="w-full bg-transparent outline-none text-sm text-gray-700"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") runTopSearch();
+                  }}
+                />
 
-              <button
-                onClick={runTopSearch}
-                className="p-1 rounded-lg hover:bg-white transition"
-                aria-label="Search"
-              >
-                <Search size={18} className="text-gray-500" />
-              </button>
+                {/* Right icon clickable */}
+                <button
+                  onClick={runTopSearch}
+                  className="p-1 rounded-lg hover:bg-white transition"
+                  aria-label="Search"
+                >
+                  <Search size={18} className="text-gray-500" />
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex-1">
+              <div className="text-lg font-semibold text-gray-900">
+                {isProfilePage ? "My Profile" : ""}
+              </div>
+              <div className="text-xs text-gray-500">
+                {isProfilePage ? "Manage your account, wallet, and activity" : ""}
+              </div>
+            </div>
+          )}
 
-          {/* Right icons */}
+          {/* Right icons (keep everywhere) */}
           <div className="flex items-center gap-3 ml-5 relative">
             {/* Bell */}
             <div ref={notifRef} className="relative">
@@ -225,7 +248,7 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
               </span>
             </button>
 
-            {/* Profile */}
+            {/* Profile circle */}
             <div ref={profileRef} className="relative">
               <button
                 onClick={() => {
@@ -275,6 +298,7 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
+        {/* Page content */}
         <main className="p-5">{children}</main>
       </div>
 
@@ -282,11 +306,11 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
       {cartOpen && (
         <div
           className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center px-4"
-          onClick={() => setCartOpen(false)} // ✅ click outside close
+          onClick={() => setCartOpen(false)} // click outside close
         >
           <div
             className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
-            onClick={(e) => e.stopPropagation()} // prevent closing when clicking inside
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="px-5 py-4 border-b flex items-center justify-between">
               <div className="font-semibold text-gray-900">Your Cart</div>
