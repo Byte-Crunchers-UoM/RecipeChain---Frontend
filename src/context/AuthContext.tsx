@@ -3,101 +3,138 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { UserRole } from "@/types";
 
-type AuthContextType = {
+export type MeUser = {
+  user_id: string;
+  email: string;
+  role: UserRole | null;
+  wallet_address?: string | null;
+};
+
+export type AuthContextType = {
+  user: MeUser | null;
   role: UserRole | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 
-  setRole: (role: UserRole) => void;
-  setAuthed: (value: boolean) => void;
+  setRole: (role: UserRole | null) => void;
 
-  logout: () => void;     // clears auth only (keeps role)
-  clearRole: () => void;  // clears role only
-  resetAll: () => void;   // clears both (optional)
+  // ✅ now RETURNS user (or null)
+  refreshSession: () => Promise<MeUser | null>;
+
+  logout: () => Promise<void>;
+
+  clearRole: () => void;
+  resetAll: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-function canUseDOM() {
-  return typeof document !== "undefined";
-}
-
-function getCookie(name: string) {
-  if (!canUseDOM()) return null;
-  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
-  return match ? decodeURIComponent(match[2]) : null;
-}
-
-function setCookie(name: string, value: string) {
-  if (!canUseDOM()) return;
-  // session cookie (clears when browser closes)
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax`;
-}
-
-function deleteCookie(name: string) {
-  if (!canUseDOM()) return;
-  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
-}
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<MeUser | null>(null);
   const [role, setRoleState] = useState<UserRole | null>(null);
   const [authed, setAuthedState] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const apiBase = process.env.NEXT_PUBLIC_API_URL;
+
+  const refreshSession = async (): Promise<MeUser | null> => {
+    if (!apiBase) {
+      setAuthedState(false);
+      setRoleState(null);
+      setUser(null);
+      return null;
+    }
+
+    try {
+      const resp = await fetch(`${apiBase}/me`, {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const json = await resp.json().catch(() => null);
+
+      if (!resp.ok || !json?.success || !json?.data) {
+        setAuthedState(false);
+        setRoleState(null);
+        setUser(null);
+        return null;
+      }
+
+      const me: MeUser = json.data;
+
+      setAuthedState(true);
+      setUser(me);
+      setRoleState((me.role as UserRole | null) ?? null);
+
+      return me;
+    } catch (e) {
+      console.error("refreshSession error:", e);
+      setAuthedState(false);
+      setRoleState(null);
+      setUser(null);
+      return null;
+    }
+  };
+
   useEffect(() => {
-    const r = getCookie("recipe_chain_role") as UserRole | null;
-    const a = getCookie("recipe_chain_authed") === "1";
-    setRoleState(r);
-    setAuthedState(a);
-    setIsLoading(false);
+    (async () => {
+      setIsLoading(true);
+      await refreshSession();
+      setIsLoading(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const setRole = (newRole: UserRole) => {
-    setCookie("recipe_chain_role", newRole);
+  const setRole = (newRole: UserRole | null) => {
     setRoleState(newRole);
-  };
-
-  const setAuthed = (value: boolean) => {
-    if (value) setCookie("recipe_chain_authed", "1");
-    else deleteCookie("recipe_chain_authed");
-    setAuthedState(value);
-  };
-
-  const logout = () => {
-    deleteCookie("recipe_chain_authed");
-    setAuthedState(false);
+    setUser((prev) => (prev ? { ...prev, role: newRole } : prev));
   };
 
   const clearRole = () => {
-    deleteCookie("recipe_chain_role");
     setRoleState(null);
+    setUser((prev) => (prev ? { ...prev, role: null } : prev));
   };
 
-  const resetAll = () => {
-    deleteCookie("recipe_chain_authed");
-    deleteCookie("recipe_chain_role");
-    setAuthedState(false);
-    setRoleState(null);
+  const logout = async () => {
+    try {
+      if (apiBase) {
+        await fetch(`${apiBase}/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }).catch(() => null);
+      }
+    } finally {
+      setAuthedState(false);
+      setRoleState(null);
+      setUser(null);
+    }
   };
 
-  const value = useMemo(
+  const resetAll = async () => {
+    await logout();
+  };
+
+  const value = useMemo<AuthContextType>(
     () => ({
+      user,
       role,
       isAuthenticated: authed,
       isLoading,
       setRole,
-      setAuthed,
+      refreshSession,
       logout,
       clearRole,
       resetAll,
     }),
-    [role, authed, isLoading]
+    [user, role, authed, isLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextType {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;

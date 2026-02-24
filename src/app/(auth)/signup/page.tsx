@@ -4,96 +4,159 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useWeb3AuthConnect } from "@web3auth/modal/react";
+import { useWeb3Auth, useWeb3AuthConnect } from "@web3auth/modal/react";
+
 import { useAuth } from "@/context/AuthContext";
+import { getWeb3AuthPrivateKey } from "@/lib/web3/getWeb3AuthPrivKey";
+import { deriveXrplAddressFromWeb3AuthPrivKey } from "@/lib/xrpl/deriveXrpl";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { clearRole, setAuthed } = useAuth();
+  const { refreshSession, resetAll } = useAuth();
+
+  const { web3Auth } = useWeb3Auth();
   const { connect, loading } = useWeb3AuthConnect();
 
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
-  const [acceptTerms, setAcceptTerms] = useState(false);
+
+  const routeByRole = (role: any) => {
+    if (role === "seller") router.replace("/seller/kyc");
+    else if (role === "buyer") router.replace("/marketplace");
+    else router.replace("/select-role");
+  };
+
+  const forceFreshWeb3AuthPopup = async () => {
+    if (web3Auth?.connected) {
+      try {
+        await web3Auth.logout();
+      } catch {
+        // ignore
+      }
+    }
+  };
 
   const handleSignup = async () => {
-    if (!acceptTerms) {
-      setError("Please accept the terms and conditions");
-      return;
-    }
-
     setError("");
+
     try {
-      clearRole(); // force role selection for a new user
-      await connect(); // user explicitly connected
-      setAuthed(true); // mark session
-      router.replace("/select-role");
-    } catch {
-      setError("Failed to create account. Please try again.");
+      if (!agreed) {
+        setError("Please agree to the Terms of Service and Privacy Policy.");
+        return;
+      }
+
+      await resetAll();
+      await forceFreshWeb3AuthPopup();
+
+      // ✅ Always show Web3Auth modal (email select)
+      await connect();
+
+      if (!web3Auth) throw new Error("Web3Auth not initialized");
+
+      // ✅ Close modal overlay if it visually sticks
+      (web3Auth as any)?.modal?.closeModal?.();
+
+      // ✅ Identity token
+      const tokenInfo: any = await web3Auth.getIdentityToken();
+      const idToken =
+        typeof tokenInfo === "string" ? tokenInfo : tokenInfo?.idToken;
+      if (!idToken) throw new Error("Failed to get identity token");
+
+      // ✅ XRPL address
+      const privKeyHexNo0x = await getWeb3AuthPrivateKey(web3Auth);
+      const walletAddress =
+        await deriveXrplAddressFromWeb3AuthPrivKey(privKeyHexNo0x);
+
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiBase) throw new Error("Missing NEXT_PUBLIC_API_URL");
+
+      // ✅ SIGNUP: backend will create if new, or treat as login if exists
+      const resp = await fetch(`${apiBase}/auth/web3auth/sync`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ walletAddress, mode: "signup" }),
+      });
+
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok) throw new Error(data?.message || "Signup failed");
+
+      // ✅ Load session + route by role
+      const me = await refreshSession();
+      routeByRole(me?.role);
+    } catch (e: any) {
+      console.error(e);
+      setError(e?.message || "Failed to create account. Please try again.");
     }
   };
 
   return (
-    <div className="relative min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      {/* Top-right switch button */}
-      <div className="absolute top-6 right-6">
+    <div className="relative min-h-screen bg-gray-100 flex items-center justify-center px-4">
+      {/* Switch button (top-right) */}
+      <div className="absolute top-8 right-8">
         <button
           onClick={() => router.push("/login")}
-          className="rounded-xl border border-teal-500 px-6 py-3 text-sm font-medium text-teal-600 hover:bg-teal-50 transition"
+          disabled={loading}
+          className="rounded-xl border border-teal-500 px-8 py-3 text-sm font-medium text-teal-600 hover:bg-teal-50 transition"
         >
           Switch to Login
         </button>
       </div>
 
       {/* Card */}
-      <div className="w-full max-w-md sm:max-w-lg">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 px-6 py-7 sm:px-8 sm:py-8 text-center">
+      <div className="w-full max-w-xl">
+        <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 px-12 py-12 text-center">
           {/* Logo */}
           <div className="flex justify-center mb-6">
             <Image
               src="/Logo.png"
               alt="RecipeChain Logo"
-              width={110}
-              height={110}
+              width={120}
+              height={120}
               priority
             />
           </div>
 
-          {/* Title block */}
-          <p className="text-sm text-gray-500 mt-3">
+          {/* Brand */}
+          <p className="text-sm text-gray-500">
             A blockchain-powered recipe marketplace
           </p>
 
-          <h2 className="text-2xl font-bold text-gray-900 mt-6">
+          <h2 className="text-3xl font-bold text-gray-900 mt-8">
             Create Your Account
           </h2>
-          <p className="text-gray-500 mt-2">
+
+          <p className="mt-3 text-gray-500 text-sm">
             Join RecipeChain &amp; Buy/Sell Recipes securely.
           </p>
 
-          {/* Signup button */}
+          {/* Button (lighter teal like screenshot) */}
           <button
             onClick={handleSignup}
-            disabled={loading || !acceptTerms}
+            disabled={loading || !agreed}
             className={[
-              "mt-6 w-full rounded-xl py-4 font-semibold transition",
-              loading || !acceptTerms
+              "mt-8 w-full rounded-xl py-4 font-medium text-base transition shadow-sm",
+              loading || !agreed
                 ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                : "bg-teal-500 text-white hover:bg-teal-600",
+                : "bg-teal-300 text-white hover:bg-teal-400",
             ].join(" ")}
           >
-            {loading ? "Signing up..." : "Sign up with Web3Auth"}
+            {loading ? "Connecting..." : "Sign up with Web3Auth"}
           </button>
 
-          {/* Terms */}
-          <div className="mt-6 flex items-start justify-center gap-3 text-left">
+          {/* Terms checkbox row */}
+          <div className="mt-8 flex items-start justify-center gap-3 text-sm text-gray-700">
             <input
               type="checkbox"
-              id="terms"
-              checked={acceptTerms}
-              onChange={(e) => setAcceptTerms(e.target.checked)}
-              className="mt-1 h-5 w-5 accent-teal-500"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-1 h-5 w-5 rounded border-gray-300 accent-teal-600"
+              disabled={loading}
             />
-            <label htmlFor="terms" className="text-sm text-gray-600">
+            <span className="text-left leading-6">
               I agree to the{" "}
               <Link href="/terms" className="text-teal-600 hover:underline">
                 Terms of Service
@@ -102,46 +165,50 @@ export default function SignupPage() {
               <Link href="/privacy" className="text-teal-600 hover:underline">
                 Privacy Policy
               </Link>
-            </label>
+            </span>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           )}
 
-          {/* Helper text */}
-          <div className="mt-6 text-xs text-gray-400">
-            🔒 A secure blockchain wallet will be created automatically after signup.
+          {/* Small note (subtle like screenshot) */}
+          <div className="mt-10 text-xs text-gray-400">
+            <span className="mr-3">🔒</span>
+            A secure blockchain wallet will be created <br className="hidden sm:block" />
+            automatically after signup.
           </div>
 
-          <div className="mt-6 text-sm text-gray-500">
+          {/* Security line */}
+          <div className="mt-10 text-xs text-gray-400">
             No password required &nbsp;•&nbsp; Secured by Web3Auth
           </div>
 
-          {/* Bottom login link */}
-          <div className="mt-6 text-sm text-gray-500">
+          {/* Login link */}
+          <div className="mt-6 text-sm text-gray-600">
             Already have an account?{" "}
             <Link href="/login" className="text-teal-600 hover:underline">
               Click here to log in
             </Link>
           </div>
+          <div className="mt-8 border-t border-gray-300"></div>
 
-          {/* Footer links */}
-          <div className="mt-8 pt-5 border-t text-xs text-gray-400 flex items-center justify-center gap-4">
-            <Link href="/privacy" className="hover:underline">
+          {/* Footer */}
+          <div className="mt-1 border-t border-gray-100 pt-6 text-xs text-gray-400 flex justify-center gap-6">
+            <Link href="/privacy" className="hover:text-gray-600">
               Privacy Policy
             </Link>
             <span>•</span>
-            <Link href="/terms" className="hover:underline">
+            <Link href="/terms" className="hover:text-gray-600">
               Terms of Service
             </Link>
           </div>
 
-          <div className="mt-3 text-xs text-gray-400">
-            © 2026 RecipeChain. All rights reserved.
+          <div className="mt-2 text-xs text-gray-400">
+            © {new Date().getFullYear()} RecipeChain. All rights reserved.
           </div>
         </div>
       </div>

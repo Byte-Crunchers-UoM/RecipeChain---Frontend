@@ -8,22 +8,22 @@ import type { UserRole } from "@/types";
 
 export default function SelectRolePage() {
   const router = useRouter();
-  const { setRole, isAuthenticated, isLoading, role } = useAuth();
+  const { setRole, isAuthenticated, isLoading, role, refreshSession } = useAuth();
 
-  // UI-only selected state (does NOT affect auth logic until confirm)
   const [selected, setSelected] = useState<UserRole>("seller");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   // Guard: must be logged in to select role
   useEffect(() => {
     if (isLoading) return;
 
-    // Not logged in -> go login
     if (!isAuthenticated) {
       router.replace("/login");
       return;
     }
 
-    // Already has role -> skip select-role (UPDATED per your request)
+    // Already has role -> skip select-role
     if (role === "seller") {
       router.replace("/seller/kyc");
       return;
@@ -56,13 +56,47 @@ export default function SelectRolePage() {
     []
   );
 
-  const goNext = (chosen: UserRole) => {
-    // Keep: store role in context
-    setRole(chosen);
+  const saveRoleAndContinue = async (chosen: UserRole) => {
+    setError("");
+    setSubmitting(true);
 
-    // UPDATED routes (buyer -> marketplace, seller -> kyc)
-    if (chosen === "buyer") router.replace("/marketplace");
-    else router.replace("/seller/kyc");
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiBase) throw new Error("Missing NEXT_PUBLIC_API_URL in frontend env");
+
+      /**
+       * ✅ BEST WAY:
+       * - Backend authenticates using httpOnly rc_session cookie
+       * - So we MUST send credentials: "include"
+       * - No Authorization header needed
+       */
+      const resp = await fetch(`${apiBase}/users/role`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: chosen }),
+      });
+      const data = await resp.json().catch(() => null);
+
+      if (!resp.ok || !data?.success) {
+        throw new Error(data?.message || data?.error || "Role update failed");
+      }
+
+      // ✅ local state update (instant UI)
+      setRole(chosen);
+
+      // ✅ refresh from DB (source of truth)
+      await refreshSession();
+
+      // ✅ route
+      if (chosen === "buyer") router.replace("/marketplace");
+      else router.replace("/seller/kyc");
+    } catch (e: any) {
+      console.error(e);
+      setError(e?.message || "Failed to set role. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -76,30 +110,22 @@ export default function SelectRolePage() {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-10">
       <div className="mx-auto w-full max-w-3xl">
-        {/* Top bar: back + logo */}
         <div className="mb-8 flex items-start justify-between">
           <button
             onClick={() => router.back()}
             className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition"
+            disabled={submitting}
           >
             <span className="text-lg">←</span> Back
           </button>
 
           <div className="flex flex-col items-center">
-            <Image
-              src="/Logo.png"
-              alt="RecipeChain Logo"
-              width={70}
-              height={70}
-              priority
-            />
-            
+            <Image src="/Logo.png" alt="RecipeChain Logo" width={70} height={70} priority />
           </div>
 
           <div className="w-[72px]" />
         </div>
 
-        {/* Progress */}
         <div className="mx-auto max-w-2xl">
           <div className="text-sm text-gray-500">Account Setup</div>
           <div className="mt-2 h-2 w-full rounded-full bg-gray-200 overflow-hidden">
@@ -115,7 +141,12 @@ export default function SelectRolePage() {
             Your role determines your permissions and cannot be changed later.
           </p>
 
-          {/* Cards */}
+          {error && (
+            <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
             <RoleCard
               title="Buyer"
@@ -124,6 +155,7 @@ export default function SelectRolePage() {
               capabilities={buyerCapabilities}
               active={selected === "buyer"}
               onClick={() => setSelected("buyer")}
+              disabled={submitting}
             />
 
             <RoleCard
@@ -133,10 +165,10 @@ export default function SelectRolePage() {
               capabilities={sellerCapabilities}
               active={selected === "seller"}
               onClick={() => setSelected("seller")}
+              disabled={submitting}
             />
           </div>
 
-          {/* Warning box */}
           <div className="mt-8 rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 flex items-start gap-3">
             <span className="mt-0.5">⚠️</span>
             <div>
@@ -145,14 +177,21 @@ export default function SelectRolePage() {
             </div>
           </div>
 
-          {/* Confirm button */}
           <div className="mt-8 flex justify-center">
             <button
-              onClick={() => goNext(selected)}
-              className="rounded-xl bg-teal-700 px-10 py-4 text-white font-semibold hover:bg-teal-800 transition shadow-sm"
+              onClick={() => saveRoleAndContinue(selected)}
+              disabled={submitting}
+              className={[
+                "rounded-xl px-10 py-4 text-white font-semibold transition shadow-sm",
+                submitting ? "bg-gray-300 cursor-not-allowed" : "bg-teal-700 hover:bg-teal-800",
+              ].join(" ")}
             >
-              Confirm Role &amp; Continue
+              {submitting ? "Saving..." : "Confirm Role & Continue"}
             </button>
+          </div>
+
+          <div className="mt-6 text-center text-xs text-gray-400">
+            Role will be saved to your account and used on future logins.
           </div>
         </div>
       </div>
@@ -167,6 +206,7 @@ function RoleCard({
   capabilities,
   active,
   onClick,
+  disabled,
 }: {
   title: string;
   description: string;
@@ -174,26 +214,25 @@ function RoleCard({
   capabilities: string[];
   active: boolean;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={[
         "relative text-left rounded-2xl border p-5 transition shadow-sm",
-        active
-          ? "border-teal-700 bg-teal-50"
-          : "border-gray-200 bg-white hover:shadow-md",
+        disabled ? "opacity-60 cursor-not-allowed" : "",
+        active ? "border-teal-700 bg-teal-50" : "border-gray-200 bg-white hover:shadow-md",
       ].join(" ")}
     >
-      {/* Check mark */}
       {active && (
         <div className="absolute top-4 right-4 h-7 w-7 rounded-full bg-teal-700 text-white flex items-center justify-center text-sm">
           ✓
         </div>
       )}
 
-      {/* Icon */}
       <div
         className={[
           "h-12 w-12 rounded-xl flex items-center justify-center text-xl",
@@ -204,9 +243,7 @@ function RoleCard({
       </div>
 
       <div className="mt-5 text-xl font-bold text-gray-900">{title}</div>
-      <div className="mt-2 text-sm text-gray-500 leading-relaxed">
-        {description}
-      </div>
+      <div className="mt-2 text-sm text-gray-500 leading-relaxed">{description}</div>
 
       <div className="mt-6 text-xs font-semibold tracking-wider text-gray-500">
         CAPABILITIES
