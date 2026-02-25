@@ -2,7 +2,9 @@ export interface Recipe {
     difficulty_level: any;
     recipe_id: string;
     title: string;
-    chef_name: string;
+    sellers: {
+        full_name: string;
+    };
     rating: number;
     ingredients: Ingredient[];
     instructions: Instructions[];

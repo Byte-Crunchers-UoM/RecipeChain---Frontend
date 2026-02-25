@@ -60,7 +60,7 @@ const badgeColor = DIFFICULTY_COLORS[difficulty] || DIFFICULTY_COLORS.default;
         {/* Chef Info */}
         <div className="flex items-center gap-2 mb-6 text-sm text-gray-500">
           <ChefHat className="w-4 h-4 text-gray-400" />
-          <span className="font-medium text-gray-700">{recipe.chef_name}</span>
+          <span className="font-medium text-gray-700">{recipe.sellers.full_name}</span>
           <span className="text-gray-300">•</span>
           <span className="text-gray-400 text-xs">{recipe.reviewsCount} reviews</span>
         </div>
