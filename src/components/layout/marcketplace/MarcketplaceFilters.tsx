@@ -2,18 +2,27 @@
 
 import { useState, Suspense } from 'react';
 import { Filter, RefreshCcw, ChevronDown, ChevronUp } from 'lucide-react';
-import { useRecipeFilters } from '@/lib/types/useRecipeFilters';
 import { FilterTag } from '@/components/ui/FilterTags';
 import { FilterCheckbox } from '@/components/ui/FilterCheckBox';
+import { FilterState } from '@/lib/types/Recipe';
 
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
-const DIETARY_NEEDS = ['Vegan', 'Vegetarian', 'Gluten-Free', 'Dairy-Free', 'Keto', 'Paleo'];
-const OCCASIONS = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Holiday'];
+const DIETARY_TAGS = ['vegan', 'Party', 'Gluten-Free', 'Dairy-Free', 'Keto', 'Paleo'];
+const OCCASIONS = [ 'Party', 'Holiday','weekend'];
 const GOALS = ['High Protein', 'Low Carb', 'Budget'];
-const CUISINES = ['Italian', 'Asian', 'Mexican', 'Indian'];
+const CUISINES = ['Italian', 'Asian', 'Mexican', 'Indian','Sri Lankan'];
+const MEAL_TYPE = ['Breakfast','Lunch','Dinner'];
 
-function FiltersContent() {
-  const { toggleFilter, clearFilters, hasFilter } = useRecipeFilters();
+
+interface FiltersProps {
+  hasFilter: (category: keyof FilterState, value: string) => boolean;
+  toggleFilter: (category: keyof FilterState, value: string) => void;
+  clearFilters: () => void;
+  applyFilters: () => void;
+  isFiltering: boolean;
+}
+
+function FiltersContent({hasFilter, toggleFilter, clearFilters, applyFilters, isFiltering}:FiltersProps) {
   const [showAdditional, setShowAdditional] = useState(false);
 
   return (
@@ -21,21 +30,24 @@ function FiltersContent() {
       
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 font-bold text-gray-800 text-base">
-          <Filter className="w-4 h-4" />
-          Filters
-        </div>
+        <button 
+    onClick={() => {
+    console.log("Button actually clicked!"); 
+    console.log("applyFilters function is:", applyFilters); 
+    applyFilters();
+  }}
+    disabled={isFiltering}
+    className="flex items-center gap-2 font-bold text-white bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded-xl text-sm transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+  >
+    <Filter className="w-4 h-4" />
+    {isFiltering ? 'Applying...' : 'Apply Filters'}
+  </button>
         <button
           onClick={clearFilters}
           className="text-[10px] text-teal-600 flex items-center gap-1 font-semibold hover:text-teal-700 transition-colors uppercase tracking-wider"
         >
           <RefreshCcw className="w-3 h-3" /> Reset
         </button>
-      </div>
-
-      {/* 1. Price Slider (Placeholder) */}
-      <div className='-mt-4'>
-        {/* Price Slider Component would go here */}
       </div>
 
       {/* 2. Difficulty */}
@@ -46,8 +58,8 @@ function FiltersContent() {
             <FilterCheckbox
               key={level}
               label={level}
-              isChecked={hasFilter('difficulty', level)}
-              onChange={() => toggleFilter('difficulty', level)}
+              isChecked={hasFilter('difficulty_level', level)}
+              onChange={() => toggleFilter('difficulty_level', level)}
             />
           ))}
         </div>
@@ -57,12 +69,12 @@ function FiltersContent() {
       <div>
         <h3 className="text-sm font-bold text-gray-700 mb-3">Dietary Needs</h3>
         <div className="flex flex-wrap gap-2">
-          {DIETARY_NEEDS.map((diet) => (
+          {DIETARY_TAGS.map((diet) => (
             <FilterTag
               key={diet}
               label={diet}
-              isSelected={hasFilter('diet', diet)}
-              onClick={() => toggleFilter('diet', diet)}
+              isSelected={hasFilter('dietary_tags', diet)}
+              onClick={() => toggleFilter('dietary_tags', diet)}
             />
           ))}
         </div>
@@ -99,6 +111,15 @@ function FiltersContent() {
             </div>
 
             <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-3">Meal Type</h3>
+              <div className="flex flex-wrap gap-2">
+                {MEAL_TYPE.map((meal_type) => (
+                  <FilterTag key={meal_type} label={meal_type} isSelected={hasFilter('meal_type', meal_type)} onClick={() => toggleFilter('meal_type', meal_type)} />
+                ))}
+              </div>
+            </div>
+
+            <div>
               <h3 className="text-sm font-bold text-gray-700 mb-3">Cuisines</h3>
               <div className="flex flex-wrap gap-2">
                 {CUISINES.map((cuisine) => (
@@ -114,10 +135,10 @@ function FiltersContent() {
 }
 
 // Wrap in a Suspense boundary as required by Next.js when using useSearchParams
-export function MarketplaceFilters() {
+export function MarketplaceFilters(props:FiltersProps) {
   return (
     <Suspense fallback={<div className="bg-[#E0F2F1] rounded-xl animate-pulse h-96 w-full"></div>}>
-      <FiltersContent />
+      <FiltersContent {...props} />
     </Suspense>
   );
 }

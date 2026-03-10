@@ -1,23 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { RecipeCard } from '@/components/recipe/RecipeCard'; // Ensure path is correct
-import { Recipe } from '@/lib/types/Recipe';
+import { RecipeCard } from '@/components/recipe/RecipeCard';
+import { FilterState, Recipe } from '@/lib/types/Recipe';
 import { fetchRecipes } from '@/services/recipeService';
-
+import { fetchFilteredRecipe } from '@/services/recipeService';
+import { useRecipeFilterContext } from '@/lib/context/RecipeFilterContext';
 const CATEGORIES = ['All Recipes', 'Breakfast', 'Lunch', 'Dinner', 'Desserts'];
+
+
 
 export default function MarketplacePage() {
   const [activeCategory, setActiveCategory] = useState('All Recipes');
-  const [priceRange, setPriceRange] = useState(100);
-  
-  // 1. Add state for recipes and loading status
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { recipes, setRecipes, isLoading, setIsLoading } = useRecipeFilterContext();
+
+
 
   // 2. Fetch data inside useEffect
   useEffect(() => {
-    const loadRecipes = async () => {
+    const     loadRecipes = async () => {
       try {
         const data = await fetchRecipes();
         // Ensure we always set an array, even if data comes back undefined
@@ -28,10 +29,16 @@ export default function MarketplacePage() {
       } finally {
         setIsLoading(false);
       }
-    };
+    };if (recipes.length === 0) {
+       loadRecipes();
+  
+      }
+   
+  }, []);
 
-    loadRecipes();
-  }, []); // Empty dependency array means this runs once on mount
+  
+    
+
 
   return (
     <div className="w-full p-8 bg-white min-h-screen">
@@ -54,9 +61,6 @@ export default function MarketplacePage() {
               {cat}
             </button>
           ))}
-        </div>
-        <div className="mb-4">
-           {/* Price range filter logic */}
         </div>
       </div>
 

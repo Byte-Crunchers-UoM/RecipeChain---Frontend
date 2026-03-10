@@ -18,6 +18,7 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
   
 const difficulty = recipe.difficulty_level?.toLowerCase() || 'default';
 const badgeColor = DIFFICULTY_COLORS[difficulty] || DIFFICULTY_COLORS.default;
+const fallbackImage = "/images/placeholder-recipe.jpg";
   return (
     <article className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden flex flex-col h-full relative">
       
@@ -29,7 +30,7 @@ const badgeColor = DIFFICULTY_COLORS[difficulty] || DIFFICULTY_COLORS.default;
       {/* Image Section */}
       <div className="relative h-52 w-full bg-gray-100">
         <Image 
-          src={recipe.imageUrl} 
+          src={recipe.image_url  && recipe.image_url !== "" ? recipe.image_url : fallbackImage} 
           alt={`Photo of ${recipe.title}`}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -60,7 +61,12 @@ const badgeColor = DIFFICULTY_COLORS[difficulty] || DIFFICULTY_COLORS.default;
         {/* Chef Info */}
         <div className="flex items-center gap-2 mb-6 text-sm text-gray-500">
           <ChefHat className="w-4 h-4 text-gray-400" />
-          <span className="font-medium text-gray-700">{recipe.sellers.full_name}</span>
+          <span className="font-medium text-gray-700">{
+            Array.isArray(recipe.sellers) 
+            ? recipe.sellers[0]?.full_name 
+            : recipe.sellers?.full_name 
+            || 'Unknown chef'
+          }</span> 
           <span className="text-gray-300">•</span>
           <span className="text-gray-400 text-xs">{recipe.reviewsCount} reviews</span>
         </div>

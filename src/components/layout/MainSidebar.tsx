@@ -12,6 +12,7 @@ import {
   type LucideIcon
 } from 'lucide-react'
 import { MarketplaceFilters } from './marcketplace/MarcketplaceFilters' 
+import { useRecipeFilterContext } from '@/lib/context/RecipeFilterContext'
 
 type MenuItem = {
   label: string
@@ -28,12 +29,12 @@ const menuItems: MenuItem[] = [
   { label: 'Profile', path: '/profile', icon: User }
 ]
 
+
+
 export default function Sidebar() {
   const pathname = usePathname()
-
-  // Determine if we should show the filters based on the current route
+  const { hasFilter, toggleFilter, clearFilters, applyFilters, isFiltering } = useRecipeFilterContext();
   const isMarketplace = pathname === '/recipes'
-
   return (
     <aside className="w-72 h-screen bg-white border-r border-gray-100 flex flex-col sticky top-0 left-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200">
       
@@ -52,9 +53,8 @@ export default function Sidebar() {
                 ${isActive 
                   ? 'bg-[#E0F2F1] text-[#00897B] font-bold border-[#00897B]' 
                   : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium border-transparent'}
-              `}
-            >
-              {/* Content (Adjusted padding slightly to account for the new 5px border) */}
+              `}            >
+              
               <div className="flex items-center gap-3 pl-4 pr-4 h-full w-full">
                 <Icon 
                   size={22} 
@@ -73,7 +73,14 @@ export default function Sidebar() {
         <>
           <div className="mx-4 border-t border-gray-100 my-2"></div>
           <div className="px-4 py-4 animate-in fade-in duration-300">
-            <MarketplaceFilters />
+            
+            <MarketplaceFilters 
+              hasFilter={hasFilter}
+              toggleFilter={toggleFilter}
+              clearFilters={clearFilters}
+              applyFilters={applyFilters}
+              isFiltering={isFiltering}
+            />
           </div>
         </>
       )}
