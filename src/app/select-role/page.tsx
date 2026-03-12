@@ -14,7 +14,6 @@ export default function SelectRolePage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Guard: must be logged in to select role
   useEffect(() => {
     if (isLoading) return;
 
@@ -23,11 +22,11 @@ export default function SelectRolePage() {
       return;
     }
 
-    // Already has role -> skip select-role
     if (role === "seller") {
       router.replace("/seller/kyc");
       return;
     }
+
     if (role === "buyer") {
       router.replace("/marketplace");
       return;
@@ -64,31 +63,22 @@ export default function SelectRolePage() {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
       if (!apiBase) throw new Error("Missing NEXT_PUBLIC_API_URL in frontend env");
 
-      /**
-       * ✅ BEST WAY:
-       * - Backend authenticates using httpOnly rc_session cookie
-       * - So we MUST send credentials: "include"
-       * - No Authorization header needed
-       */
       const resp = await fetch(`${apiBase}/users/role`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: chosen }),
       });
+
       const data = await resp.json().catch(() => null);
 
       if (!resp.ok || !data?.success) {
         throw new Error(data?.message || data?.error || "Role update failed");
       }
 
-      // ✅ local state update (instant UI)
       setRole(chosen);
-
-      // ✅ refresh from DB (source of truth)
       await refreshSession();
 
-      // ✅ route
       if (chosen === "buyer") router.replace("/marketplace");
       else router.replace("/seller/kyc");
     } catch (e: any) {
