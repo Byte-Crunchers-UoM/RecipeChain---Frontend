@@ -29,33 +29,71 @@ export default function LoginPage() {
     if (web3Auth?.connected) {
       try {
         await web3Auth.logout();
-      } catch {}
+      } catch {
+        // ignore
+      }
     }
+  };
+
+  const waitForWeb3AuthConnection = async (timeoutMs = 15000) => {
+    const start = Date.now();
+
+    while (Date.now() - start < timeoutMs) {
+      if (web3Auth?.connected && web3Auth?.provider) {
+        return true;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+
+    return false;
   };
 
   const handleLogin = async () => {
     setError("");
 
     try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+      const web3AuthClientId = process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID;
+
+      if (!apiBase) throw new Error("Missing NEXT_PUBLIC_API_URL");
+      if (!web3AuthClientId) {
+        throw new Error("Missing NEXT_PUBLIC_WEB3AUTH_CLIENT_ID");
+      }
+
       await resetAll();
       await forceFreshWeb3AuthPopup();
+
+      // Open Web3Auth modal
       await connect();
 
-      if (!web3Auth) throw new Error("Web3Auth not initialized");
+      if (!web3Auth) {
+        throw new Error("Web3Auth not initialized");
+      }
 
+      // Wait until SDK is fully connected
+      const ready = await waitForWeb3AuthConnection();
+      if (!ready) {
+        throw new Error(
+          "Web3Auth connection was not ready in time. Please try again."
+        );
+      }
+
+      // Close modal if overlay visually sticks
       (web3Auth as any)?.modal?.closeModal?.();
 
+      // Now safe to request identity token
       const tokenInfo: any = await web3Auth.getIdentityToken();
       const idToken =
         typeof tokenInfo === "string" ? tokenInfo : tokenInfo?.idToken;
-      if (!idToken) throw new Error("Failed to get identity token");
 
+      if (!idToken) {
+        throw new Error("Failed to get identity token from Web3Auth");
+      }
+
+      // Derive wallet address from Web3Auth private key
       const privKeyHexNo0x = await getWeb3AuthPrivateKey(web3Auth);
       const walletAddress =
         await deriveXrplAddressFromWeb3AuthPrivKey(privKeyHexNo0x);
-
-      const apiBase = process.env.NEXT_PUBLIC_API_URL;
-      if (!apiBase) throw new Error("Missing NEXT_PUBLIC_API_URL");
 
       const resp = await fetch(`${apiBase}/auth/web3auth/sync`, {
         method: "POST",
@@ -74,13 +112,29 @@ export default function LoginPage() {
         return;
       }
 
-      if (!resp.ok) throw new Error(data?.message || "Login failed");
+      if (!resp.ok) {
+        throw new Error(data?.message || "Login failed");
+      }
 
       const me = await refreshSession();
       routeByRole(me?.role);
     } catch (e: any) {
       console.error(e);
-      setError(e?.message || "Login failed. Please try again.");
+
+      const msg = e?.message || "Login failed. Please try again.";
+
+      if (
+        msg.includes("Wallet is not connected") ||
+        msg.includes("Wallet is not ready yet") ||
+        msg.includes("fetch project configurations")
+      ) {
+        setError(
+          "Web3Auth is not ready right now. Please check your internet connection and try again."
+        );
+        return;
+      }
+
+      setError(msg);
     }
   };
 
