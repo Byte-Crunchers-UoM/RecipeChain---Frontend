@@ -1,0 +1,49 @@
+export async function closeWeb3AuthModal(web3Auth: any) {
+  try {
+    web3Auth?.modal?.closeModal?.();
+  } catch {
+    // ignore
+  }
+
+  try {
+    web3Auth?.logoutModal?.closeModal?.();
+  } catch {
+    // ignore
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
+  if (typeof document !== "undefined") {
+    const selectors = [
+      '[data-testid="w3a-modal"]',
+      '[class*="w3a-modal"]',
+      '[class*="web3auth-modal"]',
+      '[class*="w3a-container"]',
+      '[class*="web3auth-container"]',
+      '[class*="w3a-overlay"]',
+      '[class*="web3auth-overlay"]',
+      '[class*="modal-container"]',
+      '[class*="backdrop"]',
+      '[role="dialog"]',
+    ];
+
+    const nodes = new Set<HTMLElement>();
+
+    selectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((node) => {
+        if (node instanceof HTMLElement) nodes.add(node);
+      });
+    });
+
+    nodes.forEach((node) => {
+      node.style.display = "none";
+      node.style.visibility = "hidden";
+      node.style.opacity = "0";
+      node.style.pointerEvents = "none";
+      node.setAttribute("aria-hidden", "true");
+    });
+
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+  }
+}

@@ -9,6 +9,7 @@ import { useWeb3Auth, useWeb3AuthConnect } from "@web3auth/modal/react";
 import { useAuth } from "@/context/AuthContext";
 import { getWeb3AuthPrivateKey } from "@/lib/web3/getWeb3AuthPrivKey";
 import { getXrplWalletFromWeb3AuthPrivKey } from "@/lib/xrpl/getXrplWallet";
+import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -21,9 +22,19 @@ export default function SignupPage() {
   const [error, setError] = useState("");
 
   const routeByRole = (role: any) => {
-    if (role === "seller") router.replace("/seller/kyc");
-    else if (role === "buyer") router.replace("/marketplace");
-    else router.replace("/select-role");
+    const target =
+      role === "seller"
+        ? "/seller/kyc"
+        : role === "buyer"
+        ? "/marketplace"
+        : "/select-role";
+
+    if (typeof window !== "undefined") {
+      window.location.replace(target);
+      return;
+    }
+
+    router.replace(target);
   };
 
   const forceFreshWeb3AuthPopup = async () => {
@@ -34,19 +45,24 @@ export default function SignupPage() {
         // ignore
       }
     }
+
+    await closeWeb3AuthModal(web3Auth);
   };
 
-  const waitForWeb3AuthConnection = async (timeoutMs = 15000) => {
-    const start = Date.now();
+  const waitForConnectedWeb3Auth = async (timeoutMs = 15000) => {
+    const startedAt = Date.now();
 
-    while (Date.now() - start < timeoutMs) {
-      if (web3Auth?.connected && web3Auth?.provider) {
-        return true;
+    while (Date.now() - startedAt < timeoutMs) {
+      const instance = web3Auth;
+
+      if (instance?.connected && instance?.provider) {
+        return instance;
       }
-      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      await new Promise((resolve) => setTimeout(resolve, 250));
     }
 
-    return false;
+    return null;
   };
 
   const handleSignup = async () => {
@@ -69,26 +85,18 @@ export default function SignupPage() {
       await resetAll();
       await forceFreshWeb3AuthPopup();
 
-      // Open Web3Auth modal
       await connect();
 
-      if (!web3Auth) {
-        throw new Error("Web3Auth not initialized");
-      }
-
-      // Wait until SDK is fully connected
-      const ready = await waitForWeb3AuthConnection();
-      if (!ready) {
+      const readyWeb3Auth = await waitForConnectedWeb3Auth();
+      if (!readyWeb3Auth) {
         throw new Error(
           "Web3Auth connection was not ready in time. Please try again."
         );
       }
 
-      // Close modal if overlay visually sticks
-      (web3Auth as any)?.modal?.closeModal?.();
+      await closeWeb3AuthModal(readyWeb3Auth);
 
-      // Now safe to request identity token
-      const tokenInfo: any = await web3Auth.getIdentityToken();
+      const tokenInfo: any = await readyWeb3Auth.getIdentityToken();
       const idToken =
         typeof tokenInfo === "string" ? tokenInfo : tokenInfo?.idToken;
 
@@ -96,8 +104,7 @@ export default function SignupPage() {
         throw new Error("Failed to get identity token from Web3Auth");
       }
 
-      // Derive deterministic XRPL wallet
-      const privKeyHexNo0x = await getWeb3AuthPrivateKey(web3Auth);
+      const privKeyHexNo0x = await getWeb3AuthPrivateKey(readyWeb3Auth);
       const xrplWallet =
         await getXrplWalletFromWeb3AuthPrivKey(privKeyHexNo0x);
 
@@ -110,10 +117,7 @@ export default function SignupPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({
-          walletAddress,
-          mode: "signup",
-        }),
+        body: JSON.stringify({ walletAddress, mode: "signup" }),
       });
 
       const data = await resp.json().catch(() => null);
@@ -122,10 +126,13 @@ export default function SignupPage() {
         throw new Error(data?.message || "Signup failed");
       }
 
+      await closeWeb3AuthModal(readyWeb3Auth);
+
       const me = await refreshSession();
       routeByRole(me?.role);
     } catch (e: any) {
       console.error(e);
+      await closeWeb3AuthModal(web3Auth);
 
       const msg =
         e?.message || "Failed to create account. Please try again.";
@@ -222,8 +229,7 @@ export default function SignupPage() {
 
           <div className="mt-10 text-xs text-gray-400">
             <span className="mr-3">🔒</span>
-            A secure blockchain wallet will be created{" "}
-            <br className="hidden sm:block" />
+            A secure blockchain wallet will be created <br className="hidden sm:block" />
             automatically after signup.
           </div>
 
