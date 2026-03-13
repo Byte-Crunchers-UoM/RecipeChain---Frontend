@@ -1,10 +1,11 @@
-// src/components/recipe/RecipeCard.tsx
 import Image from 'next/image';
 import Link from 'next/link'; // Standard for navigation
 import { Clock, Users, ChefHat, Star, ArrowRight } from 'lucide-react';
 import { Recipe } from '@/lib/types/Recipe';
+import { useState } from 'react';
 interface RecipeCardProps {
   recipe: Recipe;
+  onClick: () => void;
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -14,18 +15,14 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   default: 'bg-gray-500',
 };
 
-export function RecipeCard({ recipe }: RecipeCardProps) {
+export function RecipeCard({ recipe ,onClick }: RecipeCardProps) {
   
 const difficulty = recipe.difficulty_level?.toLowerCase() || 'default';
 const badgeColor = DIFFICULTY_COLORS[difficulty] || DIFFICULTY_COLORS.default;
 const fallbackImage = "/images/placeholder-recipe.jpg";
+
   return (
-    <article className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden flex flex-col h-full relative">
-      
-      
-      <Link href={`/recipe/${recipe.recipe_id}`} className="absolute inset-0 z-10">
-        <span className="sr-only">View recipe for {recipe.title}</span>
-      </Link>
+    <article onClick={onClick} className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden flex flex-col h-full relative">
 
       {/* Image Section */}
       <div className="relative h-52 w-full bg-gray-100">
@@ -57,7 +54,6 @@ const fallbackImage = "/images/placeholder-recipe.jpg";
         <h3 className="font-bold text-lg text-gray-900 mb-3 line-clamp-1 group-hover:text-emerald-600 transition-colors">
           {recipe.title}
         </h3>
-        
         {/* Chef Info */}
         <div className="flex items-center gap-2 mb-6 text-sm text-gray-500">
           <ChefHat className="w-4 h-4 text-gray-400" />
@@ -70,7 +66,6 @@ const fallbackImage = "/images/placeholder-recipe.jpg";
           <span className="text-gray-300">•</span>
           <span className="text-gray-400 text-xs">{recipe.reviewsCount} reviews</span>
         </div>
-
         {/* Footer Info */}
         <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-100">
           <div className="flex gap-4 text-xs text-gray-500 font-medium">

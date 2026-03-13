@@ -6,15 +6,18 @@ export interface Recipe {
         full_name: string;
     };
     rating: number;
+    rating_avg?: number;
     ingredients: Ingredient[];
     instructions: Instructions[];
     reviewsCount: number;
     prep_time: number;
+    cook_time:number;
     servings: number;
     difficdifficulty_level?: string;
     image_url: string;
     priceXrp?: number;
     blockchainHash?: string;
+    description : string;
 }
 
 export interface RecipeApiResponsed {

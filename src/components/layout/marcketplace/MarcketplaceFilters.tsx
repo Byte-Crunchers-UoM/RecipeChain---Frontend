@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react';
 import { Filter, RefreshCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { FilterTag } from '@/components/ui/FilterTags';
 import { FilterCheckbox } from '@/components/ui/FilterCheckBox';
-import { FilterState } from '@/lib/types/Recipe';
+import { useRecipeFilterContext } from '@/lib/context/RecipeFilterContext';
 
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
 const DIETARY_TAGS = ['vegan', 'Party', 'Gluten-Free', 'Dairy-Free', 'Keto', 'Paleo'];
@@ -13,17 +13,9 @@ const GOALS = ['High Protein', 'Low Carb', 'Budget'];
 const CUISINES = ['Italian', 'Asian', 'Mexican', 'Indian','Sri Lankan'];
 const MEAL_TYPE = ['Breakfast','Lunch','Dinner'];
 
-
-interface FiltersProps {
-  hasFilter: (category: keyof FilterState, value: string) => boolean;
-  toggleFilter: (category: keyof FilterState, value: string) => void;
-  clearFilters: () => void;
-  applyFilters: () => void;
-  isFiltering: boolean;
-}
-
-function FiltersContent({hasFilter, toggleFilter, clearFilters, applyFilters, isFiltering}:FiltersProps) {
+function FiltersContent() {
   const [showAdditional, setShowAdditional] = useState(false);
+  const { hasFilter, toggleFilter, clearFilters, applyFilters, isFiltering } = useRecipeFilterContext();
 
   return (
     <div className="bg-[#E0F2F1] w-full flex flex-col gap-8 pb-10 rounded-xl p-4">
@@ -31,17 +23,13 @@ function FiltersContent({hasFilter, toggleFilter, clearFilters, applyFilters, is
       {/* Header */}
       <div className="flex items-center justify-between">
         <button 
-    onClick={() => {
-    console.log("Button actually clicked!"); 
-    console.log("applyFilters function is:", applyFilters); 
-    applyFilters();
-  }}
-    disabled={isFiltering}
-    className="flex items-center gap-2 font-bold text-white bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded-xl text-sm transition-all disabled:opacity-50 active:scale-95 shadow-sm"
-  >
-    <Filter className="w-4 h-4" />
-    {isFiltering ? 'Applying...' : 'Apply Filters'}
-  </button>
+          onClick={() => applyFilters(true)}
+          disabled={isFiltering}
+          className="flex items-center gap-2 font-bold text-white bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded-xl text-sm transition-all disabled:opacity-50 active:scale-95 shadow-sm"
+        >
+          <Filter className="w-4 h-4" />
+          {isFiltering ? 'Applying...' : 'Apply Filters'}
+        </button>
         <button
           onClick={clearFilters}
           className="text-[10px] text-teal-600 flex items-center gap-1 font-semibold hover:text-teal-700 transition-colors uppercase tracking-wider"
@@ -50,7 +38,7 @@ function FiltersContent({hasFilter, toggleFilter, clearFilters, applyFilters, is
         </button>
       </div>
 
-      {/* 2. Difficulty */}
+      {/* Difficulty */}
       <div>
         <h3 className="text-sm font-bold text-gray-700 mb-3">Difficulty</h3>
         <div className="space-y-2.5">
@@ -65,7 +53,7 @@ function FiltersContent({hasFilter, toggleFilter, clearFilters, applyFilters, is
         </div>
       </div>
 
-      {/* 3. Dietary Needs */}
+      {/* Dietary Needs */}
       <div>
         <h3 className="text-sm font-bold text-gray-700 mb-3">Dietary Needs</h3>
         <div className="flex flex-wrap gap-2">
@@ -80,7 +68,7 @@ function FiltersContent({hasFilter, toggleFilter, clearFilters, applyFilters, is
         </div>
       </div>
 
-      {/* 4. Other Filters (Collapsible Section) */}
+      {/* Other Filters */}
       <div className="pt-2 border-t border-gray-100">
         <button
           onClick={() => setShowAdditional(!showAdditional)}
@@ -134,11 +122,10 @@ function FiltersContent({hasFilter, toggleFilter, clearFilters, applyFilters, is
   );
 }
 
-// Wrap in a Suspense boundary as required by Next.js when using useSearchParams
-export function MarketplaceFilters(props:FiltersProps) {
+export function MarketplaceFilters() {
   return (
     <Suspense fallback={<div className="bg-[#E0F2F1] rounded-xl animate-pulse h-96 w-full"></div>}>
-      <FiltersContent {...props} />
+      <FiltersContent />
     </Suspense>
   );
 }

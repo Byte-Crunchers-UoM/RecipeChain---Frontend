@@ -26,3 +26,19 @@ export async function fetchFilteredRecipe(queryString: string): Promise<Recipe[]
     throw error;
     }
 }
+
+export const searchRecipes = async (query: string): Promise<Recipe[]> => {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/recipes/search?q=${query}`);
+    
+    if (!response.ok) {
+      throw new Error('Search failed');
+    }
+    
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error("Search Error:", error);
+    return [];
+  }
+};

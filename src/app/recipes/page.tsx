@@ -2,20 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import { RecipeCard } from '@/components/recipe/RecipeCard';
-import { FilterState, Recipe } from '@/lib/types/Recipe';
+import {RecipePreview} from '@/components/recipe/RecipePreview';
+import { Recipe } from '@/lib/types/Recipe';
 import { fetchRecipes } from '@/services/recipeService';
-import { fetchFilteredRecipe } from '@/services/recipeService';
 import { useRecipeFilterContext } from '@/lib/context/RecipeFilterContext';
+interface MarcketplaceProps {
+  Recipe: Recipe;
+}
+
 const CATEGORIES = ['All Recipes', 'Breakfast', 'Lunch', 'Dinner', 'Desserts'];
 
 
 
-export default function MarketplacePage() {
+export default function MarketplacePage({Recipe}:MarcketplaceProps) {
   const [activeCategory, setActiveCategory] = useState('All Recipes');
   const { recipes, setRecipes, isLoading, setIsLoading } = useRecipeFilterContext();
-
-
-
+ const [selectedRecipe,setSelectedRecipe] = useState<Recipe|null>(null);
+  const handleRecipeClick = (clickedRecipe: Recipe) => {
+  setSelectedRecipe(clickedRecipe);
+};
   // 2. Fetch data inside useEffect
   useEffect(() => {
     const     loadRecipes = async () => {
@@ -35,11 +40,6 @@ export default function MarketplacePage() {
       }
    
   }, []);
-
-  
-    
-
-
   return (
     <div className="w-full p-8 bg-white min-h-screen">
       
@@ -73,9 +73,12 @@ export default function MarketplacePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* 4. Safely map over recipes */}
             {recipes.map((recipe: Recipe) => (
-              <RecipeCard key={recipe.recipe_id} recipe={recipe} />
+             <RecipeCard 
+                  key={recipe.recipe_id} 
+                  recipe={recipe} 
+                  onClick={() => handleRecipeClick(recipe)} // 👈 Pass the specific recipe here!
+            />
             ))}
-            
             {/* Optional: Show message if array is empty */}
             {recipes.length === 0 && (
               <p className="col-span-full text-center text-gray-500">No recipes found.</p>
@@ -83,6 +86,14 @@ export default function MarketplacePage() {
           </div>
         )}
       </section>
+      {selectedRecipe && (
+        <RecipePreview 
+          isOpen={true}
+          recipe={selectedRecipe} 
+          onClose={() => setSelectedRecipe(null)} 
+          
+        />
+      )}
 
     </div>
   );
