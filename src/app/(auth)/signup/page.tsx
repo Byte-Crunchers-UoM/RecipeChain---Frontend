@@ -8,7 +8,8 @@ import { useWeb3Auth, useWeb3AuthConnect } from "@web3auth/modal/react";
 
 import { useAuth } from "@/context/AuthContext";
 import { getWeb3AuthPrivateKey } from "@/lib/web3/getWeb3AuthPrivKey";
-import { deriveXrplAddressFromWeb3AuthPrivKey } from "@/lib/xrpl/deriveXrpl";
+import { getXrplWalletFromWeb3AuthPrivKey } from "@/lib/xrpl/getXrplWallet";
+import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -21,9 +22,19 @@ export default function SignupPage() {
   const [error, setError] = useState("");
 
   const routeByRole = (role: any) => {
-    if (role === "seller") router.replace("/seller/kyc");
-    else if (role === "buyer") router.replace("/marketplace");
-    else router.replace("/select-role");
+    const target =
+      role === "seller"
+        ? "/seller/kyc"
+        : role === "buyer"
+        ? "/marketplace"
+        : "/select-role";
+
+    if (typeof window !== "undefined") {
+      window.location.replace(target);
+      return;
+    }
+
+    router.replace(target);
   };
 
   const forceFreshWeb3AuthPopup = async () => {
@@ -34,6 +45,24 @@ export default function SignupPage() {
         // ignore
       }
     }
+
+    await closeWeb3AuthModal(web3Auth);
+  };
+
+  const waitForConnectedWeb3Auth = async (timeoutMs = 15000) => {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+      const instance = web3Auth;
+
+      if (instance?.connected && instance?.provider) {
+        return instance;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+
+    return null;
   };
 
   const handleSignup = async () => {
@@ -45,32 +74,42 @@ export default function SignupPage() {
         return;
       }
 
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+      const web3AuthClientId = process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID;
+
+      if (!apiBase) throw new Error("Missing NEXT_PUBLIC_API_URL");
+      if (!web3AuthClientId) {
+        throw new Error("Missing NEXT_PUBLIC_WEB3AUTH_CLIENT_ID");
+      }
+
       await resetAll();
       await forceFreshWeb3AuthPopup();
 
-      // ✅ Always show Web3Auth modal (email select)
       await connect();
 
-      if (!web3Auth) throw new Error("Web3Auth not initialized");
+      const readyWeb3Auth = await waitForConnectedWeb3Auth();
+      if (!readyWeb3Auth) {
+        throw new Error(
+          "Web3Auth connection was not ready in time. Please try again."
+        );
+      }
 
-      // ✅ Close modal overlay if it visually sticks
-      (web3Auth as any)?.modal?.closeModal?.();
+      await closeWeb3AuthModal(readyWeb3Auth);
 
-      // ✅ Identity token
-      const tokenInfo: any = await web3Auth.getIdentityToken();
+      const tokenInfo: any = await readyWeb3Auth.getIdentityToken();
       const idToken =
         typeof tokenInfo === "string" ? tokenInfo : tokenInfo?.idToken;
-      if (!idToken) throw new Error("Failed to get identity token");
 
-      // ✅ XRPL address
-      const privKeyHexNo0x = await getWeb3AuthPrivateKey(web3Auth);
-      const walletAddress =
-        await deriveXrplAddressFromWeb3AuthPrivKey(privKeyHexNo0x);
+      if (!idToken) {
+        throw new Error("Failed to get identity token from Web3Auth");
+      }
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL;
-      if (!apiBase) throw new Error("Missing NEXT_PUBLIC_API_URL");
+      const privKeyHexNo0x = await getWeb3AuthPrivateKey(readyWeb3Auth);
+      const xrplWallet =
+        await getXrplWalletFromWeb3AuthPrivKey(privKeyHexNo0x);
 
-      // ✅ SIGNUP: backend will create if new, or treat as login if exists
+      const walletAddress = xrplWallet.classicAddress;
+
       const resp = await fetch(`${apiBase}/auth/web3auth/sync`, {
         method: "POST",
         credentials: "include",
@@ -82,20 +121,39 @@ export default function SignupPage() {
       });
 
       const data = await resp.json().catch(() => null);
-      if (!resp.ok) throw new Error(data?.message || "Signup failed");
 
-      // ✅ Load session + route by role
+      if (!resp.ok) {
+        throw new Error(data?.message || "Signup failed");
+      }
+
+      await closeWeb3AuthModal(readyWeb3Auth);
+
       const me = await refreshSession();
       routeByRole(me?.role);
     } catch (e: any) {
       console.error(e);
-      setError(e?.message || "Failed to create account. Please try again.");
+      await closeWeb3AuthModal(web3Auth);
+
+      const msg =
+        e?.message || "Failed to create account. Please try again.";
+
+      if (
+        msg.includes("Wallet is not connected") ||
+        msg.includes("Wallet is not ready yet") ||
+        msg.includes("fetch project configurations")
+      ) {
+        setError(
+          "Web3Auth is not ready right now. Please check your internet connection and try again."
+        );
+        return;
+      }
+
+      setError(msg);
     }
   };
 
   return (
     <div className="relative min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      {/* Switch button (top-right) */}
       <div className="absolute top-8 right-8">
         <button
           onClick={() => router.push("/login")}
@@ -106,10 +164,8 @@ export default function SignupPage() {
         </button>
       </div>
 
-      {/* Card */}
       <div className="w-full max-w-xl">
         <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 px-12 py-12 text-center">
-          {/* Logo */}
           <div className="flex justify-center mb-6">
             <Image
               src="/Logo.png"
@@ -120,7 +176,6 @@ export default function SignupPage() {
             />
           </div>
 
-          {/* Brand */}
           <p className="text-sm text-gray-500">
             A blockchain-powered recipe marketplace
           </p>
@@ -133,7 +188,6 @@ export default function SignupPage() {
             Join RecipeChain &amp; Buy/Sell Recipes securely.
           </p>
 
-          {/* Button (lighter teal like screenshot) */}
           <button
             onClick={handleSignup}
             disabled={loading || !agreed}
@@ -147,7 +201,6 @@ export default function SignupPage() {
             {loading ? "Connecting..." : "Sign up with Web3Auth"}
           </button>
 
-          {/* Terms checkbox row */}
           <div className="mt-8 flex items-start justify-center gap-3 text-sm text-gray-700">
             <input
               type="checkbox"
@@ -168,35 +221,31 @@ export default function SignupPage() {
             </span>
           </div>
 
-          {/* Error */}
           {error && (
             <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           )}
 
-          {/* Small note (subtle like screenshot) */}
           <div className="mt-10 text-xs text-gray-400">
             <span className="mr-3">🔒</span>
             A secure blockchain wallet will be created <br className="hidden sm:block" />
             automatically after signup.
           </div>
 
-          {/* Security line */}
           <div className="mt-10 text-xs text-gray-400">
             No password required &nbsp;•&nbsp; Secured by Web3Auth
           </div>
 
-          {/* Login link */}
           <div className="mt-6 text-sm text-gray-600">
             Already have an account?{" "}
             <Link href="/login" className="text-teal-600 hover:underline">
               Click here to log in
             </Link>
           </div>
+
           <div className="mt-8 border-t border-gray-300"></div>
 
-          {/* Footer */}
           <div className="mt-1 border-t border-gray-100 pt-6 text-xs text-gray-400 flex justify-center gap-6">
             <Link href="/privacy" className="hover:text-gray-600">
               Privacy Policy

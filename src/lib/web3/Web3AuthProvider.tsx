@@ -9,6 +9,10 @@ import { WEB3AUTH_NETWORK } from "@web3auth/modal";
 
 const clientId = process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID || "";
 
+if (!clientId) {
+  console.error("Missing NEXT_PUBLIC_WEB3AUTH_CLIENT_ID");
+}
+
 const config: Web3AuthContextConfig = {
   web3AuthOptions: {
     clientId,
@@ -17,5 +21,9 @@ const config: Web3AuthContextConfig = {
 };
 
 export function Web3AuthProvider({ children }: { children: React.ReactNode }) {
-  return <Web3AuthModalProvider config={config}>{children}</Web3AuthModalProvider>;
+  return (
+    <Web3AuthModalProvider config={config}>
+      {children}
+    </Web3AuthModalProvider>
+  );
 }
