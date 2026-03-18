@@ -1,16 +1,91 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ChefHat,
+  Info,
+  Loader2,
+  ShoppingBag,
+  type LucideIcon,
+} from "lucide-react";
+
 import { useAuth } from "@/context/AuthContext";
-import type { UserRole } from "@/types";
+
+type Role = "buyer" | "seller";
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+
+function RoleCard({
+  title,
+  description,
+  features,
+  icon: Icon,
+  selected,
+  onClick,
+}: {
+  title: string;
+  description: string;
+  features: string[];
+  icon: LucideIcon;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "relative w-full rounded-3xl border p-6 text-left transition-all",
+        "hover:-translate-y-0.5 hover:shadow-md",
+        selected
+          ? "border-teal-500 bg-teal-50 shadow-sm"
+          : "border-slate-200 bg-white hover:border-teal-300",
+      ].join(" ")}
+    >
+      {selected ? (
+        <div className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-teal-600 text-white">
+          <CheckCircle2 className="h-5 w-5" />
+        </div>
+      ) : null}
+
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
+        <Icon className="h-7 w-7 text-teal-700" />
+      </div>
+
+      <h3 className="mt-5 text-2xl font-bold text-slate-900">{title}</h3>
+      <p className="mt-3 text-sm leading-6 text-slate-600">{description}</p>
+
+      <div className="mt-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+          Key benefits
+        </p>
+
+        <ul className="mt-3 space-y-2.5">
+          {features.map((feature) => (
+            <li
+              key={feature}
+              className="flex items-start gap-3 text-sm text-slate-700"
+            >
+              <span className="mt-2 h-1.5 w-1.5 rounded-full bg-teal-500" />
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </button>
+  );
+}
 
 export default function SelectRolePage() {
   const router = useRouter();
-  const { setRole, isAuthenticated, isLoading, role, refreshSession } = useAuth();
+  const { isLoading, isAuthenticated, role, refreshSession } = useAuth();
 
-  const [selected, setSelected] = useState<UserRole>("seller");
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -22,68 +97,54 @@ export default function SelectRolePage() {
       return;
     }
 
-    if (role === "seller") {
-      router.replace("/seller/kyc");
+    if (role === "buyer") {
+      router.replace("/");
       return;
     }
 
-    if (role === "buyer") {
-      router.replace("/marketplace");
-      return;
+    if (role === "seller") {
+      router.replace("/seller/kyc");
     }
   }, [isLoading, isAuthenticated, role, router]);
 
-  const buyerCapabilities = useMemo(
-    () => [
-      "Purchase exclusive digital recipes",
-      "Save recipes to your cookbook",
-      "Track transaction history",
-      "Earn buyer achievements",
-      "Review and rate purchased recipes",
-    ],
-    []
-  );
-
-  const sellerCapabilities = useMemo(
-    () => [
-      "Upload and mint recipes",
-      "Earn revenue in cryptocurrency",
-      "Access sales analytics",
-      "Build culinary reputation",
-      "Unlock creator achievements",
-    ],
-    []
-  );
-
-  const saveRoleAndContinue = async (chosen: UserRole) => {
+  const handleContinue = async () => {
     setError("");
-    setSubmitting(true);
+
+    if (!selectedRole) {
+      setError("Please select a role to continue.");
+      return;
+    }
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL;
-      if (!apiBase) throw new Error("Missing NEXT_PUBLIC_API_URL in frontend env");
+      setSubmitting(true);
 
-      const resp = await fetch(`${apiBase}/users/role`, {
+      const response = await fetch(`${API_BASE}/users/role`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: chosen }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ role: selectedRole }),
       });
 
-      const data = await resp.json().catch(() => null);
+      const result = await response.json().catch(() => null);
 
-      if (!resp.ok || !data?.success) {
-        throw new Error(data?.message || data?.error || "Role update failed");
+      if (!response.ok) {
+        throw new Error(result?.message || "Failed to save your role");
       }
 
-      setRole(chosen);
       await refreshSession();
 
-      if (chosen === "buyer") router.replace("/marketplace");
-      else router.replace("/seller/kyc");
+      const target = selectedRole === "seller" ? "/seller/kyc" : "/";
+
+      if (typeof window !== "undefined") {
+        window.location.replace(target);
+        return;
+      }
+
+      router.replace(target);
     } catch (e: any) {
-      console.error(e);
-      setError(e?.message || "Failed to set role. Please try again.");
+      setError(e?.message || "Failed to save your role. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -91,162 +152,135 @@ export default function SelectRolePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-gray-200 border-t-transparent rounded-full" />
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+          <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+          <span className="text-sm text-slate-600">Loading account setup...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-10">
-      <div className="mx-auto w-full max-w-3xl">
-        <div className="mb-8 flex items-start justify-between">
+    <div className="min-h-[100svh] bg-slate-50 px-4 py-4 sm:px-6">
+      <div className="mx-auto flex min-h-[calc(100svh-2rem)] max-w-5xl flex-col justify-center">
+        <div className="mb-4">
           <button
+            type="button"
             onClick={() => router.back()}
-            className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition"
-            disabled={submitting}
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900"
           >
-            <span className="text-lg">←</span> Back
+            <ArrowLeft className="h-4 w-4" />
+            Back
           </button>
-
-          <div className="flex flex-col items-center">
-            <Image src="/Logo.png" alt="RecipeChain Logo" width={70} height={70} priority />
-          </div>
-
-          <div className="w-[72px]" />
         </div>
 
-        <div className="mx-auto max-w-2xl">
-          <div className="text-sm text-gray-500">Account Setup</div>
-          <div className="mt-2 h-2 w-full rounded-full bg-gray-200 overflow-hidden">
-            <div className="h-full w-full bg-teal-600 rounded-full" />
+        <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex flex-col items-center text-center">
+            <Image
+              src="/Logo.png"
+              alt="RecipeChain logo"
+              width={82}
+              height={82}
+              className="h-auto w-[82px] object-contain"
+              priority
+            />
+
+            <div className="mt-4 inline-flex rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+              Account Setup
+            </div>
+
+            <h1 className="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+              Select Your Account Role
+            </h1>
+
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+              Choose how you will participate in the RecipeChain marketplace.
+              <br className="hidden sm:block" />
+              Your role determines your permissions and cannot be changed later.
+            </p>
           </div>
 
-          <h1 className="mt-8 text-center text-2xl font-extrabold text-gray-900">
-            Select Your Account Role
-          </h1>
-          <p className="mt-3 text-center text-gray-500 leading-relaxed">
-            Choose how you will participate in the RecipeChain marketplace.
-            <br />
-            Your role determines your permissions and cannot be changed later.
-          </p>
-
-          {error && (
-            <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="mt-8 grid gap-4 lg:grid-cols-2">
             <RoleCard
               title="Buyer"
-              description="Purchase and collect blockchain-secured recipes from chefs worldwide."
-              icon="🛒"
-              capabilities={buyerCapabilities}
-              active={selected === "buyer"}
-              onClick={() => setSelected("buyer")}
-              disabled={submitting}
+              description="Browse, purchase, and collect blockchain-secured recipes from creators."
+              features={[
+                "Discover premium recipes from verified chefs",
+                "Save purchased recipes to your collection",
+                "Review, rate, and follow your favorite creators",
+              ]}
+              icon={ShoppingBag}
+              selected={selectedRole === "buyer"}
+              onClick={() => setSelectedRole("buyer")}
             />
 
             <RoleCard
               title="Seller (Chef)"
-              description="Create, mint, and sell your recipes as digital assets on the blockchain."
-              icon="👨‍🍳"
-              capabilities={sellerCapabilities}
-              active={selected === "seller"}
-              onClick={() => setSelected("seller")}
-              disabled={submitting}
+              description="Create, verify, and sell your recipes as digital assets on RecipeChain."
+              features={[
+                "Complete seller verification before publishing",
+                "Upload and mint your original recipes",
+                "Track earnings and grow your culinary reputation",
+              ]}
+              icon={ChefHat}
+              selected={selectedRole === "seller"}
+              onClick={() => setSelectedRole("seller")}
             />
           </div>
 
-          <div className="mt-8 rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 flex items-start gap-3">
-            <span className="mt-0.5">⚠️</span>
-            <div>
-              This selection is permanent. Your account role cannot be changed after
-              confirmation.
+          <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <div className="flex items-start gap-3">
+              <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+              <p className="text-center text-sm leading-6 text-amber-900">
+                This selection is permanent. Your account role cannot be changed after
+                confirmation. Select Your Account Role.
+              </p>
             </div>
           </div>
 
-          <div className="mt-8 flex justify-center">
-            <button
-              onClick={() => saveRoleAndContinue(selected)}
-              disabled={submitting}
-              className={[
-                "rounded-xl px-10 py-4 text-white font-semibold transition shadow-sm",
-                submitting ? "bg-gray-300 cursor-not-allowed" : "bg-teal-700 hover:bg-teal-800",
-              ].join(" ")}
-            >
-              {submitting ? "Saving..." : "Confirm Role & Continue"}
-            </button>
-          </div>
+          {error ? (
+            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          ) : null}
 
-          <div className="mt-6 text-center text-xs text-gray-400">
-            Role will be saved to your account and used on future logins.
+          <div className="mt-6 flex flex-col gap-4 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-800">
+                {selectedRole === "buyer"
+                  ? "Buyer selected"
+                  : selectedRole === "seller"
+                  ? "Seller selected"
+                  : "No role selected yet"}
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                {selectedRole === "seller"
+                  ? "Next step: complete seller verification"
+                  : selectedRole === "buyer"
+                  ? "Next step: go to the home page"
+                  : "Select one option to continue"}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleContinue}
+              disabled={!selectedRole || submitting}
+              className="inline-flex min-w-[240px] items-center justify-center rounded-2xl bg-teal-600 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-300"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving role...
+                </>
+              ) : (
+                "Confirm Role & Continue"
+              )}
+            </button>
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-function RoleCard({
-  title,
-  description,
-  icon,
-  capabilities,
-  active,
-  onClick,
-  disabled,
-}: {
-  title: string;
-  description: string;
-  icon: string;
-  capabilities: string[];
-  active: boolean;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={[
-        "relative text-left rounded-2xl border p-5 transition shadow-sm",
-        disabled ? "opacity-60 cursor-not-allowed" : "",
-        active ? "border-teal-700 bg-teal-50" : "border-gray-200 bg-white hover:shadow-md",
-      ].join(" ")}
-    >
-      {active && (
-        <div className="absolute top-4 right-4 h-7 w-7 rounded-full bg-teal-700 text-white flex items-center justify-center text-sm">
-          ✓
-        </div>
-      )}
-
-      <div
-        className={[
-          "h-12 w-12 rounded-xl flex items-center justify-center text-xl",
-          active ? "bg-white" : "bg-gray-50",
-        ].join(" ")}
-      >
-        {icon}
-      </div>
-
-      <div className="mt-5 text-xl font-bold text-gray-900">{title}</div>
-      <div className="mt-2 text-sm text-gray-500 leading-relaxed">{description}</div>
-
-      <div className="mt-6 text-xs font-semibold tracking-wider text-gray-500">
-        CAPABILITIES
-      </div>
-
-      <ul className="mt-3 space-y-2 text-sm text-gray-600">
-        {capabilities.map((cap) => (
-          <li key={cap} className="flex items-start gap-2">
-            <span className="mt-1 text-teal-700">•</span>
-            <span>{cap}</span>
-          </li>
-        ))}
-      </ul>
-    </button>
   );
 }

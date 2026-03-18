@@ -11,7 +11,6 @@ import { getWeb3AuthPrivateKey } from "@/lib/web3/getWeb3AuthPrivKey";
 import { deriveXrplAddressFromWeb3AuthPrivKey } from "@/lib/xrpl/deriveXrpl";
 import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
 
-
 export default function LoginPage() {
   const router = useRouter();
   const { refreshSession, resetAll } = useAuth();
