@@ -24,6 +24,7 @@ type FormState = {
   nationality: string;
   address: string;
   phoneNo: string;
+  nicNo: string;
   confirmAccuracy: boolean;
   agreeTerms: boolean;
 };
@@ -34,6 +35,7 @@ const initialFormState: FormState = {
   nationality: "",
   address: "",
   phoneNo: "",
+  nicNo: "",
   confirmAccuracy: false,
   agreeTerms: false,
 };
@@ -61,6 +63,7 @@ export default function SellerKycForm() {
     nationality?: string;
     address?: string;
     phoneNo?: string;
+    nicNo?: string;
     walletAddress?: string;
     idFileName?: string;
   }>({});
@@ -70,6 +73,7 @@ export default function SellerKycForm() {
   const nationalityRef = useRef<HTMLInputElement | null>(null);
   const addressRef = useRef<HTMLTextAreaElement | null>(null);
   const phoneNoRef = useRef<HTMLInputElement | null>(null);
+  const nicNoRef = useRef<HTMLInputElement | null>(null);
   const fileSectionRef = useRef<HTMLElement | null>(null);
   const legalSectionRef = useRef<HTMLElement | null>(null);
 
@@ -89,6 +93,7 @@ export default function SellerKycForm() {
     nationality: formData.nationality?.trim() || "",
     address: formData.address?.trim() || "",
     phoneNo: formData.phoneNo?.trim() || "",
+    nicNo: formData.nicNo?.trim() || "",
     walletAddress: walletAddress || "",
     idFileName: idDocument?.name || "",
   });
@@ -123,13 +128,19 @@ export default function SellerKycForm() {
               nationality: statusData?.nationality || "",
               address: statusData?.address || "",
               phoneNo: statusData?.phone_no || "",
+              nicNo: statusData?.nic_no || "",
               walletAddress: currentUser?.wallet_address || "",
-              idFileName: statusData?.id_photo_path
-                ? statusData.id_photo_path.split("/").pop() || ""
-                : "",
+              idFileName: statusData?.id_document_original_name || "",
             });
 
-            if (statusData?.full_name || statusData?.date_of_birth || statusData?.nationality || statusData?.address || statusData?.phone_no) {
+            if (
+              statusData?.full_name ||
+              statusData?.date_of_birth ||
+              statusData?.nationality ||
+              statusData?.address ||
+              statusData?.phone_no ||
+              statusData?.nic_no
+            ) {
               setFormData((prev) => ({
                 ...prev,
                 fullName: statusData?.full_name || prev.fullName,
@@ -137,6 +148,7 @@ export default function SellerKycForm() {
                 nationality: statusData?.nationality || prev.nationality,
                 address: statusData?.address || prev.address,
                 phoneNo: statusData?.phone_no || prev.phoneNo,
+                nicNo: statusData?.nic_no || prev.nicNo,
               }));
             }
           }
@@ -227,6 +239,10 @@ export default function SellerKycForm() {
       nextErrors.phoneNo = "Phone number is required";
     }
 
+    if (!formData.nicNo.trim()) {
+      nextErrors.nicNo = "NIC number is required";
+    }
+
     if (!idDocument) {
       nextErrors.idDocument = "Government-issued ID is required";
     } else {
@@ -274,6 +290,9 @@ export default function SellerKycForm() {
       } else if (nextErrors.phoneNo) {
         phoneNoRef.current?.scrollIntoView(scrollOptions);
         phoneNoRef.current?.focus();
+      } else if (nextErrors.nicNo) {
+        nicNoRef.current?.scrollIntoView(scrollOptions);
+        nicNoRef.current?.focus();
       } else if (nextErrors.idDocument) {
         fileSectionRef.current?.scrollIntoView(scrollOptions);
       } else if (nextErrors.confirmAccuracy || nextErrors.agreeTerms) {
@@ -329,6 +348,7 @@ export default function SellerKycForm() {
       payload.append("nationality", formData.nationality.trim());
       payload.append("address", formData.address.trim());
       payload.append("phoneNo", formData.phoneNo.trim());
+      payload.append("nicNo", formData.nicNo.trim());
       payload.append("confirmAccuracy", String(formData.confirmAccuracy));
       payload.append("agreeTerms", String(formData.agreeTerms));
 
@@ -351,11 +371,16 @@ export default function SellerKycForm() {
         verified_at: null,
         rejection_reason: null,
         full_name: formData.fullName.trim(),
+        display_name: formData.fullName.trim(),
         date_of_birth: formData.dateOfBirth,
         nationality: formData.nationality.trim(),
         address: formData.address.trim(),
         phone_no: formData.phoneNo.trim(),
-        id_photo_path: idDocument?.name || "",
+        nic_no: formData.nicNo.trim(),
+        cloudinary_public_id: null,
+        id_document_resource_type:
+          idDocument?.type === "application/pdf" ? "raw" : "image",
+        id_document_original_name: idDocument?.name || "",
       });
     } catch (error: any) {
       setSubmitError(error?.message || "Failed to submit verification");
@@ -609,26 +634,50 @@ export default function SellerKycForm() {
                 ) : null}
               </div>
 
-              <div>
-                <label
-                  htmlFor="phoneNo"
-                  className="mb-2 block text-sm font-medium text-slate-800"
-                >
-                  Phone Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  ref={phoneNoRef}
-                  id="phoneNo"
-                  name="phoneNo"
-                  type="tel"
-                  value={formData.phoneNo}
-                  onChange={handleInputChange}
-                  placeholder="+94 71 252 5789"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                />
-                {errors.phoneNo ? (
-                  <p className="mt-2 text-sm text-red-600">{errors.phoneNo}</p>
-                ) : null}
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="phoneNo"
+                    className="mb-2 block text-sm font-medium text-slate-800"
+                  >
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    ref={phoneNoRef}
+                    id="phoneNo"
+                    name="phoneNo"
+                    type="tel"
+                    value={formData.phoneNo}
+                    onChange={handleInputChange}
+                    placeholder="+94 71 252 5789"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  />
+                  {errors.phoneNo ? (
+                    <p className="mt-2 text-sm text-red-600">{errors.phoneNo}</p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="nicNo"
+                    className="mb-2 block text-sm font-medium text-slate-800"
+                  >
+                    NIC Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    ref={nicNoRef}
+                    id="nicNo"
+                    name="nicNo"
+                    type="text"
+                    value={formData.nicNo}
+                    onChange={handleInputChange}
+                    placeholder="200012345678 or 123456789V"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  />
+                  {errors.nicNo ? (
+                    <p className="mt-2 text-sm text-red-600">{errors.nicNo}</p>
+                  ) : null}
+                </div>
               </div>
             </div>
           </section>
