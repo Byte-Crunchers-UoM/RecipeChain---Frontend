@@ -10,10 +10,12 @@ import LegalAgreementSection from "./LegalAgreementSection";
 import ReviewNotice from "./ReviewNotice";
 import UnderReviewView from "./UnderReviewView";
 import SubmittedDetailsModal from "./SubmittedDetailsModal";
+import VerifiedSuccessView from "./VerifiedSuccessView";
 
 import {
   fetchMe,
   fetchSellerKycStatus,
+  markSellerKycApprovalPageSeen,
   submitSellerKyc,
   type SellerKycStatus,
 } from "@/lib/api/sellerKyc";
@@ -57,6 +59,8 @@ export default function SellerKycForm() {
   const [submitSuccess, setSubmitSuccess] = useState("");
 
   const [showSubmittedDetails, setShowSubmittedDetails] = useState(false);
+  const [isMarkingSeen, setIsMarkingSeen] = useState(false);
+
   const [submittedDetails, setSubmittedDetails] = useState<{
     fullName?: string;
     dateOfBirth?: string;
@@ -79,8 +83,9 @@ export default function SellerKycForm() {
 
   const status = kycStatus?.verification_status ?? null;
   const isPending = status === "pending";
-  const isVerified = status === "verified";
+  const isApproved = status === "approved";
   const isRejected = status === "rejected";
+  const hasSeenApprovedPage = kycStatus?.kyc_approval_page_seen === true;
 
   const maxDate = useMemo(() => {
     const today = new Date();
@@ -97,6 +102,53 @@ export default function SellerKycForm() {
     walletAddress: walletAddress || "",
     idFileName: idDocument?.name || "",
   });
+
+  const handleLogout = async () => {
+    try {
+      setSubmitError("");
+
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("user");
+        localStorage.removeItem("seller");
+        sessionStorage.clear();
+      }
+
+      router.replace("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      setSubmitError("Failed to logout. Please try again.");
+    }
+  };
+
+  const handleApprovedPageContinue = async (targetPath: string) => {
+    try {
+      setIsMarkingSeen(true);
+      setSubmitError("");
+
+      await markSellerKycApprovalPageSeen();
+
+      setKycStatus((prev) =>
+        prev
+          ? {
+              ...prev,
+              kyc_approval_page_seen: true,
+            }
+          : prev
+      );
+
+      router.push(targetPath);
+    } catch (error: any) {
+      setSubmitError(
+        error?.message || "Failed to continue. Please try again."
+      );
+    } finally {
+      setIsMarkingSeen(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -174,6 +226,12 @@ export default function SellerKycForm() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!loadingPage && userRole === "seller" && isApproved && hasSeenApprovedPage) {
+      router.replace("/seller/dashboard");
+    }
+  }, [loadingPage, userRole, isApproved, hasSeenApprovedPage, router]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -381,6 +439,7 @@ export default function SellerKycForm() {
         id_document_resource_type:
           idDocument?.type === "application/pdf" ? "raw" : "image",
         id_document_original_name: idDocument?.name || "",
+        kyc_approval_page_seen: false,
       });
     } catch (error: any) {
       setSubmitError(error?.message || "Failed to submit verification");
@@ -423,27 +482,25 @@ export default function SellerKycForm() {
     );
   }
 
-  if (isVerified) {
+  if (isApproved && !hasSeenApprovedPage) {
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border bg-white p-8 text-center shadow-sm">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
-          <CheckCircle2 className="h-9 w-9 text-emerald-600" />
-        </div>
-        <h2 className="mt-5 text-3xl font-bold text-slate-900">
-          Seller verification approved
-        </h2>
-        <p className="mt-3 text-slate-600">
-          Your seller account has been verified successfully. You can now
-          continue to your seller dashboard and manage your recipes.
-        </p>
-        <button
-          type="button"
-          onClick={() => router.push("/seller/dashboard")}
-          className="mt-6 rounded-xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-700"
-        >
-          Go to seller dashboard
-        </button>
-      </div>
+      <>
+        {submitError ? (
+          <div className="mx-auto mb-4 max-w-3xl rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {submitError}
+          </div>
+        ) : null}
+
+        <VerifiedSuccessView
+          submittedAt={kycStatus?.verification_submitted_at}
+          verifiedAt={kycStatus?.verified_at}
+          onLogout={handleLogout}
+          onGoDashboard={() => handleApprovedPageContinue("/seller/dashboard")}
+          onCreateRecipe={() =>
+            handleApprovedPageContinue("/seller/recipes/upload")
+          }
+        />
+      </>
     );
   }
 
@@ -453,7 +510,7 @@ export default function SellerKycForm() {
         <UnderReviewView
           submittedAt={kycStatus?.verification_submitted_at}
           onViewDetails={() => setShowSubmittedDetails(true)}
-          onGoDashboard={() => router.push("/seller/dashboard")}
+          onLogout={handleLogout}
         />
 
         <SubmittedDetailsModal
@@ -464,6 +521,10 @@ export default function SellerKycForm() {
         />
       </>
     );
+  }
+
+  if (isApproved && hasSeenApprovedPage) {
+    return null;
   }
 
   return (

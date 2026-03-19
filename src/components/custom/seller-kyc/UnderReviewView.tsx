@@ -6,8 +6,7 @@ import {
   FileText,
   Headphones,
   Info,
-  LayoutDashboard,
-  History,
+  LogOut,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -15,7 +14,7 @@ import { useRouter } from "next/navigation";
 type Props = {
   submittedAt?: string | null;
   onViewDetails: () => void;
-  onGoDashboard: () => void;
+  onLogout: () => void;
 };
 
 function formatSubmittedDate(dateString?: string | null) {
@@ -69,9 +68,17 @@ function ReviewCard({
 export default function UnderReviewView({
   submittedAt,
   onViewDetails,
-  onGoDashboard,
+  onLogout,
 }: Props) {
   const router = useRouter();
+
+  const handleLogoutClick = async () => {
+    try {
+      await onLogout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#F3F5F7]">
@@ -86,22 +93,14 @@ export default function UnderReviewView({
             priority
           />
 
-          <div className="flex items-center gap-0">
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={onGoDashboard}
+              onClick={handleLogoutClick}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
-              <LayoutDashboard className="h-4 w-4" />
-              Dashboard
-            </button>
-
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              <History className="h-4 w-4" />
-              History
+              <LogOut className="h-4 w-4" />
+              Logout
             </button>
 
             <button
@@ -127,8 +126,8 @@ export default function UnderReviewView({
           </h1>
 
           <p className="mt-4 max-w-2xl text-[15px] leading-7 text-slate-500 sm:text-[16px]">
-            Our compliance team is carefully reviewing your submission. This process
-            typically takes 24–48 hours to ensure security and accuracy.
+            Our compliance team is carefully reviewing your submission. This
+            process typically takes 24–48 hours to ensure security and accuracy.
           </p>
 
           <div className="mt-8 px-2 sm:px-6">
@@ -141,7 +140,9 @@ export default function UnderReviewView({
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
                     <Check className="h-5 w-5" />
                   </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-800">Submitted</p>
+                  <p className="mt-3 text-sm font-semibold text-slate-800">
+                    Submitted
+                  </p>
                   <p className="mt-1 text-xs text-slate-500">
                     {formatSubmittedShortDate(submittedAt)}
                   </p>
@@ -151,7 +152,9 @@ export default function UnderReviewView({
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-600 text-white shadow-sm">
                     <Clock3 className="h-5 w-5" />
                   </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-800">Under Review</p>
+                  <p className="mt-3 text-sm font-semibold text-slate-800">
+                    Under Review
+                  </p>
                   <p className="mt-1 text-xs text-slate-500">In Progress</p>
                 </div>
 
@@ -159,7 +162,9 @@ export default function UnderReviewView({
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-400 shadow-sm">
                     <div className="h-3 w-3 rounded-full bg-slate-400" />
                   </div>
-                  <p className="mt-3 text-sm font-medium text-slate-500">Decision</p>
+                  <p className="mt-3 text-sm font-medium text-slate-500">
+                    Decision
+                  </p>
                   <p className="mt-1 text-xs text-slate-400">Pending</p>
                 </div>
               </div>
@@ -170,8 +175,9 @@ export default function UnderReviewView({
             <div className="flex items-start gap-3">
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-teal-700" />
               <p className="text-sm leading-7 text-slate-700">
-                You will be notified by email and in your dashboard once our team
-                completes the review. No action is needed from you at this time.
+                You will be notified by email and in your dashboard once our
+                team completes the review. No action is needed from you at this
+                time.
               </p>
             </div>
           </div>
@@ -245,10 +251,11 @@ export default function UnderReviewView({
         <div className="mt-6 flex justify-center">
           <button
             type="button"
-            onClick={onGoDashboard}
-            className="rounded-2xl bg-teal-600 px-10 py-4 text-base font-semibold text-white shadow-sm hover:bg-teal-700"
+            onClick={handleLogoutClick}
+            className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-10 py-4 text-base font-semibold text-white shadow-sm hover:bg-teal-700"
           >
-            Go to Dashboard
+            <LogOut className="h-5 w-5" />
+            Logout
           </button>
         </div>
       </main>

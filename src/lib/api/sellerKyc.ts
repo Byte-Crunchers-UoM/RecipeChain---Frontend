@@ -10,7 +10,7 @@ export type MeResponse = {
 };
 
 export type SellerKycStatus = {
-  verification_status?: "pending" | "verified" | "rejected" | null;
+  verification_status?: "pending" | "approved" | "rejected" | null;
   verification_submitted_at?: string | null;
   verified_at?: string | null;
   rejection_reason?: string | null;
@@ -24,12 +24,21 @@ export type SellerKycStatus = {
   cloudinary_public_id?: string | null;
   id_document_resource_type?: "image" | "raw" | null;
   id_document_original_name?: string | null;
+  kyc_approval_page_seen?: boolean | null;
 };
 
 export type SellerKycResponse = {
   success?: boolean;
   message?: string;
   data?: SellerKycStatus;
+};
+
+export type MarkSellerKycApprovalPageSeenResponse = {
+  success?: boolean;
+  message?: string;
+  data?: {
+    kyc_approval_page_seen?: boolean;
+  };
 };
 
 const API_BASE =
@@ -91,6 +100,30 @@ export async function submitSellerKyc(formData: FormData) {
 
   if (!response.ok) {
     throw new Error(result?.message || "Failed to submit KYC");
+  }
+
+  return result;
+}
+
+export async function markSellerKycApprovalPageSeen() {
+  const response = await fetch(`${API_BASE}/sellers/kyc/approval-page-seen`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      kyc_approval_page_seen: true,
+    }),
+  });
+
+  const result: MarkSellerKycApprovalPageSeenResponse =
+    await parseApiResponse(response);
+
+  if (!response.ok) {
+    throw new Error(
+      result?.message || "Failed to update KYC approval page seen status"
+    );
   }
 
   return result;
