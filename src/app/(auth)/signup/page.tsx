@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { getWeb3AuthPrivateKey } from "@/lib/web3/getWeb3AuthPrivKey";
 import { getXrplWalletFromWeb3AuthPrivKey } from "@/lib/xrpl/getXrplWallet";
 import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
+import { getSellerEntryRoute } from "@/lib/getSellerEntryRoute";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -21,13 +22,14 @@ export default function SignupPage() {
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
 
-  const routeByRole = (role: any) => {
-    const target =
-      role === "seller"
-        ? "/seller/kyc"
-        : role === "buyer"
-        ? "/marketplace"
-        : "/select-role";
+  const routeByRole = async (role: any) => {
+    let target = "/select-role";
+
+    if (role === "seller") {
+      target = await getSellerEntryRoute();
+    } else if (role === "buyer") {
+      target = "/marketplace";
+    }
 
     if (typeof window !== "undefined") {
       window.location.replace(target);
@@ -129,7 +131,7 @@ export default function SignupPage() {
       await closeWeb3AuthModal(readyWeb3Auth);
 
       const me = await refreshSession();
-      routeByRole(me?.role);
+      await routeByRole(me?.role);
     } catch (e: any) {
       console.error(e);
       await closeWeb3AuthModal(web3Auth);
@@ -153,20 +155,20 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="absolute top-8 right-8">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-100 px-4">
+      <div className="absolute right-8 top-8">
         <button
           onClick={() => router.push("/login")}
           disabled={loading}
-          className="rounded-xl border border-teal-500 px-8 py-3 text-sm font-medium text-teal-600 hover:bg-teal-50 transition"
+          className="rounded-xl border border-teal-500 px-8 py-3 text-sm font-medium text-teal-600 transition hover:bg-teal-50"
         >
           Switch to Login
         </button>
       </div>
 
       <div className="w-full max-w-xl">
-        <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 px-12 py-12 text-center">
-          <div className="flex justify-center mb-6">
+        <div className="rounded-3xl border border-gray-100 bg-white px-12 py-12 text-center shadow-2xl">
+          <div className="mb-6 flex justify-center">
             <Image
               src="/Logo.png"
               alt="RecipeChain Logo"
@@ -180,11 +182,11 @@ export default function SignupPage() {
             A blockchain-powered recipe marketplace
           </p>
 
-          <h2 className="text-3xl font-bold text-gray-900 mt-8">
+          <h2 className="mt-8 text-3xl font-bold text-gray-900">
             Create Your Account
           </h2>
 
-          <p className="mt-3 text-gray-500 text-sm">
+          <p className="mt-3 text-sm text-gray-500">
             Join RecipeChain &amp; Buy/Sell Recipes securely.
           </p>
 
@@ -192,9 +194,9 @@ export default function SignupPage() {
             onClick={handleSignup}
             disabled={loading || !agreed}
             className={[
-              "mt-8 w-full rounded-xl py-4 font-medium text-base transition shadow-sm",
+              "mt-8 w-full rounded-xl py-4 text-base font-medium transition shadow-sm",
               loading || !agreed
-                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                ? "cursor-not-allowed bg-gray-200 text-gray-500"
                 : "bg-teal-300 text-white hover:bg-teal-400",
             ].join(" ")}
           >
@@ -234,7 +236,7 @@ export default function SignupPage() {
           </div>
 
           <div className="mt-10 text-xs text-gray-400">
-            No password required &nbsp;•&nbsp; Secured by Web3Auth
+            No password required • Secured by Web3Auth
           </div>
 
           <div className="mt-6 text-sm text-gray-600">
@@ -244,9 +246,9 @@ export default function SignupPage() {
             </Link>
           </div>
 
-          <div className="mt-8 border-t border-gray-300"></div>
+          <div className="mt-8 border-t border-gray-300" />
 
-          <div className="mt-1 border-t border-gray-100 pt-6 text-xs text-gray-400 flex justify-center gap-6">
+          <div className="mt-1 flex justify-center gap-6 border-t border-gray-100 pt-6 text-xs text-gray-400">
             <Link href="/privacy" className="hover:text-gray-600">
               Privacy Policy
             </Link>

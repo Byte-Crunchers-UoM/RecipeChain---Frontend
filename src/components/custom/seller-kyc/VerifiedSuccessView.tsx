@@ -4,6 +4,7 @@ import {
   Check,
   CheckCircle2,
   LayoutDashboard,
+  Loader2,
   LogOut,
   PlusCircle,
   ShieldCheck,
@@ -14,9 +15,10 @@ import Image from "next/image";
 type Props = {
   submittedAt?: string | null;
   verifiedAt?: string | null;
-  onLogout: () => void;
-  onGoDashboard: () => void;
-  onCreateRecipe: () => void;
+  onLogout: () => void | Promise<void>;
+  onGoDashboard: () => void | Promise<void>;
+  onCreateRecipe: () => void | Promise<void>;
+  isLoading?: boolean;
 };
 
 function formatShortDate(dateString?: string | null) {
@@ -70,6 +72,7 @@ export default function VerifiedSuccessView({
   onLogout,
   onGoDashboard,
   onCreateRecipe,
+  isLoading = false,
 }: Props) {
   return (
     <div className="min-h-screen bg-[#F3F5F7]">
@@ -88,7 +91,8 @@ export default function VerifiedSuccessView({
             <button
               type="button"
               onClick={onLogout}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <LogOut className="h-4 w-4" />
               Logout
@@ -97,9 +101,14 @@ export default function VerifiedSuccessView({
             <button
               type="button"
               onClick={onGoDashboard}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <LayoutDashboard className="h-4 w-4" />
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <LayoutDashboard className="h-4 w-4" />
+              )}
               Dashboard
             </button>
 
@@ -136,129 +145,107 @@ export default function VerifiedSuccessView({
               <div className="absolute left-[15%] right-[15%] top-5 h-[2px] bg-emerald-500" />
 
               <div className="relative flex items-start justify-between">
-                <div className="flex w-24 flex-col items-center text-center">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
-                    <Check className="h-5 w-5" />
+                {[
+                  {
+                    label: "Submitted",
+                    date: formatShortDate(submittedAt),
+                  },
+                  {
+                    label: "Reviewed",
+                    date: formatShortDate(verifiedAt),
+                  },
+                  {
+                    label: "Approved",
+                    date: formatShortDate(verifiedAt),
+                  },
+                ].map((step) => (
+                  <div
+                    key={step.label}
+                    className="flex w-[33%] flex-col items-center text-center"
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
+                      <Check className="h-5 w-5" />
+                    </div>
+                    <p className="mt-3 text-sm font-semibold text-slate-700">
+                      {step.label}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{step.date}</p>
                   </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-800">
-                    Submitted
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {formatShortDate(submittedAt)}
-                  </p>
-                </div>
-
-                <div className="flex w-24 flex-col items-center text-center">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
-                    <Check className="h-5 w-5" />
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-800">
-                    Reviewed
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {formatShortDate(verifiedAt)}
-                  </p>
-                </div>
-
-                <div className="flex w-24 flex-col items-center text-center">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm">
-                    <Check className="h-5 w-5" />
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-800">
-                    Approved
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {formatLongDate(verifiedAt)}
-                  </p>
-                </div>
+                ))}
               </div>
             </div>
           </div>
 
-          <div className="mt-8 rounded-2xl border-l-4 border-emerald-600 bg-emerald-50 px-5 py-4">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" />
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            <FeatureCard
+              icon={<Store className="h-5 w-5" />}
+              title="Start Selling"
+              description="List and publish your recipes for buyers across the marketplace."
+            />
+            <FeatureCard
+              icon={<ShieldCheck className="h-5 w-5" />}
+              title="Trusted Seller"
+              description="Your verified badge builds confidence and trust with buyers."
+            />
+            <FeatureCard
+              icon={<LayoutDashboard className="h-5 w-5" />}
+              title="Manage Easily"
+              description="Track recipes, sales, and earnings from your seller dashboard."
+            />
+          </div>
+
+          <div className="mt-8 rounded-2xl bg-slate-50 px-5 py-5">
+            <h3 className="text-sm font-semibold text-slate-800">
+              Verification summary
+            </h3>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div>
-                <p className="text-base font-semibold text-emerald-900">
-                  Verification Complete
+                <p className="text-xs uppercase tracking-wide text-slate-400">
+                  Submitted on
                 </p>
-                <p className="mt-1 text-sm leading-7 text-slate-700">
-                  Your seller account was approved on {formatLongDate(verifiedAt)}
-                  . All seller features are now unlocked and ready to use.
+                <p className="mt-1 text-sm font-medium text-slate-700">
+                  {formatLongDate(submittedAt)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-400">
+                  Approved on
+                </p>
+                <p className="mt-1 text-sm font-medium text-slate-700">
+                  {formatLongDate(verifiedAt)}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="mt-8 flex justify-center">
-            <div className="flex h-28 w-28 items-center justify-center rounded-full bg-emerald-100">
-              <ShieldCheck className="h-14 w-14 text-emerald-600" />
-            </div>
-          </div>
-
-          <div className="mt-8">
-            <h2 className="text-center text-2xl font-semibold tracking-[-0.01em] text-slate-800">
-              What you can do now:
-            </h2>
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <FeatureCard
-                icon={<PlusCircle className="h-6 w-6" />}
-                title="Upload Recipes"
-                description="Create and list your first recipe for sale"
-              />
-              <FeatureCard
-                icon={<LayoutDashboard className="h-6 w-6" />}
-                title="Manage Sales"
-                description="Track earnings and view analytics"
-              />
-              <FeatureCard
-                icon={<Store className="h-6 w-6" />}
-                title="Build Reputation"
-                description="Earn ratings and grow your brand"
-              />
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
               onClick={onGoDashboard}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-600 px-6 py-4 text-base font-semibold text-white shadow-sm hover:bg-teal-700"
+              disabled={isLoading}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-4 text-[15px] font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[240px]"
             >
-              <LayoutDashboard className="h-5 w-5" />
-              Go to Seller Dashboard
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <LayoutDashboard className="h-4 w-4" />
+              )}
+              Go to Dashboard
             </button>
 
             <button
               type="button"
               onClick={onCreateRecipe}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-4 text-base font-semibold text-white shadow-sm hover:bg-emerald-700"
+              disabled={isLoading}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-[15px] font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[240px]"
             >
-              <PlusCircle className="h-5 w-5" />
-              Create Your First Recipe
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <PlusCircle className="h-4 w-4" />
+              )}
+              Create Recipe
             </button>
-          </div>
-
-          <div className="mt-8 rounded-2xl bg-teal-50 px-6 py-5 text-center">
-            <p className="text-[15px] leading-7 text-slate-700">
-              Welcome to the RecipeChain seller community! If you have
-              questions, check out our{" "}
-              <a
-                href="#"
-                className="font-semibold text-teal-700 underline underline-offset-4"
-              >
-                Seller Guide
-              </a>{" "}
-              or{" "}
-              <a
-                href="/contact-us"
-                className="font-semibold text-teal-700 underline underline-offset-4"
-              >
-                contact our team
-              </a>
-              .
-            </p>
           </div>
         </div>
       </main>

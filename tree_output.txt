@@ -1,0 +1,109 @@
+﻿Folder PATH listing
+Volume serial number is 8825-12D8
+C:\USERS\USER\DESKTOP\RECIPECHAIN\RECIPECHAINFRONTENDNEW\RECIPECHAIN---FRONTEND\SRC
++---app
+|   |   globals.css
+|   |   layout.tsx
+|   |   middleware.ts
+|   |   page.tsx
+|   |   
+|   +---(auth)
+|   |   +---login
+|   |   |       page.tsx
+|   |   |       
+|   |   \---signup
+|   |           page.tsx
+|   |           
+|   +---(protected)
+|   |   +---buyer
+|   |   |   |   layout.tsx
+|   |   |   |   
+|   |   |   +---cookbook
+|   |   |   |       page.tsx
+|   |   |   |       
+|   |   |   +---dashboard
+|   |   |   |       layout.tsx
+|   |   |   |       page.tsx
+|   |   |   |       
+|   |   |   +---feedback
+|   |   |   |       page.tsx
+|   |   |   |       
+|   |   |   \---profile
+|   |   |           page.tsx
+|   |   |           
+|   |   \---seller
+|   |       +---dashboard
+|   |       |       layout.tsx
+|   |       |       page.tsx
+|   |       |       
+|   |       +---kyc
+|   |       |       page.tsx
+|   |       |       
+|   |       +---profile
+|   |       |       page.tsx
+|   |       |       
+|   |       +---recipes
+|   |       |       page.tsx
+|   |       |       
+|   |       \---settings
+|   |               page.tsx
+|   |               
+|   +---about
+|   |       page.tsx
+|   |       
+|   +---contact-us
+|   |       page.tsx
+|   |       
+|   +---marketplace
+|   |       page.tsx
+|   |       
+|   +---privacy
+|   |       page.tsx
+|   |       
+|   +---profile
+|   |       page.tsx
+|   |       
+|   +---recipes
+|   |       page.tsx
+|   |       
+|   +---select-role
+|   |       page.tsx
+|   |       
+|   \---terms
+|           page.tsx
+|           
++---components
+|   \---custom
+|       |   ProtectedRoute.tsx
+|       |   
+|       \---seller-kyc
+|               DocumentUploadSection.tsx
+|               LegalAgreementSection.tsx
+|               PersonalDetailsSection.tsx
+|               ReviewNotice.tsx
+|               SellerKycForm.tsx
+|               SubmittedDetailsModal.tsx
+|               UnderReviewView.tsx
+|               VerifiedSuccessView.tsx
+|               
++---context
+|       AuthContext.tsx
+|       
++---lib
+|   |   utils.ts
+|   |   
+|   +---api
+|   |       sellerKyc.ts
+|   |       
+|   +---web3
+|   |       closeWeb3AuthModal.ts
+|   |       getWeb3AuthPrivKey.ts
+|   |       Web3AuthProvider.tsx
+|   |       
+|   \---xrpl
+|           deriveXrpl.ts
+|           getXrplWallet.ts
+|           
+\---types
+        index.ts
+        

@@ -108,7 +108,7 @@ export default function UnderReviewView({
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
             >
               Status: Under Review
-              <span className="text-slate-400">⌄</span>
+              
             </button>
           </div>
         </div>

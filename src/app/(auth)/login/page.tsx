@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { getWeb3AuthPrivateKey } from "@/lib/web3/getWeb3AuthPrivKey";
 import { deriveXrplAddressFromWeb3AuthPrivKey } from "@/lib/xrpl/deriveXrpl";
 import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
+import { getSellerEntryRoute } from "@/lib/getSellerEntryRoute";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,13 +21,14 @@ export default function LoginPage() {
 
   const [error, setError] = useState("");
 
-  const routeByRole = (role: any) => {
-    const target =
-      role === "seller"
-        ? "/seller/kyc"
-        : role === "buyer"
-        ? "/marketplace"
-        : "/select-role";
+  const routeByRole = async (role: any) => {
+    let target = "/select-role";
+
+    if (role === "seller") {
+      target = await getSellerEntryRoute();
+    } else if (role === "buyer") {
+      target = "/marketplace";
+    }
 
     if (typeof window !== "undefined") {
       window.location.replace(target);
@@ -126,7 +128,7 @@ export default function LoginPage() {
       await closeWeb3AuthModal(readyWeb3Auth);
 
       const me = await refreshSession();
-      routeByRole(me?.role);
+      await routeByRole(me?.role);
     } catch (e: any) {
       console.error(e);
       await closeWeb3AuthModal(web3Auth);
@@ -149,20 +151,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="absolute top-8 right-8">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-100 px-4">
+      <div className="absolute right-8 top-8">
         <button
           onClick={() => router.push("/signup")}
           disabled={loading}
-          className="rounded-xl border border-teal-500 px-6 py-3 text-sm font-medium text-teal-600 hover:bg-teal-50 transition"
+          className="rounded-xl border border-teal-500 px-6 py-3 text-sm font-medium text-teal-600 transition hover:bg-teal-50"
         >
           Switch to Sign Up
         </button>
       </div>
 
       <div className="w-full max-w-xl">
-        <div className="bg-white rounded-3xl shadow-2xl px-10 py-12 text-center border border-gray-100">
-          <div className="flex justify-center mb-6">
+        <div className="rounded-3xl border border-gray-100 bg-white px-10 py-12 text-center shadow-2xl">
+          <div className="mb-6 flex justify-center">
             <Image
               src="/Logo.png"
               alt="RecipeChain Logo"
@@ -172,15 +174,15 @@ export default function LoginPage() {
             />
           </div>
 
-          <p className="text-gray-500 text-sm">
+          <p className="text-sm text-gray-500">
             A blockchain-powered recipe marketplace
           </p>
 
-          <h2 className="text-3xl font-bold text-gray-900 mt-8">
+          <h2 className="mt-8 text-3xl font-bold text-gray-900">
             Log in to your Account
           </h2>
 
-          <p className="mt-3 text-gray-500 text-sm">
+          <p className="mt-3 text-sm text-gray-500">
             Welcome back to RecipeChain!
           </p>
 
@@ -194,7 +196,7 @@ export default function LoginPage() {
             onClick={handleLogin}
             disabled={loading}
             className={[
-              "mt-10 w-full rounded-xl py-4 font-semibold text-lg transition shadow-md",
+              "mt-10 w-full rounded-xl py-4 text-lg font-semibold transition shadow-md",
               loading
                 ? "bg-gray-200 text-gray-500"
                 : "bg-teal-600 text-white hover:bg-teal-700",
@@ -211,14 +213,14 @@ export default function LoginPage() {
             New user?{" "}
             <Link
               href="/signup"
-              className="text-teal-600 font-medium hover:underline"
+              className="font-medium text-teal-600 hover:underline"
             >
               Click here to sign up
             </Link>
           </div>
-          <div className="mt-6 border-t border-gray-300"></div>
+          <div className="mt-6 border-t border-gray-300" />
 
-          <div className="mt-6 border-t border-gray-100 pt-6 text-xs text-gray-400 flex justify-center gap-2">
+          <div className="mt-6 flex justify-center gap-2 border-t border-gray-100 pt-6 text-xs text-gray-400">
             <Link href="/privacy" className="hover:text-gray-600">
               Privacy Policy
             </Link>
