@@ -41,7 +41,9 @@ export default function SignupPage() {
     if (web3Auth?.connected) {
       try {
         await web3Auth.logout();
-      } catch {}
+      } catch {
+        // ignore
+      }
     }
 
     await closeWeb3AuthModal(web3Auth);
@@ -115,12 +117,17 @@ export default function SignupPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ walletAddress, mode: "signup" }),
+        body: JSON.stringify({ walletAddress }),
       });
 
       const data = await resp.json().catch(() => null);
 
       if (!resp.ok) {
+        if (resp.status === 409) {
+          setError(data?.message || "Please use your original sign-in method.");
+          return;
+        }
+
         throw new Error(data?.message || "Signup failed");
       }
 
@@ -160,7 +167,7 @@ export default function SignupPage() {
               width={120}
               height={120}
               priority
-              className="h-auto"
+              className="h-auto w-[120px]"
             />
           </div>
 
