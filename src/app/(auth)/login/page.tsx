@@ -93,8 +93,12 @@ export default function LoginPage() {
       await closeWeb3AuthModal(readyWeb3Auth);
 
       const tokenInfo: any = await readyWeb3Auth.getIdentityToken();
+      console.log("Web3Auth tokenInfo:", tokenInfo);
+
       const idToken =
         typeof tokenInfo === "string" ? tokenInfo : tokenInfo?.idToken;
+
+      console.log("Has idToken:", !!idToken);
 
       if (!idToken) {
         throw new Error("Failed to get identity token from Web3Auth");
@@ -171,6 +175,7 @@ export default function LoginPage() {
               width={120}
               height={120}
               priority
+              className="h-auto w-[120px]"
             />
           </div>
 
@@ -218,6 +223,7 @@ export default function LoginPage() {
               Click here to sign up
             </Link>
           </div>
+
           <div className="mt-6 border-t border-gray-300" />
 
           <div className="mt-6 flex justify-center gap-2 border-t border-gray-100 pt-6 text-xs text-gray-400">
