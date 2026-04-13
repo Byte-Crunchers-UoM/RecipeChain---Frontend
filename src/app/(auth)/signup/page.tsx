@@ -24,7 +24,7 @@ export default function SignupPage() {
   const routeByRole = (role: any) => {
     const target =
       role === "seller"
-        ? "/seller/kyc"
+        ? "/seller/dashboard"
         : role === "buyer"
         ? "/marketplace"
         : "/select-role";
@@ -41,9 +41,7 @@ export default function SignupPage() {
     if (web3Auth?.connected) {
       try {
         await web3Auth.logout();
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
 
     await closeWeb3AuthModal(web3Auth);
@@ -131,48 +129,38 @@ export default function SignupPage() {
       const me = await refreshSession();
       routeByRole(me?.role);
     } catch (e: any) {
-      console.error(e);
+      console.error("Signup error:", e);
       await closeWeb3AuthModal(web3Auth);
 
       const msg =
         e?.message || "Failed to create account. Please try again.";
-
-      if (
-        msg.includes("Wallet is not connected") ||
-        msg.includes("Wallet is not ready yet") ||
-        msg.includes("fetch project configurations")
-      ) {
-        setError(
-          "Web3Auth is not ready right now. Please check your internet connection and try again."
-        );
-        return;
-      }
 
       setError(msg);
     }
   };
 
   return (
-    <div className="relative min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="absolute top-8 right-8">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-100 px-4">
+      <div className="absolute right-8 top-8">
         <button
           onClick={() => router.push("/login")}
           disabled={loading}
-          className="rounded-xl border border-teal-500 px-8 py-3 text-sm font-medium text-teal-600 hover:bg-teal-50 transition"
+          className="rounded-xl border border-teal-500 px-8 py-3 text-sm font-medium text-teal-600 transition hover:bg-teal-50"
         >
           Switch to Login
         </button>
       </div>
 
       <div className="w-full max-w-xl">
-        <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 px-12 py-12 text-center">
-          <div className="flex justify-center mb-6">
+        <div className="rounded-3xl border border-gray-100 bg-white px-12 py-12 text-center shadow-2xl">
+          <div className="mb-6 flex justify-center">
             <Image
               src="/Logo.png"
               alt="RecipeChain Logo"
               width={120}
               height={120}
               priority
+              className="h-auto"
             />
           </div>
 
@@ -180,11 +168,11 @@ export default function SignupPage() {
             A blockchain-powered recipe marketplace
           </p>
 
-          <h2 className="text-3xl font-bold text-gray-900 mt-8">
+          <h2 className="mt-8 text-3xl font-bold text-gray-900">
             Create Your Account
           </h2>
 
-          <p className="mt-3 text-gray-500 text-sm">
+          <p className="mt-3 text-sm text-gray-500">
             Join RecipeChain &amp; Buy/Sell Recipes securely.
           </p>
 
@@ -192,9 +180,9 @@ export default function SignupPage() {
             onClick={handleSignup}
             disabled={loading || !agreed}
             className={[
-              "mt-8 w-full rounded-xl py-4 font-medium text-base transition shadow-sm",
+              "mt-8 w-full rounded-xl py-4 text-base font-medium transition shadow-sm",
               loading || !agreed
-                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                ? "cursor-not-allowed bg-gray-200 text-gray-500"
                 : "bg-teal-300 text-white hover:bg-teal-400",
             ].join(" ")}
           >
@@ -229,12 +217,13 @@ export default function SignupPage() {
 
           <div className="mt-10 text-xs text-gray-400">
             <span className="mr-3">🔒</span>
-            A secure blockchain wallet will be created <br className="hidden sm:block" />
+            A secure blockchain wallet will be created
+            <br className="hidden sm:block" />
             automatically after signup.
           </div>
 
           <div className="mt-10 text-xs text-gray-400">
-            No password required &nbsp;•&nbsp; Secured by Web3Auth
+            No password required • Secured by Web3Auth
           </div>
 
           <div className="mt-6 text-sm text-gray-600">
@@ -244,9 +233,9 @@ export default function SignupPage() {
             </Link>
           </div>
 
-          <div className="mt-8 border-t border-gray-300"></div>
+          <div className="mt-8 border-t border-gray-300" />
 
-          <div className="mt-1 border-t border-gray-100 pt-6 text-xs text-gray-400 flex justify-center gap-6">
+          <div className="mt-1 flex justify-center gap-6 border-t border-gray-100 pt-6 text-xs text-gray-400">
             <Link href="/privacy" className="hover:text-gray-600">
               Privacy Policy
             </Link>

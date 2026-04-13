@@ -23,7 +23,7 @@ export default function LoginPage() {
   const routeByRole = (role: any) => {
     const target =
       role === "seller"
-        ? "/seller/kyc"
+        ? "/seller/dashboard"
         : role === "buyer"
         ? "/marketplace"
         : "/select-role";
@@ -40,9 +40,7 @@ export default function LoginPage() {
     if (web3Auth?.connected) {
       try {
         await web3Auth.logout();
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
 
     await closeWeb3AuthModal(web3Auth);
@@ -132,55 +130,44 @@ export default function LoginPage() {
       await closeWeb3AuthModal(web3Auth);
 
       const msg = e?.message || "Login failed. Please try again.";
-
-      if (
-        msg.includes("Wallet is not connected") ||
-        msg.includes("Wallet is not ready yet") ||
-        msg.includes("fetch project configurations")
-      ) {
-        setError(
-          "Web3Auth is not ready right now. Please check your internet connection and try again."
-        );
-        return;
-      }
-
       setError(msg);
     }
   };
 
   return (
-    <div className="relative min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="absolute top-8 right-8">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-100 px-4">
+      <div className="absolute right-8 top-8">
         <button
           onClick={() => router.push("/signup")}
           disabled={loading}
-          className="rounded-xl border border-teal-500 px-6 py-3 text-sm font-medium text-teal-600 hover:bg-teal-50 transition"
+          className="rounded-xl border border-teal-500 px-6 py-3 text-sm font-medium text-teal-600 transition hover:bg-teal-50"
         >
           Switch to Sign Up
         </button>
       </div>
 
       <div className="w-full max-w-xl">
-        <div className="bg-white rounded-3xl shadow-2xl px-10 py-12 text-center border border-gray-100">
-          <div className="flex justify-center mb-6">
+        <div className="rounded-3xl border border-gray-100 bg-white px-10 py-12 text-center shadow-2xl">
+          <div className="mb-6 flex justify-center">
             <Image
               src="/Logo.png"
               alt="RecipeChain Logo"
               width={120}
               height={120}
               priority
+              className="h-auto"
             />
           </div>
 
-          <p className="text-gray-500 text-sm">
+          <p className="text-sm text-gray-500">
             A blockchain-powered recipe marketplace
           </p>
 
-          <h2 className="text-3xl font-bold text-gray-900 mt-8">
+          <h2 className="mt-8 text-3xl font-bold text-gray-900">
             Log in to your Account
           </h2>
 
-          <p className="mt-3 text-gray-500 text-sm">
+          <p className="mt-3 text-sm text-gray-500">
             Welcome back to RecipeChain!
           </p>
 
@@ -194,7 +181,7 @@ export default function LoginPage() {
             onClick={handleLogin}
             disabled={loading}
             className={[
-              "mt-10 w-full rounded-xl py-4 font-semibold text-lg transition shadow-md",
+              "mt-10 w-full rounded-xl py-4 text-lg font-semibold transition shadow-md",
               loading
                 ? "bg-gray-200 text-gray-500"
                 : "bg-teal-600 text-white hover:bg-teal-700",
@@ -211,14 +198,15 @@ export default function LoginPage() {
             New user?{" "}
             <Link
               href="/signup"
-              className="text-teal-600 font-medium hover:underline"
+              className="font-medium text-teal-600 hover:underline"
             >
               Click here to sign up
             </Link>
           </div>
-          <div className="mt-6 border-t border-gray-300"></div>
 
-          <div className="mt-6 border-t border-gray-100 pt-6 text-xs text-gray-400 flex justify-center gap-2">
+          <div className="mt-6 border-t border-gray-300" />
+
+          <div className="mt-6 flex justify-center gap-2 border-t border-gray-100 pt-6 text-xs text-gray-400">
             <Link href="/privacy" className="hover:text-gray-600">
               Privacy Policy
             </Link>
