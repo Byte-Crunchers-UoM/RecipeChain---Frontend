@@ -115,17 +115,17 @@ export default function LoginPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ walletAddress, mode: "login" }),
+        body: JSON.stringify({ walletAddress }),
       });
 
       const data = await resp.json().catch(() => null);
 
-      if (resp.status === 404) {
-        setError(data?.message || "Account not found. Please sign up first.");
-        return;
-      }
-
       if (!resp.ok) {
+        if (resp.status === 409) {
+          setError(data?.message || "Please use your original sign-in method.");
+          return;
+        }
+
         throw new Error(data?.message || "Login failed");
       }
 
@@ -134,7 +134,7 @@ export default function LoginPage() {
       const me = await refreshSession();
       await routeByRole(me?.role);
     } catch (e: any) {
-      console.error(e);
+      console.error("Login error:", e);
       await closeWeb3AuthModal(web3Auth);
 
       const msg = e?.message || "Login failed. Please try again.";
