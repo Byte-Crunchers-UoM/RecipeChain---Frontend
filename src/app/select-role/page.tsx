@@ -20,6 +20,9 @@ type Role = "buyer" | "seller";
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
+const BUYER_HOME = "/buyer/profile";
+const SELLER_HOME = "/seller/kyc";
+
 function RoleCard({
   title,
   description,
@@ -98,12 +101,13 @@ export default function SelectRolePage() {
     }
 
     if (role === "buyer") {
-      router.replace("/");
+      router.replace(BUYER_HOME);
       return;
     }
 
     if (role === "seller") {
-      router.replace("/seller/kyc");
+      router.replace(SELLER_HOME);
+      return;
     }
   }, [isLoading, isAuthenticated, role, router]);
 
@@ -135,7 +139,7 @@ export default function SelectRolePage() {
 
       await refreshSession();
 
-      const target = selectedRole === "seller" ? "/seller/kyc" : "/";
+      const target = selectedRole === "seller" ? SELLER_HOME : BUYER_HOME;
 
       if (typeof window !== "undefined") {
         window.location.replace(target);
@@ -204,11 +208,11 @@ export default function SelectRolePage() {
           <div className="mt-8 grid gap-4 lg:grid-cols-2">
             <RoleCard
               title="Buyer"
-              description="Browse, purchase, and collect blockchain-secured recipes from creators."
+              description="Browse, purchase, save, and manage your blockchain-secured recipe collection."
               features={[
                 "Discover premium recipes from verified chefs",
-                "Save purchased recipes to your collection",
-                "Review, rate, and follow your favorite creators",
+                "Save purchased recipes to your personal cookbook",
+                "Review recipes and build your buyer profile",
               ]}
               icon={ShoppingBag}
               selected={selectedRole === "buyer"}
@@ -234,7 +238,7 @@ export default function SelectRolePage() {
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
               <p className="text-center text-sm leading-6 text-amber-900">
                 This selection is permanent. Your account role cannot be changed after
-                confirmation. Select Your Account Role.
+                confirmation.
               </p>
             </div>
           </div>
@@ -258,7 +262,7 @@ export default function SelectRolePage() {
                 {selectedRole === "seller"
                   ? "Next step: complete seller verification"
                   : selectedRole === "buyer"
-                  ? "Next step: go to the home page"
+                  ? "Next step: open your buyer profile"
                   : "Select one option to continue"}
               </p>
             </div>

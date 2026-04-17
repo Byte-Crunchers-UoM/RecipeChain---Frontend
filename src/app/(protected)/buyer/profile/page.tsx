@@ -1,674 +1,465 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import EditProfileModal from "@/components/buyer/EditProfileModal";
 import {
-  DollarSign,
-  ShoppingBag,
-  Heart,
-  TrendingUp,
-  Pencil,
-  Copy,
-  Shield,
-  Mail,
-  Bell,
-  Trash2,
-  ExternalLink,
-  Upload,
-  X,
-  CheckCircle2,
-} from "lucide-react";
+  deleteMyAccountPermanently,
+  getMyBuyerProfile,
+  updateMyBuyerProfile,
+} from "@/lib/api/buyer";
+import type { BuyerProfile } from "@/types/buyer";
+import { useAuth } from "@/context/AuthContext";
 
-type ActivityItem = {
-  id: string;
-  title: string;
-  date: string;
-  amount: string;
-  type: "Purchase" | "Sale";
-  status: "Completed" | "Pending";
-};
+const XRPL_EXPLORER_BASE =
+  process.env.NEXT_PUBLIC_XRPL_EXPLORER_BASE_URL || "";
 
-type Achievement = {
-  id: string;
-  title: string;
-  subtitle: string;
-  icon: "star" | "zap" | "trophy" | "users";
-  earned?: boolean;
-};
+function formatJoinedYear(dateString?: string) {
+  if (!dateString) return "Recently";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "Recently";
+  return String(date.getFullYear());
+}
+
+function formatWallet(wallet?: string) {
+  if (!wallet) return "Not connected";
+  if (wallet.length <= 12) return wallet;
+  return `${wallet.slice(0, 8)}...${wallet.slice(-6)}`;
+}
+
+function getWalletExplorerUrl(wallet?: string) {
+  if (!wallet || !XRPL_EXPLORER_BASE) return "";
+  return `${XRPL_EXPLORER_BASE.replace(/\/$/, "")}/${wallet}`;
+}
+
+function getInitials(name?: string, email?: string) {
+  const source = String(name || email || "U").trim();
+  return source
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
 
 export default function BuyerProfilePage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { resetAll } = useAuth();
 
-  // Normally these come from your AuthContext + backend
-  const [profile, setProfile] = useState({
-    displayName: "Ashcharya Arts",
-    username: "ashcharya_arts",
-    email: "ashcharya@example.com",
-    verified: true,
-    country: "United States",
-    timezone: "Pacific Time (PT)",
-    currency: "USD ($)",
-    bio:
-      "Passionate about exploring new recipes and sharing culinary experiences on Web3....",
-    memberSince: "2024",
-    tags: ["User", "Top Buyer"],
-    wallet: "0x1234...5678",
-    networks: ["Ethereum Mainnet", "Polygon"],
-    connectionStatus: "Wallet Connected",
-    walletBalanceEth: "2.45 ETH",
-    walletBalanceUsd: "$4,850.00",
-  });
+  const [profile, setProfile] = useState<BuyerProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Stats cards
-  const stats = useMemo(
-    () => [
-      {
-        id: "spent",
-        label: "Total Spent",
-        value: "1.24 ETH",
-        sub: "≈ $2,450",
-        icon: DollarSign,
-        color: "text-green-600",
-        bg: "bg-green-50",
-      },
-      {
-        id: "owned",
-        label: "Recipes Owned",
-        value: "23",
-        sub: "+3 this month",
-        icon: ShoppingBag,
-        color: "text-blue-600",
-        bg: "bg-blue-50",
-      },
-      {
-        id: "fav",
-        label: "Favorites",
-        value: "47",
-        sub: "Saved recipes",
-        icon: Heart,
-        color: "text-pink-600",
-        bg: "bg-pink-50",
-      },
-      {
-        id: "bal",
-        label: "Balance",
-        value: "0.36 ETH",
-        sub: "≈ $712",
-        icon: TrendingUp,
-        color: "text-purple-600",
-        bg: "bg-purple-50",
-      },
-    ],
-    []
-  );
-
-  const activity: ActivityItem[] = [
-    {
-      id: "a1",
-      title: "Spicy Thai Basil Chicken",
-      date: "Jan 2, 2026",
-      amount: "0.05 ETH",
-      type: "Purchase",
-      status: "Completed",
-    },
-    {
-      id: "a2",
-      title: "Chocolate Lava Cake Recipe",
-      date: "Dec 28, 2025",
-      amount: "0.12 ETH",
-      type: "Sale",
-      status: "Completed",
-    },
-    {
-      id: "a3",
-      title: "Homemade Ramen Bowl",
-      date: "Dec 20, 2025",
-      amount: "0.08 ETH",
-      type: "Purchase",
-      status: "Pending",
-    },
-  ];
-
-  const achievements: Achievement[] = [
-    { id: "ach1", title: "Top Buyer", subtitle: "Purchased 20+ recipes", icon: "star", earned: true },
-    { id: "ach2", title: "Early Supporter", subtitle: "Joined in 2024", icon: "zap", earned: true },
-    { id: "ach3", title: "Top Creator", subtitle: "Created 10+ recipes", icon: "trophy", earned: false },
-    { id: "ach4", title: "Community Leader", subtitle: "Verified contributor", icon: "users", earned: false },
-  ];
-
-  // Edit modal
-  const [editOpen, setEditOpen] = useState(false);
-  const modalRef = useRef<HTMLDivElement | null>(null);
-
-  // Editable fields (modal state)
-  const [editForm, setEditForm] = useState({
-    displayName: profile.displayName,
-    username: profile.username,
-    bio: profile.bio,
-  });
+  const shouldAutoOpenEdit = searchParams.get("edit") === "1";
 
   useEffect(() => {
-    // sync modal fields when profile changes or modal opens
-    if (editOpen) {
-      setEditForm({
-        displayName: profile.displayName,
-        username: profile.username,
-        bio: profile.bio,
-      });
-    }
-  }, [editOpen, profile]);
+    let active = true;
 
-  // click outside closes modal
-  useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (!editOpen) return;
-      const target = e.target as Node;
-      if (modalRef.current && !modalRef.current.contains(target)) {
-        setEditOpen(false);
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const data = await getMyBuyerProfile();
+        if (active) setProfile(data);
+      } catch (err) {
+        if (active) {
+          setError(err instanceof Error ? err.message : "Failed to load profile");
+        }
+      } finally {
+        if (active) setLoading(false);
       }
     };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [editOpen]);
 
-  const copyText = async (t: string) => {
-    try {
-      await navigator.clipboard.writeText(t);
-    } catch {
-      // ignore
+    load();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loading && profile && shouldAutoOpenEdit) {
+      setModalOpen(true);
+    }
+  }, [loading, profile, shouldAutoOpenEdit]);
+
+  const initials = useMemo(() => {
+    return getInitials(profile?.display_name, profile?.email);
+  }, [profile?.display_name, profile?.email]);
+
+  const earnedBadges =
+    profile?.badges?.filter((badge) => badge.earned).length || 0;
+
+  const walletExplorerUrl = getWalletExplorerUrl(profile?.wallet_address);
+  const recentActivity = profile?.recent_activity || [];
+  const badges = profile?.badges || [];
+
+  const closeModal = () => {
+    setModalOpen(false);
+
+    if (shouldAutoOpenEdit) {
+      router.replace(pathname, { scroll: false });
     }
   };
 
-  const saveProfile = () => {
-    // ✅ UI fully functional: updates local page state (later call backend)
-    setProfile((p) => ({
-      ...p,
-      displayName: editForm.displayName,
-      username: editForm.username.replace("@", ""),
-      bio: editForm.bio,
-    }));
-    setEditOpen(false);
+  const handleSave = async (payload: {
+    displayName: string;
+    bio: string;
+    profilePhoto?: File | null;
+  }) => {
+    try {
+      setSaving(true);
+      const updated = await updateMyBuyerProfile(payload);
+      setProfile(updated);
+      window.dispatchEvent(new Event("buyer-profile-updated"));
+      closeModal();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const initials = (profile.displayName?.split(" ")?.map((w) => w[0])?.join("") || "AA").slice(0, 2).toUpperCase();
+  const handleCopyWallet = async () => {
+    if (!profile?.wallet_address) return;
+
+    try {
+      await navigator.clipboard.writeText(profile.wallet_address);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      alert("Failed to copy wallet address");
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    const confirmed = window.confirm(
+      "This will permanently delete your buyer account and related buyer data. This action cannot be undone. Do you want to continue?"
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeleteLoading(true);
+      const result = await deleteMyAccountPermanently();
+      alert(result?.message || "Account deleted permanently.");
+      await resetAll();
+      router.replace("/signup");
+    } catch (err) {
+      alert(
+        err instanceof Error ? err.message : "Failed to delete account permanently"
+      );
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8 text-base text-slate-600">
+        Loading buyer profile...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="p-8">
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-600">
+          Buyer profile not found.
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-[1100px]">
-      <h1 className="text-xl font-semibold text-gray-900">My Profile</h1>
+    <div className="mx-auto max-w-[1400px] space-y-5">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Total Spent"
+          value={`${profile.total_spent_xrp.toFixed(2)} XRP`}
+          sub={`${profile.total_purchases} purchases`}
+        />
+        <StatCard
+          label="Recipes Owned"
+          value={String(profile.total_purchases)}
+          sub={`${profile.saved_recipes_count} saved`}
+        />
+        <StatCard
+          label="Reviews Given"
+          value={String(profile.feedback_count)}
+          sub="Community activity"
+        />
+        <StatCard
+          label="Balance"
+          value={`${profile.account_balance.toFixed(2)} XRP`}
+          sub="XRPL wallet balance"
+        />
+      </div>
 
-      {/* Stats */}
-      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s) => {
-          const Icon = s.icon;
-          return (
-            <div key={s.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-              <div className={`h-9 w-9 rounded-xl ${s.bg} flex items-center justify-center`}>
-                <Icon className={s.color} size={18} />
+      <div className="rounded-3xl border bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            {profile.profile_picture ? (
+              <img
+                src={profile.profile_picture}
+                alt={profile.display_name || profile.email}
+                className="h-20 w-20 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-teal-500 text-3xl font-bold text-white">
+                {initials}
               </div>
-              <div className="mt-3 text-xs text-gray-500">{s.label}</div>
-              <div className="mt-1 text-lg font-semibold text-gray-900">{s.value}</div>
-              <div className="mt-1 text-xs text-gray-400">{s.sub}</div>
-            </div>
-          );
-        })}
-      </div>
+            )}
 
-      {/* Profile header card */}
-      <div className="mt-5 bg-white border border-gray-200 rounded-2xl shadow-sm p-5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <div className="h-16 w-16 rounded-full bg-teal-600 text-white flex items-center justify-center text-xl font-bold">
-              {initials}
-            </div>
-            <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-white rounded-full flex items-center justify-center border border-gray-200">
-              <CheckCircle2 className="text-teal-600" size={16} />
-            </div>
-          </div>
-
-          <div>
-            <div className="font-semibold text-gray-900">{profile.displayName}</div>
-            <div className="text-sm text-gray-500">
-              Web3 food lover • Member since {profile.memberSince}
-            </div>
-
-            <div className="mt-2 flex items-center gap-2 flex-wrap">
-              {profile.tags.map((t) => (
-                <span
-                  key={t}
-                  className={[
-                    "px-3 py-1 rounded-full text-xs font-medium",
-                    t === "Top Buyer" ? "bg-purple-50 text-purple-700" : "bg-teal-50 text-teal-700",
-                  ].join(" ")}
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setEditOpen(true)}
-          className="rounded-xl bg-teal-600 text-white px-4 py-2 text-sm font-medium hover:bg-teal-700 transition flex items-center gap-2"
-        >
-          <Pencil size={16} />
-          Edit Profile
-        </button>
-      </div>
-
-      {/* Two-column cards */}
-      <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Account Details */}
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5">
-          <div className="text-sm font-semibold text-gray-900">Account Details</div>
-
-          <div className="mt-4 space-y-4 text-sm">
-            <Row label="Username" value={`@${profile.username}`} rightIcon={<CopyButton onClick={() => copyText(`@${profile.username}`)} />} />
-            <Row
-              label="Email Address"
-              value={
-                <span className="flex items-center gap-2">
-                  {profile.email}
-                  {profile.verified && (
-                    <span className="flex items-center gap-1 text-xs text-teal-700">
-                      <CheckCircle2 size={14} className="text-teal-600" />
-                      Verified
-                    </span>
-                  )}
-                </span>
-              }
-              rightIcon={<CopyButton onClick={() => copyText(profile.email)} />}
-            />
-            <Row label="Country" value={profile.country} />
-            <Row label="Time Zone" value={profile.timezone} />
-            <Row label="Preferred Currency" value={profile.currency} />
             <div>
-              <div className="text-xs text-gray-500">Bio</div>
-              <div className="mt-1 text-gray-900 leading-6">
-                {profile.bio}{" "}
-                <button className="text-teal-600 text-xs hover:underline">
-                  View more ▾
-                </button>
+              <h2 className="text-2xl font-semibold text-slate-900">
+                {profile.display_name || profile.email}
+              </h2>
+              <p className="text-slate-500">
+                XRPL buyer • Member since {formatJoinedYear(profile.joined_at)}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span className="rounded-full bg-teal-50 px-3 py-1 text-sm font-medium text-teal-700">
+                  Buyer
+                </span>
+                {profile.total_purchases >= 10 ? (
+                  <span className="rounded-full bg-purple-50 px-3 py-1 text-sm font-medium text-purple-700">
+                    Top Buyer
+                  </span>
+                ) : null}
               </div>
             </div>
           </div>
 
-          <div className="mt-4 text-xs text-gray-400 flex items-center gap-2">
-            <Shield size={14} className="text-gray-400" />
-            Some details are synced from your Web3 login provider.
-          </div>
-        </div>
-
-        {/* Wallet & Security */}
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5">
-          <div className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-            <Shield size={16} className="text-teal-600" />
-            Wallet &amp; Security
-          </div>
-
-          <div className="mt-4 bg-gray-50 border border-gray-200 rounded-2xl p-4">
-            <div className="text-xs text-gray-500">Connected Wallet</div>
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <div className="text-sm text-gray-900">{profile.wallet}</div>
-              <CopyButton onClick={() => copyText(profile.wallet)} />
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <div className="text-xs text-gray-500">Network</div>
-            <div className="mt-2 flex gap-2 flex-wrap">
-              {profile.networks.map((n) => (
-                <span key={n} className="px-3 py-1 rounded-full text-xs bg-purple-50 text-purple-700 border border-purple-100">
-                  {n}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <div className="text-xs text-gray-500">Connection Status</div>
-            <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs bg-green-50 text-green-700 border border-green-100">
-              <span className="h-2 w-2 rounded-full bg-green-600" />
-              {profile.connectionStatus}
-            </div>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            <button className="w-full rounded-xl bg-teal-600 text-white py-3 text-sm font-medium hover:bg-teal-700 transition">
-              Navigate to Wallet
-            </button>
-            <button className="w-full rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition flex items-center justify-center gap-2">
-              <ExternalLink size={16} />
-              Manage Web3 Auth &amp; Devices
-            </button>
-          </div>
-
-          <div className="mt-5 flex items-center justify-between text-sm">
-            <div className="text-gray-500">Wallet Balance</div>
-            <div className="text-gray-900 font-medium">{profile.walletBalanceEth}</div>
-          </div>
-          <div className="mt-2 flex items-center justify-between text-sm">
-            <div className="text-gray-500">≈ USD Value</div>
-            <div className="text-gray-900 font-medium">{profile.walletBalanceUsd}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Security & Privacy + Activity */}
-      <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Security & Privacy */}
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5">
-          <div className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-            <Shield size={16} className="text-teal-600" />
-            Security &amp; Privacy
-          </div>
-
-          <div className="mt-4 space-y-3">
-            <ActionRow
-              icon={<Mail className="text-slate-600" size={18} />}
-              title="Change Email"
-              subtitle="Update your email address"
-              action="Manage"
-            />
-            <ActionRow
-              icon={<Bell className="text-slate-600" size={18} />}
-              title="Notifications"
-              subtitle="Manage email and push notifications"
-              action="Configure"
-            />
-            <ActionRow
-              danger
-              icon={<Trash2 className="text-red-600" size={18} />}
-              title="Delete Account"
-              subtitle="Permanently delete your account"
-              action="Request"
-            />
-          </div>
-        </div>
-
-        {/* Activity */}
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5">
-          <div className="text-sm font-semibold text-gray-900">Activity</div>
-          <div className="mt-2 text-xs text-gray-500">
-            You have <span className="text-teal-700 font-medium">12 recipe purchases</span> and{" "}
-            <span className="text-teal-700 font-medium">3 sales</span>
-          </div>
-
-          <div className="mt-4 space-y-3">
-            {activity.map((a) => (
-              <div key={a.id} className="border border-gray-200 rounded-2xl p-4 flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-gray-900 truncate">{a.title}</div>
-                  <div className="mt-1 text-xs text-gray-500">
-                    {a.date} • {a.amount} •{" "}
-                    <span className={a.type === "Purchase" ? "text-blue-600" : "text-purple-600"}>
-                      {a.type}
-                    </span>
-                  </div>
-                </div>
-
-                <span
-                  className={[
-                    "px-3 py-1 rounded-full text-xs font-medium border",
-                    a.status === "Completed"
-                      ? "bg-green-50 text-green-700 border-green-100"
-                      : "bg-yellow-50 text-yellow-700 border-yellow-100",
-                  ].join(" ")}
-                >
-                  {a.status}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <button className="mt-4 w-full rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
-            View Transaction History →
+          <button
+            onClick={() => setModalOpen(true)}
+            className="rounded-2xl bg-teal-600 px-5 py-3 text-white hover:bg-teal-700"
+          >
+            Edit Profile
           </button>
         </div>
       </div>
 
-      {/* Achievements */}
-      <div className="mt-5 lg:ml-[calc(50%+10px)]">
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-semibold text-gray-900">Achievements</div>
-            <div className="text-xs text-gray-500">
-              {achievements.filter((a) => a.earned).length} of {achievements.length} earned
-            </div>
-          </div>
+      <div className="grid gap-5 xl:grid-cols-[1.15fr_1fr]">
+        <div className="space-y-5">
+          <SectionCard title="Account Details">
+            <DetailRow
+              label="Display Name"
+              value={profile.display_name || profile.email}
+            />
+            <DetailRow label="Email Address" value={profile.email || "-"} />
+            <DetailRow
+              label="Wallet Address"
+              value={formatWallet(profile.wallet_address)}
+            />
+            <DetailRow label="Preferred Network" value="XRPL" />
+            <DetailRow
+              label="Bio"
+              value={profile.bio || "No bio added yet"}
+              multiline
+            />
+          </SectionCard>
 
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {achievements.map((a) => (
-              <div
-                key={a.id}
-                className={[
-                  "rounded-2xl border p-4",
-                  a.earned ? "border-teal-200 bg-teal-50" : "border-gray-200 bg-white",
-                ].join(" ")}
+          <SectionCard title="Wallet & Security">
+            <DetailRow
+              label="Connected Wallet"
+              value={formatWallet(profile.wallet_address)}
+            />
+            <DetailRow label="Network" value="XRP Ledger (XRPL)" />
+            <DetailRow
+              label="Connection Status"
+              value={profile.wallet_address ? "Wallet Connected" : "Not Connected"}
+            />
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={handleCopyWallet}
+                disabled={!profile.wallet_address}
+                className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <div className="flex items-start justify-between">
-                  <div className="h-10 w-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
-                    <span className="text-sm">{iconFor(a.icon)}</span>
-                  </div>
-                  {a.earned && (
-                    <span className="h-6 w-6 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs">
-                      ✓
+                {copied ? "Copied" : "Copy Wallet Address"}
+              </button>
+
+              {walletExplorerUrl ? (
+                <a
+                  href={walletExplorerUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-2xl border border-slate-200 px-4 py-3 text-center text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Open in Explorer
+                </a>
+              ) : (
+                <div className="rounded-2xl border border-slate-200 px-4 py-3 text-center text-sm text-slate-400">
+                  Explorer URL not configured
+                </div>
+              )}
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Security & Privacy">
+            <DetailRow label="Email" value={profile.email || "-"} />
+            <DetailRow label="Role" value={profile.role || "buyer"} />
+
+            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4">
+              <p className="text-sm text-red-700">
+                Permanently delete this account and related buyer data.
+              </p>
+              <button
+                type="button"
+                onClick={handlePermanentDelete}
+                disabled={deleteLoading}
+                className="mt-3 rounded-2xl bg-red-600 px-4 py-3 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {deleteLoading ? "Deleting..." : "Delete Account Permanently"}
+              </button>
+            </div>
+          </SectionCard>
+        </div>
+
+        <div className="space-y-5">
+          <SectionCard title="Activity">
+            <div className="mb-4 text-sm text-slate-500">
+              You have {profile.total_purchases} purchases and {profile.feedback_count} reviews.
+            </div>
+
+            <div className="space-y-3">
+              {recentActivity.length === 0 ? (
+                <p className="text-slate-500">No recent buyer activity yet.</p>
+              ) : (
+                recentActivity.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between rounded-2xl border px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-medium text-slate-800">{item.title}</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(item.date).toLocaleDateString()} •{" "}
+                        {item.amount_xrp.toFixed(2)} XRP • Purchase
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-sm ${
+                        item.status === "completed"
+                          ? "bg-green-50 text-green-700"
+                          : "bg-yellow-50 text-yellow-700"
+                      }`}
+                    >
+                      {item.status}
                     </span>
-                  )}
+                  </div>
+                ))
+              )}
+            </div>
+          </SectionCard>
+
+          <SectionCard title={`Achievements (${earnedBadges} earned)`}>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {badges.map((badge) => (
+                <div
+                  key={badge.key}
+                  className={`rounded-2xl border p-4 ${
+                    badge.earned
+                      ? "border-teal-500 bg-teal-50"
+                      : "border-slate-200 bg-slate-50 opacity-70"
+                  }`}
+                >
+                  <p className="font-semibold text-slate-800">{badge.title}</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {badge.description}
+                  </p>
+                  <p
+                    className={`mt-3 text-sm font-medium ${
+                      badge.earned ? "text-teal-700" : "text-slate-400"
+                    }`}
+                  >
+                    {badge.earned ? "Earned" : "Locked"}
+                  </p>
                 </div>
-                <div className="mt-3 text-sm font-semibold text-gray-900">{a.title}</div>
-                <div className="mt-1 text-xs text-gray-500">{a.subtitle}</div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </SectionCard>
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
-      {editOpen && (
-        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center px-4">
-          <div
-            ref={modalRef}
-            className="w-full max-w-xl bg-white rounded-2xl shadow-xl overflow-hidden"
-          >
-            {/* Header */}
-            <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
-              <div className="text-xl font-semibold text-gray-900">Edit Profile</div>
-              <button
-                onClick={() => setEditOpen(false)}
-                className="h-10 w-10 rounded-xl hover:bg-gray-50 flex items-center justify-center"
-                aria-label="Close"
-              >
-                <X className="text-gray-500" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="px-4 py-4">
-              <div className="text-base font-medium text-gray-900">Profile Picture</div>
-
-              <div className="mt-5 flex items-center gap-6">
-                <div className="h-10 w-10 rounded-full bg-teal-600 text-white flex items-center justify-center text-xl font-bold">
-                  {initials}
-                </div>
-
-                <button className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-medium text-gray-800 hover:bg-gray-50 transition flex items-center gap-2">
-                  <Upload size={18} />
-                  Upload New Photo
-                </button>
-              </div>
-
-              <div className="mt-8 space-y-6">
-                <Field
-                  label="Display Name"
-                  value={editForm.displayName}
-                  onChange={(v) => setEditForm((s) => ({ ...s, displayName: v }))}
-                />
-                <Field
-                  label="Username"
-                  value={`@${editForm.username.replace("@", "")}`}
-                  onChange={(v) =>
-                    setEditForm((s) => ({
-                      ...s,
-                      username: v.replace("@", ""),
-                    }))
-                  }
-                />
-                <TextArea
-                  label="Bio"
-                  value={editForm.bio}
-                  onChange={(v) => setEditForm((s) => ({ ...s, bio: v }))}
-                />
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between">
-              <button
-                onClick={() => setEditOpen(false)}
-                className="rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-medium hover:bg-gray-50 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveProfile}
-                className="rounded-xl bg-teal-600 text-white px-8 py-3 text-sm font-medium hover:bg-teal-700 transition shadow-sm"
-              >
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EditProfileModal
+        open={modalOpen}
+        profile={profile}
+        isSaving={saving}
+        onClose={closeModal}
+        onSave={handleSave}
+      />
     </div>
   );
 }
 
-/* ---------- Small Components ---------- */
-
-function Row({
+function StatCard({
   label,
   value,
-  rightIcon,
+  sub,
 }: {
   label: string;
-  value: any;
-  rightIcon?: React.ReactNode;
+  value: string;
+  sub: string;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <div className="text-xs text-gray-500">{label}</div>
-        <div className="mt-1 text-gray-900">{value}</div>
-      </div>
-      {rightIcon ? <div className="mt-5">{rightIcon}</div> : null}
+    <div className="rounded-3xl border bg-white p-5 shadow-sm">
+      <p className="text-sm text-slate-500">{label}</p>
+      <p className="mt-2 text-3xl font-semibold text-slate-900">{value}</p>
+      <p className="mt-2 text-sm text-slate-400">{sub}</p>
     </div>
   );
 }
 
-function CopyButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="h-9 w-9 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition flex items-center justify-center"
-      aria-label="Copy"
-      type="button"
-    >
-      <Copy size={16} className="text-gray-600" />
-    </button>
-  );
-}
-
-function ActionRow({
-  icon,
+function SectionCard({
   title,
-  subtitle,
-  action,
-  danger,
+  children,
 }: {
-  icon: React.ReactNode;
   title: string;
-  subtitle: string;
-  action: string;
-  danger?: boolean;
+  children: React.ReactNode;
 }) {
   return (
-    <div
-      className={[
-        "rounded-2xl border p-4 flex items-center justify-between gap-4",
-        danger ? "border-red-200 bg-red-50/40" : "border-gray-200 bg-white",
-      ].join(" ")}
-    >
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="h-10 w-10 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <div className={["text-sm font-semibold truncate", danger ? "text-red-700" : "text-gray-900"].join(" ")}>
-            {title}
-          </div>
-          <div className="text-xs text-gray-500 truncate">{subtitle}</div>
-        </div>
-      </div>
-
-      <button
-        className={[
-          "text-sm font-medium",
-          danger ? "text-red-600 hover:underline" : "text-teal-600 hover:underline",
-        ].join(" ")}
-      >
-        {action} →
-      </button>
+    <div className="rounded-3xl border bg-white p-6 shadow-sm">
+      <h3 className="mb-4 text-xl font-semibold text-slate-900">{title}</h3>
+      {children}
     </div>
   );
 }
 
-function Field({
+function DetailRow({
   label,
   value,
-  onChange,
+  multiline = false,
 }: {
   label: string;
   value: string;
-  onChange: (v: string) => void;
+  multiline?: boolean;
 }) {
   return (
-    <div>
-      <div className="text-sm font-medium text-gray-800">{label}</div>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-2 w-full rounded-2xl border border-gray-200 px-5 py-4 outline-none focus:ring-2 focus:ring-teal-200"
-      />
+    <div className="mb-4">
+      <p className="text-sm text-slate-500">{label}</p>
+      <p className={`mt-1 text-slate-800 ${multiline ? "whitespace-pre-wrap" : ""}`}>
+        {value}
+      </p>
     </div>
   );
-}
-
-function TextArea({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div>
-      <div className="text-sm font-medium text-gray-800">{label}</div>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-2 w-full min-h-[140px] rounded-2xl border border-gray-200 px-5 py-4 outline-none focus:ring-2 focus:ring-teal-200"
-      />
-    </div>
-  );
-}
-
-function iconFor(k: Achievement["icon"]) {
-  if (k === "star") return "⭐";
-  if (k === "zap") return "⚡";
-  if (k === "trophy") return "🏆";
-  return "👥";
 }

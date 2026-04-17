@@ -12,6 +12,8 @@ import { getXrplWalletFromWeb3AuthPrivKey } from "@/lib/xrpl/getXrplWallet";
 import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
 import { getSellerEntryRoute } from "@/lib/getSellerEntryRoute";
 
+const BUYER_HOME = "/buyer/profile";
+
 export default function SignupPage() {
   const router = useRouter();
   const { refreshSession, resetAll } = useAuth();
@@ -28,7 +30,7 @@ export default function SignupPage() {
     if (role === "seller") {
       target = await getSellerEntryRoute();
     } else if (role === "buyer") {
-      target = "/marketplace";
+      target = BUYER_HOME;
     }
 
     if (typeof window !== "undefined") {
@@ -147,12 +149,39 @@ export default function SignupPage() {
       });
 
       if (!resp.ok) {
+        if (resp.status === 409) {
+          throw new Error(
+            data?.message || "Please use your original sign-in method."
+          );
+        }
+
         throw new Error(data?.message || "Signup failed");
       }
 
       await closeWeb3AuthModal(readyWeb3Auth);
 
       const me = await refreshSession();
+
+      if (me?.role === "buyer") {
+        if (typeof window !== "undefined") {
+          window.location.replace(BUYER_HOME);
+          return;
+        }
+        router.replace(BUYER_HOME);
+        return;
+      }
+
+      if (me?.role === "seller") {
+        const sellerTarget = await getSellerEntryRoute();
+
+        if (typeof window !== "undefined") {
+          window.location.replace(sellerTarget);
+          return;
+        }
+        router.replace(sellerTarget);
+        return;
+      }
+
       await routeByRole(me?.role);
     } catch (e: any) {
       console.error("Signup error:", e);

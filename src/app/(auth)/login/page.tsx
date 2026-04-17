@@ -12,6 +12,8 @@ import { deriveXrplAddressFromWeb3AuthPrivKey } from "@/lib/xrpl/deriveXrpl";
 import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
 import { getSellerEntryRoute } from "@/lib/getSellerEntryRoute";
 
+const BUYER_HOME = "/buyer/profile";
+
 export default function LoginPage() {
   const router = useRouter();
   const { refreshSession, resetAll } = useAuth();
@@ -27,7 +29,7 @@ export default function LoginPage() {
     if (role === "seller") {
       target = await getSellerEntryRoute();
     } else if (role === "buyer") {
-      target = "/marketplace";
+      target = BUYER_HOME;
     }
 
     if (typeof window !== "undefined") {
@@ -132,6 +134,29 @@ export default function LoginPage() {
       await closeWeb3AuthModal(readyWeb3Auth);
 
       const me = await refreshSession();
+
+      // If role already exists, go directly to the correct page
+      if (me?.role === "buyer") {
+        if (typeof window !== "undefined") {
+          window.location.replace(BUYER_HOME);
+          return;
+        }
+        router.replace(BUYER_HOME);
+        return;
+      }
+
+      if (me?.role === "seller") {
+        const sellerTarget = await getSellerEntryRoute();
+
+        if (typeof window !== "undefined") {
+          window.location.replace(sellerTarget);
+          return;
+        }
+        router.replace(sellerTarget);
+        return;
+      }
+
+      // No role yet -> role selection page
       await routeByRole(me?.role);
     } catch (e: any) {
       console.error("Login error:", e);

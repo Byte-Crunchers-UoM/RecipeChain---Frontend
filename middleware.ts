@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const BUYER_HOME = "/buyer/profile";
+const SELLER_HOME = "/seller/kyc";
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -27,18 +30,31 @@ export function middleware(request: NextRequest) {
     if (pathname.startsWith("/select-role") && !role) {
       return NextResponse.next();
     }
-    if (role === "seller") return NextResponse.redirect(new URL("/seller/dashboard", request.url));
-    if (role === "buyer") return NextResponse.redirect(new URL("/buyer/dashboard", request.url));
+
+    if (role === "seller") {
+      return NextResponse.redirect(new URL(SELLER_HOME, request.url));
+    }
+
+    if (role === "buyer") {
+      return NextResponse.redirect(new URL(BUYER_HOME, request.url));
+    }
+
     return NextResponse.redirect(new URL("/select-role", request.url));
   }
 
   // Role-based access for protected routes
   if (isSellerRoute && role !== "seller") {
-    return NextResponse.redirect(new URL("/buyer/dashboard", request.url));
+    if (role === "buyer") {
+      return NextResponse.redirect(new URL(BUYER_HOME, request.url));
+    }
+    return NextResponse.redirect(new URL("/select-role", request.url));
   }
 
   if (isBuyerRoute && role !== "buyer") {
-    return NextResponse.redirect(new URL("/seller/dashboard", request.url));
+    if (role === "seller") {
+      return NextResponse.redirect(new URL(SELLER_HOME, request.url));
+    }
+    return NextResponse.redirect(new URL("/select-role", request.url));
   }
 
   return NextResponse.next();
