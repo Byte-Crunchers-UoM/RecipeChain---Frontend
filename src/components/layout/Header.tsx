@@ -4,16 +4,17 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, Bell, ShoppingCart, User } from 'lucide-react';
-//port { useRecipeFilterContext } from '@/lib/context/RecipeFilterContext';
 import { SearchBar } from './marcketplace/SearchBar';
+import { usePathname } from 'next/navigation';
+import CartBadge from '../recipe/CartBadge';
 interface HeaderProps {
   cartCount?: number;
   notificationCount?: number;
 }
-
 export default function Header({ cartCount = 0, notificationCount = 0 }: HeaderProps) {
-  const [searchQuery, setSearchQuery] = useState('');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const pathname = usePathname();
+  const isMarcketplace = pathname === '/recipes'
 
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm">
@@ -27,9 +28,13 @@ export default function Header({ cartCount = 0, notificationCount = 0 }: HeaderP
         </div>
 
         {/* Search Bar */}
-        <div className="flex-1 max-w-lg mx-8">
-        <SearchBar />
-      </div>
+        {
+          isMarcketplace &&
+          <div className="flex-1 max-w-lg mx-8">
+           <SearchBar />
+          </div>
+        }
+        
 
         {/* Right Side Icons */}
         <div className="flex items-center gap-6">
@@ -44,14 +49,8 @@ export default function Header({ cartCount = 0, notificationCount = 0 }: HeaderP
           </button>
 
           {/* Shopping Cart */}
-          <button className="relative text-gray-600 hover:text-teal-500 transition-colors">
-            <ShoppingCart className="w-6 h-6" />
-            {cartCount > 0 && (
-              <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {cartCount}
-              </span>
-            )}
-          </button>
+         
+          <CartBadge/>
 
           {/* Profile Button */}
           <div className="relative">

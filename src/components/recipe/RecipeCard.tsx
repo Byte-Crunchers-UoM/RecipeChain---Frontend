@@ -1,3 +1,4 @@
+"use client";
 import Image from 'next/image';
 import Link from 'next/link'; // Standard for navigation
 import { Clock, Users, ChefHat, Star, ArrowRight } from 'lucide-react';

@@ -10,10 +10,6 @@ interface MarcketplaceProps {
   Recipe: Recipe;
 }
 
-const CATEGORIES = ['All Recipes', 'Breakfast', 'Lunch', 'Dinner', 'Desserts'];
-
-
-
 export default function MarketplacePage({Recipe}:MarcketplaceProps) {
   const [activeCategory, setActiveCategory] = useState('All Recipes');
   const { recipes, setRecipes, isLoading, setIsLoading } = useRecipeFilterContext();
@@ -42,27 +38,7 @@ export default function MarketplacePage({Recipe}:MarcketplaceProps) {
   }, []);
   return (
     <div className="w-full p-8 bg-white min-h-screen">
-      
-      {/* --- TOP SECTION: Tabs & Header Controls --- */}
-      <div className="mb-8">
-        <div className="flex flex-wrap gap-2 mb-8">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`
-                px-5 py-2 rounded-full text-xs font-bold transition-all duration-200
-                ${activeCategory === cat
-                  ? 'bg-[#009F7F] text-white shadow-md shadow-emerald-100'
-                  : 'bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                }
-              `}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       {/* --- MAIN CONTENT: Recipe Grid --- */}
       <section>

@@ -12,7 +12,6 @@ import {
   type LucideIcon
 } from 'lucide-react'
 import { MarketplaceFilters } from './marcketplace/MarcketplaceFilters' 
-import { useRecipeFilterContext } from '@/lib/context/RecipeFilterContext'
 
 type MenuItem = {
   label: string
@@ -29,12 +28,17 @@ const menuItems: MenuItem[] = [
   { label: 'Profile', path: '/profile', icon: User }
 ]
 
-
-
 export default function Sidebar() {
   const pathname = usePathname()
-  const { hasFilter, toggleFilter, clearFilters, applyFilters, isFiltering } = useRecipeFilterContext();
+  
+  // 1. Hide the entire sidebar if we are on the Home page
+  if (pathname === '/') {
+    return null;
+  }
+
+  // 2. Otherwise, calculate states for the current page
   const isMarketplace = pathname === '/recipes'
+
   return (
     <aside className="w-72 h-screen bg-white border-r border-gray-100 flex flex-col sticky top-0 left-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200">
       
@@ -48,14 +52,12 @@ export default function Sidebar() {
             <Link
               key={item.path}
               href={item.path}
-              
               className={`w-full h-13 flex items-center rounded-xl transition-all duration-200 group border-l-[5px]
                 ${isActive 
                   ? 'bg-[#E0F2F1] text-[#00897B] font-bold border-[#00897B]' 
                   : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium border-transparent'}
               `}            >
-              
-              <div className="flex items-center gap-3 pl-4 pr-4 h-full w-full">
+              <div className="flex items-center gap-3 pl-4 pr-4 h-full w-full py-3">
                 <Icon 
                   size={22} 
                   strokeWidth={isActive ? 2.5 : 2}
@@ -73,14 +75,7 @@ export default function Sidebar() {
         <>
           <div className="mx-4 border-t border-gray-100 my-2"></div>
           <div className="px-4 py-4 animate-in fade-in duration-300">
-            
-            <MarketplaceFilters 
-              hasFilter={hasFilter}
-              toggleFilter={toggleFilter}
-              clearFilters={clearFilters}
-              applyFilters={applyFilters}
-              isFiltering={isFiltering}
-            />
+            <MarketplaceFilters />
           </div>
         </>
       )}

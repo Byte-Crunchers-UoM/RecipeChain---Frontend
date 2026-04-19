@@ -8,7 +8,8 @@ import { searchRecipes } from '@/services/recipeService';
 export function SearchBar() {
   const [text, setText] = useState('');
   const { setRecipes, setIsLoading, applyFilters } = useRecipeFilterContext();
-    const isFirstRender = useRef(true);
+  const isFirstRender = useRef(true);
+
 
   useEffect(() => {
     if (isFirstRender.current) {

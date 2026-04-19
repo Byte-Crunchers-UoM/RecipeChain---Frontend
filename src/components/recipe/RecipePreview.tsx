@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { Recipe } from '@/lib/types/Recipe';
 import { Flame, Clock, Coins, Users, Star } from 'lucide-react';
+import SaveRecipeButton from './SaveRecipeButton';
 
 interface RecipeModalProps {
   isOpen: boolean;
@@ -14,8 +15,7 @@ interface RecipeModalProps {
 
 export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
   const [mounted, setMounted] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -33,19 +33,6 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
       document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {      
-      setIsSaved(true);
-      // Reset after 2 seconds
-      setTimeout(() => setIsSaved(false), 2000);
-    } catch (error) {
-      console.error('Failed to save recipe:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   // Safety check: if no recipe is provided, don't render the modal content
   if (!mounted || !isOpen || !recipe) return null;
@@ -193,36 +180,12 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
             <div className="flex gap-3 sticky bottom-0 pt-4 bg-linear-to-t from-white via-white to-transparent backdrop-blur-sm border-t border-gray-100">
               <button 
                 className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl transition shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSaving}
+                disabled={isUnlocking}
               >
-                {isSaving ? 'Unlocking...' : `Unlock Recipe for ${recipe.priceXrp || 0} XRP`}
+                {isUnlocking ? 'Unlocking...' : `Unlock Recipe for ${recipe.priceXrp || 0} XRP`}
               </button>
               
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className={`px-6 py-3 rounded-xl font-semibold transition shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                  isSaved
-                    ? 'bg-green-100 text-green-700 border border-green-300'
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300'
-                }`}
-              >
-                {isSaved ? (
-                  <>
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    Saved
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h6a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" />
-                    </svg>
-                    Save
-                  </>
-                )}
-              </button>
+              <SaveRecipeButton recipe={recipe} />
             </div>
           </div>
         </div>
