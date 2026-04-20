@@ -30,18 +30,22 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
     const toggleCart = () => setIsOpen((prev) => !prev);
     const closeCart = () => setIsOpen(false);
 
-    // Load cart on mount
+    // Load cart on mount (gracefully handles failures)
     useEffect(()=>{
         if(!isAuthenticated || !userId || !token) return;
         const loadCart = async () =>{
             setIsLoading(true);
+            setError(null);
             try{
                 const recipes = await fetchCart(userId, token);
                 setCartItems(recipes || []);
-                setError(null);
-            }catch (error){
-                console.error("Failed to load recipe cart:", error);
-                setError("Failed to load cart");
+            } catch (error){
+                // Log error but don't break the app
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                console.warn("Warning: Could not load saved recipes from server:", errorMessage);
+                // Don't set error state for fetch failures - let user continue using the app
+                // Cart will be empty until server recovers
+                setCartItems([]);
             } finally {
                 setIsLoading(false);
             }
@@ -61,6 +65,7 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
 
             // Prevent duplicate saves
             if (cartItems.find((item) => item.recipe_id === recipe.recipe_id)) {
+                setError("Recipe already in cart");
                 return;
             }
 
@@ -71,8 +76,9 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
             setCartItems((prev) => [...prev, recipe]);
             setIsOpen(true); // Pop open the cart to show the user it worked
         } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to add recipe to cart';
             console.error("Failed to add recipe to cart:", err);
-            setError("Failed to add recipe to cart");
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -94,8 +100,9 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
             // Update local state
             setCartItems((prev) => prev.filter((item) => item.recipe_id !== recipe_id));
         } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to remove recipe from cart';
             console.error("Failed to remove recipe from cart:", err);
-            setError("Failed to remove recipe from cart");
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
