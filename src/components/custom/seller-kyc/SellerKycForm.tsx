@@ -39,7 +39,7 @@ import {
 
 type FormState = {
   fullName: string;
-  dateOfBirth: string; // YYYY-MM-DD
+  dateOfBirth: string;
   nationality: string;
   address: string;
   phoneNo: string;
@@ -61,6 +61,27 @@ type DateParts = {
   month: string;
   year: string;
 };
+
+type SubmittedDetails = {
+  fullName?: string;
+  dateOfBirth?: string;
+  nationality?: string;
+  address?: string;
+  phoneNo?: string;
+  nicNo?: string;
+  walletAddress?: string;
+  idFileName?: string;
+  idDocumentFrontUrl?: string;
+  idDocumentBackUrl?: string;
+  idDocumentFrontName?: string;
+  idDocumentBackName?: string;
+};
+
+type DuplicateIdentityWarning = {
+  field?: "nicNo" | "phoneNo";
+  status?: "pending" | "rejected" | "approved";
+  message?: string;
+} | null;
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
@@ -427,13 +448,160 @@ function FieldError({ message }: { message?: string }) {
   return <p className="mt-1.5 text-xs text-[#D64545]">{message}</p>;
 }
 
+function isPreviewableImage(file: File | null) {
+  return !!file && file.type.startsWith("image/");
+}
+
+function getReadableFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function DocumentUploadCard({
+  title,
+  subtitle,
+  file,
+  previewUrl,
+  error,
+  isDragging,
+  highlighted,
+  onClick,
+  onRemove,
+  onDragEnter,
+  onDragLeave,
+  onDragOver,
+  onDrop,
+}: {
+  title: string;
+  subtitle: string;
+  file: File | null;
+  previewUrl: string;
+  error?: string;
+  isDragging: boolean;
+  highlighted: boolean;
+  onClick: () => void;
+  onRemove: () => void;
+  onDragEnter: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDrop: (e: React.DragEvent<HTMLDivElement>) => void;
+}) {
+  const isImage = !!file && file.type.startsWith("image/");
+  const isPdf = !!file && file.type === "application/pdf";
+
+  return (
+    <div>
+      <label className="mb-2 block text-[13px] font-medium text-[#475467]">
+        {title} <span className="text-[#FF5A5F]">*</span>
+      </label>
+
+      <div
+        onClick={onClick}
+        onDragEnter={onDragEnter}
+        onDragLeave={onDragLeave}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        className={[
+          "cursor-pointer rounded-[14px] border border-dashed bg-white p-4 transition",
+          highlighted
+            ? "border-[#F59E0B] bg-[#FFFBEA]"
+            : isDragging
+            ? "border-[#19B5AE] bg-[#F0FBFA]"
+            : "border-[#D6D9DE] hover:bg-[#FAFAFA]",
+        ].join(" ")}
+      >
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[14px] font-semibold text-[#344054]">{title}</p>
+            <p className="text-[12px] text-[#8A94A6]">{subtitle}</p>
+          </div>
+
+          {file ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
+              className="rounded-md border border-[#E5E7EB] px-2.5 py-1 text-[12px] text-[#667085] hover:bg-[#F9FAFB]"
+            >
+              Remove
+            </button>
+          ) : null}
+        </div>
+
+        {file ? (
+          <div className="space-y-3">
+            {isImage && previewUrl ? (
+              <div className="relative h-[180px] overflow-hidden rounded-[12px] border border-[#E5E7EB] bg-[#F8FAFC]">
+                <Image
+                  src={previewUrl}
+                  alt={`${title} preview`}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
+            ) : isPdf ? (
+              <div className="flex h-[180px] flex-col items-center justify-center rounded-[12px] border border-[#E5E7EB] bg-[#F8FAFC] text-center">
+                <div className="rounded-full bg-[#E9F2FF] px-4 py-2 text-[12px] font-semibold text-[#175CD3]">
+                  PDF
+                </div>
+                <p className="mt-3 max-w-[220px] break-words px-4 text-[13px] font-medium text-[#344054]">
+                  {file.name}
+                </p>
+              </div>
+            ) : null}
+
+            <div className="rounded-[12px] border border-[#EEF2F6] bg-[#FBFCFD] px-3 py-3">
+              <p className="truncate text-[13px] font-medium text-[#344054]">
+                {file.name}
+              </p>
+              <p className="mt-1 text-[12px] text-[#8A94A6]">
+                {file.type || "Unknown type"} • {getReadableFileSize(file.size)}
+              </p>
+              <p className="mt-2 text-[12px] text-[#667085]">
+                Click to replace this file
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="py-6 text-center">
+            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-[#D9DEE3] text-[#67728A]">
+              <Upload className="h-5 w-5" />
+            </div>
+
+            <p className="mt-3 text-[14px] font-medium text-[#344054]">
+              Click to upload or drag file
+            </p>
+            <p className="mt-2 text-[12px] text-[#8A94A6]">
+              Accepted formats: JPG, PNG, PDF • Max size: 10MB
+            </p>
+          </div>
+        )}
+      </div>
+
+      <FieldError message={error} />
+    </div>
+  );
+}
+
 export default function SellerKycForm() {
   const router = useRouter();
 
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [dobParts, setDobParts] = useState<DateParts>(initialDobParts);
   const [errors, setErrors] = useState<ErrorState>({});
-  const [idDocument, setIdDocument] = useState<File | null>(null);
+  const [idDocumentFront, setIdDocumentFront] = useState<File | null>(null);
+  const [idDocumentBack, setIdDocumentBack] = useState<File | null>(null);
+  const [frontPreviewUrl, setFrontPreviewUrl] = useState("");
+  const [backPreviewUrl, setBackPreviewUrl] = useState("");
+
+  const frontFileInputRef = useRef<HTMLInputElement | null>(null);
+  const backFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [dragTarget, setDragTarget] = useState<"front" | "back" | null>(null);
   const [walletAddress, setWalletAddress] = useState("");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [selectedCountryCode, setSelectedCountryCode] =
@@ -441,11 +609,12 @@ export default function SellerKycForm() {
 
   const [kycStatus, setKycStatus] = useState<SellerKycStatus | null>(null);
   const [loadingPage, setLoadingPage] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
   const [walletCopied, setWalletCopied] = useState(false);
+  const [duplicateIdentityWarning, setDuplicateIdentityWarning] =
+    useState<DuplicateIdentityWarning>(null);
 
   const [showSubmittedDetails, setShowSubmittedDetails] = useState(false);
   const [isMarkingSeen, setIsMarkingSeen] = useState(false);
@@ -455,18 +624,7 @@ export default function SellerKycForm() {
   );
   const [rejectedFieldLabels, setRejectedFieldLabels] = useState<string[]>([]);
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const [submittedDetails, setSubmittedDetails] = useState<{
-    fullName?: string;
-    dateOfBirth?: string;
-    nationality?: string;
-    address?: string;
-    phoneNo?: string;
-    nicNo?: string;
-    walletAddress?: string;
-    idFileName?: string;
-  }>({});
+  const [submittedDetails, setSubmittedDetails] = useState<SubmittedDetails>({});
 
   const fullNameRef = useRef<HTMLInputElement | null>(null);
   const dayRef = useRef<HTMLSelectElement | null>(null);
@@ -490,6 +648,26 @@ export default function SellerKycForm() {
     [selectedCountryCode]
   );
 
+  const yearOptions = useMemo(() => getYearOptions(), []);
+  const dayOptions = useMemo(() => {
+    const count = getDaysInMonth(dobParts.month, dobParts.year);
+    return Array.from({ length: count }, (_, index) =>
+      String(index + 1).padStart(2, "0")
+    );
+  }, [dobParts.month, dobParts.year]);
+
+  const isFormReadyToSubmit =
+    !validateFullName(formData.fullName) &&
+    !validateDateOfBirth(formData.dateOfBirth) &&
+    !validateNationality(formData.nationality) &&
+    !validateAddress(formData.address) &&
+    !validatePhone(formData.phoneNo, selectedCountryCode) &&
+    !validateNicNo(formData.nicNo, selectedCountryCode) &&
+    !validateIdDocument(idDocumentFront) &&
+    !validateIdDocument(idDocumentBack) &&
+    formData.confirmAccuracy &&
+    formData.agreeTerms;
+
   const getFieldClass = (field: SellerKycFieldKey) => {
     const highlighted = rejectedFieldKeys.includes(field);
 
@@ -508,15 +686,7 @@ export default function SellerKycForm() {
     ].join(" ");
   };
 
-  const yearOptions = useMemo(() => getYearOptions(), []);
-  const dayOptions = useMemo(() => {
-    const count = getDaysInMonth(dobParts.month, dobParts.year);
-    return Array.from({ length: count }, (_, index) =>
-      String(index + 1).padStart(2, "0")
-    );
-  }, [dobParts.month, dobParts.year]);
-
-  const buildSubmittedDetails = () => {
+  const buildSubmittedDetails = (): SubmittedDetails => {
     const internationalPhone =
       buildInternationalPhone(formData.phoneNo, selectedCountryCode) ||
       `${selectedCountry.dialCode} ${formData.phoneNo.trim()}`;
@@ -529,12 +699,26 @@ export default function SellerKycForm() {
       phoneNo: internationalPhone,
       nicNo: formData.nicNo.trim().toUpperCase(),
       walletAddress: walletAddress || "",
-      idFileName: idDocument?.name || kycStatus?.id_document_original_name || "",
+      idFileName:
+        [idDocumentFront?.name, idDocumentBack?.name]
+          .filter(Boolean)
+          .join(" / ") || kycStatus?.id_document_original_name || "",
+      idDocumentFrontUrl:
+        frontPreviewUrl || kycStatus?.id_document_front_url || "",
+      idDocumentBackUrl:
+        backPreviewUrl || kycStatus?.id_document_back_url || "",
+      idDocumentFrontName:
+        idDocumentFront?.name || kycStatus?.id_document_front_original_name || "",
+      idDocumentBackName:
+        idDocumentBack?.name || kycStatus?.id_document_back_original_name || "",
     };
   };
 
   const validateSingleField = (
-    fieldName: keyof FormState | "idDocument",
+    fieldName:
+      | keyof FormState
+      | "idDocumentFront"
+      | "idDocumentBack",
     nextValue?: string | boolean | File | null
   ) => {
     switch (fieldName) {
@@ -564,8 +748,10 @@ export default function SellerKycForm() {
         return nextValue || formData.agreeTerms
           ? ""
           : "You must agree to RecipeChain's terms and policy.";
-      case "idDocument":
-        return validateIdDocument((nextValue as File | null) ?? idDocument);
+      case "idDocumentFront":
+        return validateIdDocument((nextValue as File | null) ?? idDocumentFront);
+      case "idDocumentBack":
+        return validateIdDocument((nextValue as File | null) ?? idDocumentBack);
       default:
         return "";
     }
@@ -579,7 +765,8 @@ export default function SellerKycForm() {
       address: validateAddress(formData.address),
       phoneNo: validatePhone(formData.phoneNo, selectedCountryCode),
       nicNo: validateNicNo(formData.nicNo, selectedCountryCode),
-      idDocument: validateIdDocument(idDocument),
+      idDocumentFront: validateIdDocument(idDocumentFront),
+      idDocumentBack: validateIdDocument(idDocumentBack),
       confirmAccuracy: formData.confirmAccuracy
         ? ""
         : "Please confirm that your details are accurate.",
@@ -620,7 +807,7 @@ export default function SellerKycForm() {
       } else if (cleanedErrors.nicNo) {
         nicNoRef.current?.scrollIntoView(scrollOptions);
         nicNoRef.current?.focus();
-      } else if (cleanedErrors.idDocument) {
+      } else if (cleanedErrors.idDocumentFront || cleanedErrors.idDocumentBack) {
         fileSectionRef.current?.scrollIntoView(scrollOptions);
       } else if (cleanedErrors.confirmAccuracy || cleanedErrors.agreeTerms) {
         legalSectionRef.current?.scrollIntoView(scrollOptions);
@@ -750,12 +937,12 @@ export default function SellerKycForm() {
             setKycStatus(statusData);
 
             if (
-                  statusData?.verification_status === "approved" &&
-                  statusData?.kyc_approval_page_seen === true
-                ) {
-                  router.replace("/seller/dashboard");
-                  return;
-                }
+              statusData?.verification_status === "approved" &&
+              statusData?.kyc_approval_page_seen === true
+            ) {
+              router.replace("/seller/dashboard");
+              return;
+            }
 
             const derivedCountry = getDefaultCountryCode(
               statusData?.nationality || ""
@@ -780,7 +967,21 @@ export default function SellerKycForm() {
               phoneNo: statusData?.phone_no || "",
               nicNo: statusData?.nic_no || "",
               walletAddress: currentUser?.wallet_address || "",
-              idFileName: statusData?.id_document_original_name || "",
+              idFileName:
+                [
+                  statusData?.id_document_front_original_name,
+                  statusData?.id_document_back_original_name,
+                ]
+                  .filter(Boolean)
+                  .join(" / ") ||
+                statusData?.id_document_original_name ||
+                "",
+              idDocumentFrontUrl: statusData?.id_document_front_url || "",
+              idDocumentBackUrl: statusData?.id_document_back_url || "",
+              idDocumentFrontName:
+                statusData?.id_document_front_original_name || "",
+              idDocumentBackName:
+                statusData?.id_document_back_original_name || "",
             });
 
             if (statusData?.verification_status === "rejected") {
@@ -821,7 +1022,31 @@ export default function SellerKycForm() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [router]);
+
+  useEffect(() => {
+    if (!idDocumentFront || !isPreviewableImage(idDocumentFront)) {
+      setFrontPreviewUrl("");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(idDocumentFront);
+    setFrontPreviewUrl(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [idDocumentFront]);
+
+  useEffect(() => {
+    if (!idDocumentBack || !isPreviewableImage(idDocumentBack)) {
+      setBackPreviewUrl("");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(idDocumentBack);
+    setBackPreviewUrl(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [idDocumentBack]);
 
   useEffect(() => {
     if (!isPending || userRole !== "seller") return;
@@ -888,6 +1113,8 @@ export default function SellerKycForm() {
         ...prev,
         phoneNo: validatePhone(formatted, selectedCountryCode),
       }));
+
+      setDuplicateIdentityWarning(null);
       return;
     }
 
@@ -912,6 +1139,8 @@ export default function SellerKycForm() {
       ...prev,
       [name]: fieldError,
     }));
+
+    setDuplicateIdentityWarning(null);
   };
 
   const handleBlur = (
@@ -944,6 +1173,8 @@ export default function SellerKycForm() {
         ? "Please confirm that your details are accurate."
         : "You must agree to RecipeChain's terms and policy.",
     }));
+
+    setDuplicateIdentityWarning(null);
   };
 
   const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -966,36 +1197,86 @@ export default function SellerKycForm() {
         phoneNo: nextPhone,
       };
     });
+
+    setDuplicateIdentityWarning(null);
   };
 
-  const handleFileChange = (file: File | null) => {
-    setIdDocument(file);
-
+  const handleFrontFileChange = (file: File | null) => {
+    setIdDocumentFront(file);
     setErrors((prev) => ({
       ...prev,
-      idDocument: validateIdDocument(file),
+      idDocumentFront: validateIdDocument(file),
     }));
+    setDuplicateIdentityWarning(null);
   };
 
-  const onDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
+  const handleBackFileChange = (file: File | null) => {
+    setIdDocumentBack(file);
+    setErrors((prev) => ({
+      ...prev,
+      idDocumentBack: validateIdDocument(file),
+    }));
+    setDuplicateIdentityWarning(null);
   };
 
-  const onDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
+  const openFrontPicker = () => {
+    frontFileInputRef.current?.click();
   };
 
-  const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const openBackPicker = () => {
+    backFileInputRef.current?.click();
+  };
+
+  const handleDragEnter =
+    (target: "front" | "back") => (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setDragTarget(target);
+    };
+
+  const handleDragLeave =
+    (target: "front" | "back") => (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      if (dragTarget === target) {
+        setDragTarget(null);
+      }
+    };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
-  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0] || null;
-    handleFileChange(file);
+  const handleDrop =
+    (target: "front" | "back") => (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setDragTarget(null);
+
+      const file = e.dataTransfer.files?.[0] || null;
+
+      if (target === "front") {
+        handleFrontFileChange(file);
+      } else {
+        handleBackFileChange(file);
+      }
+    };
+
+  const removeFrontFile = () => {
+    setIdDocumentFront(null);
+    setFrontPreviewUrl("");
+    setErrors((prev) => ({
+      ...prev,
+      idDocumentFront: "Please upload your government-issued ID.",
+    }));
+    setDuplicateIdentityWarning(null);
+  };
+
+  const removeBackFile = () => {
+    setIdDocumentBack(null);
+    setBackPreviewUrl("");
+    setErrors((prev) => ({
+      ...prev,
+      idDocumentBack: "Please upload your government-issued ID.",
+    }));
+    setDuplicateIdentityWarning(null);
   };
 
   const handleCopyWallet = async () => {
@@ -1017,6 +1298,7 @@ export default function SellerKycForm() {
     e.preventDefault();
     setSubmitError("");
     setSubmitSuccess("");
+    setDuplicateIdentityWarning(null);
 
     if (!validateForm()) return;
 
@@ -1047,8 +1329,12 @@ export default function SellerKycForm() {
       payload.append("confirmAccuracy", String(formData.confirmAccuracy));
       payload.append("agreeTerms", String(formData.agreeTerms));
 
-      if (idDocument) {
-        payload.append("idDocument", idDocument);
+      if (idDocumentFront) {
+        payload.append("idDocumentFront", idDocumentFront);
+      }
+
+      if (idDocumentBack) {
+        payload.append("idDocumentBack", idDocumentBack);
       }
 
       const detailsForModal = {
@@ -1075,14 +1361,37 @@ export default function SellerKycForm() {
         address: normalizeSpaces(formData.address),
         phone_no: internationalPhone,
         nic_no: formData.nicNo.trim().toUpperCase(),
+
+        id_document_front_url: null,
+        id_document_front_public_id: null,
+        id_document_front_resource_type:
+          idDocumentFront?.type === "application/pdf" ? "raw" : "image",
+        id_document_front_original_name: idDocumentFront?.name || "",
+
+        id_document_back_url: null,
+        id_document_back_public_id: null,
+        id_document_back_resource_type:
+          idDocumentBack?.type === "application/pdf" ? "raw" : "image",
+        id_document_back_original_name: idDocumentBack?.name || "",
+
         cloudinary_public_id: null,
         id_document_resource_type:
-          idDocument?.type === "application/pdf" ? "raw" : "image",
-        id_document_original_name: idDocument?.name || "",
+          idDocumentFront?.type === "application/pdf" ? "raw" : "image",
+        id_document_original_name: idDocumentFront?.name || "",
         kyc_approval_page_seen: false,
       });
     } catch (error: any) {
-      setSubmitError(error?.message || "Failed to submit verification");
+      if (error?.messageCode === "duplicate_seller_identity") {
+        setDuplicateIdentityWarning({
+          field: error.field,
+          status: error.status,
+          message: error.friendlyMessage,
+        });
+        setSubmitError("");
+      } else {
+        setDuplicateIdentityWarning(null);
+        setSubmitError(error?.message || "Failed to submit verification");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -1167,7 +1476,7 @@ export default function SellerKycForm() {
   return (
     <div className="min-h-screen bg-[#F4F6F7] text-[#2E3742]">
       <header className="border-b border-[#ECECEC] bg-white">
-        <div className="relative mx-auto flex h-[72px] max-w-[1200px] items-center px-6">
+        <div className="relative mx-auto flex h-[58px] max-w-[1200px] items-center px-4">
           <button
             type="button"
             onClick={() => router.push("/login")}
@@ -1181,10 +1490,10 @@ export default function SellerKycForm() {
             <Image
               src="/Logo.png"
               alt="RecipeChain Logo"
-              width={58}
-              height={58}
+              width={42}
+              height={42}
               priority
-              className="h-auto w-[46px] object-contain"
+              className="h-auto w-[34px] object-contain"
             />
           </div>
         </div>
@@ -1214,7 +1523,6 @@ export default function SellerKycForm() {
             </div>
           </div>
 
-
           {submitError ? (
             <div className="mt-6 rounded-[12px] border border-[#F5C2C7] bg-[#FFF1F2] px-4 py-3 text-sm text-[#B42318]">
               {submitError}
@@ -1229,7 +1537,9 @@ export default function SellerKycForm() {
 
           {forceShowForm && rejectedFieldLabels.length > 0 ? (
             <div className="mt-6 rounded-[12px] border border-[#F5C27A] bg-[#FFF8E7] px-4 py-4 text-sm text-[#8A5A00]">
-              <p className="font-semibold">Please correct these fields before resubmitting:</p>
+              <p className="font-semibold">
+                Please correct these fields before resubmitting:
+              </p>
               <p className="mt-2">{rejectedFieldLabels.join(", ")}</p>
             </div>
           ) : null}
@@ -1460,68 +1770,65 @@ export default function SellerKycForm() {
                 <div className="flex items-start gap-2">
                   <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#19B5AE]" />
                   <p>
-                    Your documents are encrypted and securely stored. All
-                    information is kept confidential and used only for
-                    verification purposes.
+                    Upload clear front and back images of your government-issued
+                    ID. Supported formats: JPG, PNG, PDF. Maximum file size:
+                    10MB each.
                   </p>
                 </div>
               </div>
 
-              <div className="mt-4">
-                <label className="mb-2 block text-[13px] font-medium text-[#475467]">
-                  Government-issued ID (Passport / Driver&apos;s License){" "}
-                  <span className="text-[#FF5A5F]">*</span>
-                </label>
+              <input
+                ref={frontFileInputRef}
+                type="file"
+                accept=".jpg,.jpeg,.png,.pdf"
+                className="hidden"
+                onChange={(e) =>
+                  handleFrontFileChange(e.target.files?.[0] || null)
+                }
+              />
 
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.pdf"
-                  className="hidden"
-                  onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+              <input
+                ref={backFileInputRef}
+                type="file"
+                accept=".jpg,.jpeg,.png,.pdf"
+                className="hidden"
+                onChange={(e) =>
+                  handleBackFileChange(e.target.files?.[0] || null)
+                }
+              />
+
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <DocumentUploadCard
+                  title="Front Side"
+                  subtitle="NIC / Passport / Driver's License"
+                  file={idDocumentFront}
+                  previewUrl={frontPreviewUrl}
+                  error={errors.idDocumentFront}
+                  isDragging={dragTarget === "front"}
+                  highlighted={rejectedFieldKeys.includes("idDocumentFront")}
+                  onClick={openFrontPicker}
+                  onRemove={removeFrontFile}
+                  onDragEnter={handleDragEnter("front")}
+                  onDragLeave={handleDragLeave("front")}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop("front")}
                 />
 
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragEnter={onDragEnter}
-                  onDragLeave={onDragLeave}
-                  onDragOver={onDragOver}
-                  onDrop={onDrop}
-                  className={[
-                    "cursor-pointer rounded-[14px] border border-dashed px-6 py-9 text-center transition",
-                    rejectedFieldKeys.includes("idDocument")
-                      ? "border-[#F59E0B] bg-[#FFFBEA]"
-                      : isDragging
-                      ? "border-[#19B5AE] bg-[#F0FBFA]"
-                      : "border-[#D6D9DE] bg-white hover:bg-[#FAFAFA]",
-                  ].join(" ")}
-                >
-                  <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-[#D9DEE3] text-[#67728A]">
-                    <Upload className="h-5 w-5" />
-                  </div>
-
-                  {idDocument ? (
-                    <>
-                      <p className="mt-3 text-[14px] font-medium text-[#344054]">
-                        {idDocument.name}
-                      </p>
-                      <p className="mt-1 text-[12px] text-[#7B8794]">
-                        Click to replace or drag and drop another file
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="mt-3 text-[14px] font-medium text-[#344054]">
-                        Click to upload or drag file
-                      </p>
-                      <p className="mt-2 text-[12px] text-[#8A94A6]">
-                        Accepted formats: JPG, PNG, PDF • Max size: 10MB
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                <FieldError message={errors.idDocument} />
+                <DocumentUploadCard
+                  title="Back Side"
+                  subtitle="Upload the reverse side clearly"
+                  file={idDocumentBack}
+                  previewUrl={backPreviewUrl}
+                  error={errors.idDocumentBack}
+                  isDragging={dragTarget === "back"}
+                  highlighted={rejectedFieldKeys.includes("idDocumentBack")}
+                  onClick={openBackPicker}
+                  onRemove={removeBackFile}
+                  onDragEnter={handleDragEnter("back")}
+                  onDragLeave={handleDragLeave("back")}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop("back")}
+                />
               </div>
             </section>
 
@@ -1599,9 +1906,7 @@ export default function SellerKycForm() {
                   <input
                     type="checkbox"
                     checked={formData.agreeTerms}
-                    onChange={(e) =>
-                      handleToggle("agreeTerms", e.target.checked)
-                    }
+                    onChange={(e) => handleToggle("agreeTerms", e.target.checked)}
                     className="mt-0.5 h-4 w-4 rounded border-[#C7CDD4] text-[#19B5AE] focus:ring-[#19B5AE]"
                   />
                   <span>
@@ -1646,7 +1951,12 @@ export default function SellerKycForm() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex h-[48px] w-full items-center justify-center rounded-[12px] bg-[#8BD6CF] px-4 text-[14px] font-semibold text-white transition hover:bg-[#76CBC3] disabled:cursor-not-allowed disabled:opacity-80"
+                className={[
+                  "flex h-[48px] w-full items-center justify-center rounded-[12px] px-4 text-[14px] font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-80",
+                  isFormReadyToSubmit
+                    ? "bg-[#19B5AE] hover:bg-[#13938d] shadow-[0_8px_20px_rgba(25,181,174,0.20)]"
+                    : "bg-[#8BD6CF] hover:bg-[#76CBC3]",
+                ].join(" ")}
               >
                 {isSubmitting ? (
                   <>
@@ -1658,8 +1968,29 @@ export default function SellerKycForm() {
                 )}
               </button>
 
-              <p className="mt-3 text-center text-[12px] text-[#98A2B3]">
-                You will be notified once your verification is approved.
+              {duplicateIdentityWarning?.message ? (
+                <div
+                  className={[
+                    "mt-4 rounded-[12px] border px-4 py-3 text-sm leading-6",
+                    duplicateIdentityWarning.status === "approved"
+                      ? "border-red-200 bg-red-50 text-red-700"
+                      : duplicateIdentityWarning.status === "rejected"
+                      ? "border-orange-200 bg-orange-50 text-orange-700"
+                      : "border-amber-200 bg-amber-50 text-amber-700",
+                  ].join(" ")}
+                >
+                  {duplicateIdentityWarning.message}
+                </div>
+              ) : null}
+
+              <p
+                className={`mt-3 text-center text-[12px] ${
+                  isFormReadyToSubmit ? "text-[#067647]" : "text-[#98A2B3]"
+                }`}
+              >
+                {isFormReadyToSubmit
+                  ? "All required details are filled. Ready to submit."
+                  : "You will be notified once your verification is approved."}
               </p>
             </div>
 
@@ -1667,7 +1998,7 @@ export default function SellerKycForm() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="inline-flex items-center gap-2 text-[13px] font-medium text-[#6B7280] transition hover:text-[#374151]"
+                className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium text-[#6B7280] transition-all duration-200 hover:bg-red-50 hover:text-red-600"
               >
                 <LogOut className="h-4 w-4" />
                 Logout

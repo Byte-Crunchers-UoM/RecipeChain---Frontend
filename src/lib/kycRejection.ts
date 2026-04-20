@@ -5,7 +5,8 @@ export type SellerKycFieldKey =
   | "address"
   | "phoneNo"
   | "nicNo"
-  | "idDocument"
+  | "idDocumentFront"
+  | "idDocumentBack"
   | "confirmAccuracy"
   | "agreeTerms";
 

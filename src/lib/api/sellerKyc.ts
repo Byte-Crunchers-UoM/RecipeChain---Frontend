@@ -20,10 +20,24 @@ export type SellerKycStatus = {
   nationality?: string | null;
   address?: string | null;
   phone_no?: string | null;
+  phone_no_normalized?: string | null;
   nic_no?: string | null;
+  nic_no_normalized?: string | null;
+
+  id_document_front_url?: string | null;
+  id_document_front_public_id?: string | null;
+  id_document_front_resource_type?: "image" | "raw" | null;
+  id_document_front_original_name?: string | null;
+
+  id_document_back_url?: string | null;
+  id_document_back_public_id?: string | null;
+  id_document_back_resource_type?: "image" | "raw" | null;
+  id_document_back_original_name?: string | null;
+
   cloudinary_public_id?: string | null;
   id_document_resource_type?: "image" | "raw" | null;
   id_document_original_name?: string | null;
+
   kyc_approval_page_seen?: boolean | null;
 };
 
@@ -96,10 +110,19 @@ export async function submitSellerKyc(formData: FormData) {
     body: formData,
   });
 
-  const result: SellerKycResponse = await parseApiResponse(response);
+  const result: any = await parseApiResponse(response);
 
   if (!response.ok) {
-    throw new Error(result?.message || "Failed to submit KYC");
+    const error: any = new Error(
+      result?.friendlyMessage || result?.message || "Failed to submit KYC"
+    );
+
+    error.messageCode = result?.message;
+    error.field = result?.field;
+    error.status = result?.status;
+    error.friendlyMessage = result?.friendlyMessage;
+
+    throw error;
   }
 
   return result;
