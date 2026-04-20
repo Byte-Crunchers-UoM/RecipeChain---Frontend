@@ -71,7 +71,7 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
             <div className="relative">
               <Image
                 src={recipe.image_url && recipe.image_url !== "" ? recipe.image_url : "/images/placeholder-recipe.jpg"}
-                alt={`Photo of ${recipe.title}`}
+                alt={recipe.title ? `Photo of ${recipe.title}` : 'Recipe image'}
                 width={200}
                 height={300}
                 className="rounded-lg object-cover w-full h-48 md:h-80"

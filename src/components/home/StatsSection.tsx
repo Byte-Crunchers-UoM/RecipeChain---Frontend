@@ -22,7 +22,7 @@ function StatItem({ stat, index }: StatItemProps): React.ReactElement {
 
 export function StatsSection(): React.ReactElement {
   return (
-    <section className="py-24 bg-gradient-to-r from-[#16a34a] to-[#15803d] text-white">
+    <section className="py-24 bg-linear-to-r from-[#16a34a] to-[#15803d] text-white">
       <div className="max-w-7xl mx-auto px-8">
         <div className="grid md:grid-cols-4 gap-12">
           {STATS.map((stat, idx) => (

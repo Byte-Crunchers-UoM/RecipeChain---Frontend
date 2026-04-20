@@ -28,7 +28,7 @@ export default function RecipeCartItem({ recipe, onRemove }: RecipeCartItemProps
             <div className="relative w-16 h-16 shrink-0">
                 <Image 
                     src={recipe.image_url || "/placeholder-food.jpg"} 
-                    alt={recipe.title} 
+                    alt={recipe.title || 'Recipe image'} 
                     fill
                     className="object-cover rounded-xl"
                     sizes="64px"

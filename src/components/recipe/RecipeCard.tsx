@@ -29,7 +29,7 @@ const fallbackImage = "/images/placeholder-recipe.jpg";
       <div className="relative h-52 w-full bg-gray-100">
         <Image 
           src={recipe.image_url  && recipe.image_url !== "" ? recipe.image_url : fallbackImage} 
-          alt={`Photo of ${recipe.title}`}
+          alt={recipe.title ? `Photo of ${recipe.title}` : 'Recipe image'}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover group-hover:scale-105 transition-transform duration-500"
