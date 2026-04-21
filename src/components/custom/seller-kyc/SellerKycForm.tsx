@@ -31,6 +31,7 @@ import {
   markSellerKycApprovalPageSeen,
   submitSellerKyc,
   type SellerKycStatus,
+  ApiError,
 } from "@/lib/api/sellerKyc";
 import {
   parseSellerKycRejection,
@@ -85,6 +86,7 @@ type DuplicateIdentityWarning = {
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
+const ALLOWED_FILE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".pdf"];
 
 const initialFormState: FormState = {
   fullName: "",
@@ -383,7 +385,13 @@ function validateNicNo(value: string, countryCode: CountryCode) {
 function validateIdDocument(file: File | null) {
   if (!file) return "Please upload your government-issued ID.";
 
-  if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+  const nameParts = file.name.split(".");
+  const extension =
+    nameParts.length > 1 ? `.${nameParts.pop()?.toLowerCase() ?? ""}` : "";
+  const hasValidExtension = extension.length > 1 && ALLOWED_FILE_EXTENSIONS.includes(extension);
+  const hasValidMime = ALLOWED_FILE_TYPES.includes(file.type);
+
+  if (!hasValidMime || !hasValidExtension) {
     return "Only JPG, PNG, and PDF files are allowed.";
   }
 
@@ -897,8 +905,10 @@ export default function SellerKycForm() {
       );
 
       router.replace(targetPath);
-    } catch (error: any) {
-      setSubmitError(error?.message || "Failed to continue. Please try again.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to continue. Please try again.";
+      setSubmitError(message);
     } finally {
       setIsMarkingSeen(false);
     }
@@ -907,8 +917,8 @@ export default function SellerKycForm() {
   const handleResubmitRejectedKyc = () => {
     const parsed = parseSellerKycRejection(kycStatus?.rejection_reason);
 
-    setRejectedFieldKeys(parsed.items.map((item: any) => item.field));
-    setRejectedFieldLabels(parsed.items.map((item: any) => item.label));
+    setRejectedFieldKeys(parsed.items.map((item) => item.field));
+    setRejectedFieldLabels(parsed.items.map((item) => item.label));
     setForceShowForm(true);
   };
 
@@ -1006,9 +1016,11 @@ export default function SellerKycForm() {
             console.warn("No existing KYC status found:", error);
           }
         }
-      } catch (error: any) {
+      } catch (error) {
         if (!cancelled) {
-          setSubmitError(error?.message || "Failed to load seller details.");
+          const message =
+            error instanceof Error ? error.message : "Failed to load seller details.";
+          setSubmitError(message);
         }
       } finally {
         if (!cancelled) {
@@ -1085,7 +1097,7 @@ export default function SellerKycForm() {
           window.clearInterval(intervalId);
         }
       } catch (error) {
-        console.warn("KYC polling failed:", error);
+        console.warn("KYC polling failed:", error instanceof Error ? error.message : error);
       }
     }, 5000);
 
@@ -1201,21 +1213,20 @@ export default function SellerKycForm() {
     setDuplicateIdentityWarning(null);
   };
 
-  const handleFrontFileChange = (file: File | null) => {
-    setIdDocumentFront(file);
-    setErrors((prev) => ({
-      ...prev,
-      idDocumentFront: validateIdDocument(file),
-    }));
-    setDuplicateIdentityWarning(null);
-  };
-
-  const handleBackFileChange = (file: File | null) => {
-    setIdDocumentBack(file);
-    setErrors((prev) => ({
-      ...prev,
-      idDocumentBack: validateIdDocument(file),
-    }));
+  const handleFileChange = (side: "front" | "back", file: File | null) => {
+    if (side === "front") {
+      setIdDocumentFront(file);
+      setErrors((prev) => ({
+        ...prev,
+        idDocumentFront: validateIdDocument(file),
+      }));
+    } else {
+      setIdDocumentBack(file);
+      setErrors((prev) => ({
+        ...prev,
+        idDocumentBack: validateIdDocument(file),
+      }));
+    }
     setDuplicateIdentityWarning(null);
   };
 
@@ -1253,29 +1264,28 @@ export default function SellerKycForm() {
       const file = e.dataTransfer.files?.[0] || null;
 
       if (target === "front") {
-        handleFrontFileChange(file);
+        handleFileChange("front", file);
       } else {
-        handleBackFileChange(file);
+        handleFileChange("back", file);
       }
     };
 
-  const removeFrontFile = () => {
-    setIdDocumentFront(null);
-    setFrontPreviewUrl("");
-    setErrors((prev) => ({
-      ...prev,
-      idDocumentFront: "Please upload your government-issued ID.",
-    }));
-    setDuplicateIdentityWarning(null);
-  };
-
-  const removeBackFile = () => {
-    setIdDocumentBack(null);
-    setBackPreviewUrl("");
-    setErrors((prev) => ({
-      ...prev,
-      idDocumentBack: "Please upload your government-issued ID.",
-    }));
+  const removeFile = (side: "front" | "back") => {
+    if (side === "front") {
+      setIdDocumentFront(null);
+      setFrontPreviewUrl("");
+      setErrors((prev) => ({
+        ...prev,
+        idDocumentFront: "Please upload your government-issued ID.",
+      }));
+    } else {
+      setIdDocumentBack(null);
+      setBackPreviewUrl("");
+      setErrors((prev) => ({
+        ...prev,
+        idDocumentBack: "Please upload your government-issued ID.",
+      }));
+    }
     setDuplicateIdentityWarning(null);
   };
 
@@ -1346,7 +1356,8 @@ export default function SellerKycForm() {
       const result = await submitSellerKyc(payload);
 
       setSubmitSuccess(
-        result?.message || "Verification submitted successfully."
+        (typeof result?.message === "string" ? result.message : null) ||
+          "Verification submitted successfully."
       );
 
       setKycStatus({
@@ -1380,8 +1391,8 @@ export default function SellerKycForm() {
         id_document_original_name: idDocumentFront?.name || "",
         kyc_approval_page_seen: false,
       });
-    } catch (error: any) {
-      if (error?.messageCode === "duplicate_seller_identity") {
+    } catch (error) {
+      if (error instanceof ApiError && error.messageCode === "duplicate_seller_identity") {
         setDuplicateIdentityWarning({
           field: error.field,
           status: error.status,
@@ -1390,7 +1401,9 @@ export default function SellerKycForm() {
         setSubmitError("");
       } else {
         setDuplicateIdentityWarning(null);
-        setSubmitError(error?.message || "Failed to submit verification");
+        setSubmitError(
+          error instanceof Error ? error.message : "Failed to submit verification"
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -1468,7 +1481,7 @@ export default function SellerKycForm() {
         rejectedAt={kycStatus?.verification_submitted_at}
         rejectionReason={kycStatus?.rejection_reason}
         onResubmit={handleResubmitRejectedKyc}
-        onSupport={() => window.alert("Support page not connected yet.")}
+        onSupport={() => router.push("/contact-us")}
       />
     );
   }
@@ -1781,9 +1794,10 @@ export default function SellerKycForm() {
                 ref={frontFileInputRef}
                 type="file"
                 accept=".jpg,.jpeg,.png,.pdf"
+                aria-label="Upload front side of ID document"
                 className="hidden"
                 onChange={(e) =>
-                  handleFrontFileChange(e.target.files?.[0] || null)
+                  handleFileChange("front", e.target.files?.[0] || null)
                 }
               />
 
@@ -1791,9 +1805,10 @@ export default function SellerKycForm() {
                 ref={backFileInputRef}
                 type="file"
                 accept=".jpg,.jpeg,.png,.pdf"
+                aria-label="Upload back side of ID document"
                 className="hidden"
                 onChange={(e) =>
-                  handleBackFileChange(e.target.files?.[0] || null)
+                  handleFileChange("back", e.target.files?.[0] || null)
                 }
               />
 
@@ -1807,7 +1822,7 @@ export default function SellerKycForm() {
                   isDragging={dragTarget === "front"}
                   highlighted={rejectedFieldKeys.includes("idDocumentFront")}
                   onClick={openFrontPicker}
-                  onRemove={removeFrontFile}
+                  onRemove={() => removeFile("front")}
                   onDragEnter={handleDragEnter("front")}
                   onDragLeave={handleDragLeave("front")}
                   onDragOver={handleDragOver}
@@ -1823,7 +1838,7 @@ export default function SellerKycForm() {
                   isDragging={dragTarget === "back"}
                   highlighted={rejectedFieldKeys.includes("idDocumentBack")}
                   onClick={openBackPicker}
-                  onRemove={removeBackFile}
+                  onRemove={() => removeFile("back")}
                   onDragEnter={handleDragEnter("back")}
                   onDragLeave={handleDragLeave("back")}
                   onDragOver={handleDragOver}
