@@ -1448,8 +1448,8 @@ export default function SellerKycForm() {
       <>
         <UnderReviewView
           submittedAt={kycStatus?.verification_submitted_at}
-          onViewDetails={() => setShowSubmittedDetails(true)}
-          onLogout={handleLogout}
+          onViewDetailsAction={() => setShowSubmittedDetails(true)}
+          onLogoutAction={handleLogout}
         />
 
         <SubmittedDetailsModal

@@ -127,7 +127,8 @@ export default function SelectRolePage() {
         body: JSON.stringify({ role: selectedRole }),
       });
 
-      const result = await response.json().catch(() => null);
+      const result: { message?: string } | null =
+        await response.json().catch(() => null);
 
       if (!response.ok) {
         throw new Error(result?.message || "Failed to save your role");
@@ -143,8 +144,12 @@ export default function SelectRolePage() {
       }
 
       router.replace(target);
-    } catch (e: any) {
-      setError(e?.message || "Failed to save your role. Please try again.");
+    } catch (e: unknown) {
+      const message =
+        e instanceof Error
+          ? e.message
+          : "Failed to save your role. Please try again.";
+      setError(message);
     } finally {
       setSubmitting(false);
     }

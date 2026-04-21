@@ -12,6 +12,16 @@ import { getXrplWalletFromWeb3AuthPrivKey } from "@/lib/xrpl/getXrplWallet";
 import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
 import { getSellerEntryRoute } from "@/lib/getSellerEntryRoute";
 
+type IdentityTokenResult =
+  | string
+  | {
+      idToken?: string;
+    }
+  | null
+  | undefined;
+
+type AppRole = "seller" | "buyer" | null | undefined;
+
 export default function SignupPage() {
   const router = useRouter();
   const { refreshSession, resetAll } = useAuth();
@@ -22,7 +32,7 @@ export default function SignupPage() {
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
 
-  const routeByRole = async (role: any) => {
+  const routeByRole = async (role: AppRole) => {
     let target = "/select-role";
 
     if (role === "seller") {
@@ -61,7 +71,9 @@ export default function SignupPage() {
         return instance;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 250);
+      });
     }
 
     return null;
@@ -98,7 +110,8 @@ export default function SignupPage() {
 
       await closeWeb3AuthModal(readyWeb3Auth);
 
-      const tokenInfo: any = await readyWeb3Auth.getIdentityToken();
+      const tokenInfo: IdentityTokenResult =
+        await readyWeb3Auth.getIdentityToken();
 
       const idToken =
         typeof tokenInfo === "string" ? tokenInfo : tokenInfo?.idToken;
@@ -123,7 +136,7 @@ export default function SignupPage() {
         body: JSON.stringify({ walletAddress }),
       });
 
-      const data = await resp.json().catch(() => null);
+      const data: { message?: string } | null = await resp.json().catch(() => null);
 
       if (!resp.ok) {
         throw new Error(data?.message || "Signup failed");
@@ -133,11 +146,14 @@ export default function SignupPage() {
 
       const me = await refreshSession();
       await routeByRole(me?.role);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Signup error:", e);
       await closeWeb3AuthModal(web3Auth);
 
-      const msg = e?.message || "Failed to create account. Please try again.";
+      const msg =
+        e instanceof Error
+          ? e.message
+          : "Failed to create account. Please try again.";
 
       if (
         msg.includes("Wallet is not connected") ||

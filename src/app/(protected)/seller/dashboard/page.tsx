@@ -29,7 +29,7 @@ export default function SellerDashboardPage() {
           router.replace("/seller/kyc");
           return;
         }
-      } catch (error) {
+      } catch {
         if (!cancelled) {
           router.replace("/login");
         }
@@ -43,10 +43,5 @@ export default function SellerDashboardPage() {
     };
   }, [router]);
 
-  return (
-    <div>
-      {/* your dashboard UI */}
-      Seller Dashboard
-    </div>
-  );
+  return <div>Seller Dashboard</div>;
 }

@@ -13,8 +13,8 @@ import { useRouter } from "next/navigation";
 
 type Props = {
   submittedAt?: string | null;
-  onViewDetails: () => void;
-  onLogout: () => void;
+  onViewDetailsAction: () => void;
+  onLogoutAction: () => void | Promise<void>;
 };
 
 function formatSubmittedDate(dateString?: string | null) {
@@ -67,14 +67,14 @@ function ReviewCard({
 
 export default function UnderReviewView({
   submittedAt,
-  onViewDetails,
-  onLogout,
+  onViewDetailsAction,
+  onLogoutAction,
 }: Props) {
   const router = useRouter();
 
   const handleLogoutClick = async () => {
     try {
-      await onLogout();
+      await onLogoutAction();
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -178,8 +178,7 @@ export default function UnderReviewView({
             </div>
           </div>
 
-          <div className="mt-8 grid gap-5 lg:grid-cols-2 items-stretch">
-            {/* LEFT BLOCK */}
+          <div className="mt-8 grid items-stretch gap-5 lg:grid-cols-2">
             <div className="h-full rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex justify-center lg:justify-start">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-teal-50">
@@ -211,10 +210,7 @@ export default function UnderReviewView({
               </div>
             </div>
 
-            {/* RIGHT BLOCK */}
             <div className="flex h-full flex-col justify-between space-y-4">
-              
-              {/* Submitted Card */}
               <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -226,27 +222,29 @@ export default function UnderReviewView({
 
                   <button
                     type="button"
-                    onClick={onViewDetails}
-                    className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-teal-700 transition-all duration-200 hover:bg-teal-600 hover:text-white hover:border-teal-600"
+                    onClick={onViewDetailsAction}
+                    className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-teal-700 transition-all duration-200 hover:border-teal-600 hover:bg-teal-600 hover:text-white"
                   >
                     View Submitted Details
                   </button>
                 </div>
               </div>
 
-              {/* Support Card */}
               <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white px-5 py-5">
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">Need help?</p>
+                  <p className="text-sm font-semibold text-slate-800">
+                    Need help?
+                  </p>
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Contact support if you have questions about your seller verification or submitted details.
+                    Contact support if you have questions about your seller
+                    verification or submitted details.
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => router.push("/contact-us")}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-[15px] font-semibold text-slate-800 transition-all duration-200 hover:bg-teal-600 hover:text-white hover:border-teal-600"
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-[15px] font-semibold text-slate-800 transition-all duration-200 hover:border-teal-600 hover:bg-teal-600 hover:text-white"
                 >
                   <Headphones className="h-4 w-4" />
                   Contact Support
@@ -257,6 +255,5 @@ export default function UnderReviewView({
         </div>
       </main>
     </div>
-   
   );
 }

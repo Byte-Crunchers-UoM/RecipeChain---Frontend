@@ -12,6 +12,16 @@ import { deriveXrplAddressFromWeb3AuthPrivKey } from "@/lib/xrpl/deriveXrpl";
 import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
 import { getSellerEntryRoute } from "@/lib/getSellerEntryRoute";
 
+type IdentityTokenResult =
+  | string
+  | {
+      idToken?: string;
+    }
+  | null
+  | undefined;
+
+type AppRole = "seller" | "buyer" | null | undefined;
+
 export default function LoginPage() {
   const router = useRouter();
   const { refreshSession, resetAll } = useAuth();
@@ -21,7 +31,7 @@ export default function LoginPage() {
 
   const [error, setError] = useState("");
 
-  const routeByRole = async (role: any) => {
+  const routeByRole = async (role: AppRole) => {
     let target = "/select-role";
 
     if (role === "seller") {
@@ -60,7 +70,9 @@ export default function LoginPage() {
         return instance;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 250);
+      });
     }
 
     return null;
@@ -92,7 +104,8 @@ export default function LoginPage() {
 
       await closeWeb3AuthModal(readyWeb3Auth);
 
-      const tokenInfo: any = await readyWeb3Auth.getIdentityToken();
+      const tokenInfo: IdentityTokenResult =
+        await readyWeb3Auth.getIdentityToken();
 
       const idToken =
         typeof tokenInfo === "string" ? tokenInfo : tokenInfo?.idToken;
@@ -115,7 +128,7 @@ export default function LoginPage() {
         body: JSON.stringify({ walletAddress }),
       });
 
-      const data = await resp.json().catch(() => null);
+      const data: { message?: string } | null = await resp.json().catch(() => null);
 
       if (!resp.ok) {
         if (resp.status === 409) {
@@ -130,11 +143,12 @@ export default function LoginPage() {
 
       const me = await refreshSession();
       await routeByRole(me?.role);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Login error:", e);
       await closeWeb3AuthModal(web3Auth);
 
-      const msg = e?.message || "Login failed. Please try again.";
+      const msg =
+        e instanceof Error ? e.message : "Login failed. Please try again.";
 
       if (
         msg.includes("Wallet is not connected") ||
