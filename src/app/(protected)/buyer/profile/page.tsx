@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import {
   DollarSign,
   ShoppingBag,
@@ -38,8 +37,6 @@ type Achievement = {
 };
 
 export default function BuyerProfilePage() {
-  const router = useRouter();
-
   // Normally these come from your AuthContext + backend
   const [profile, setProfile] = useState({
     displayName: "Ashcharya Arts",

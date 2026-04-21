@@ -87,7 +87,6 @@ export default function SignupPage() {
       await resetAll();
       await forceFreshWeb3AuthPopup();
 
-      console.log("Starting Web3Auth signup flow...");
       await connect();
 
       const readyWeb3Auth = await waitForConnectedWeb3Auth();
@@ -97,25 +96,12 @@ export default function SignupPage() {
         );
       }
 
-      console.log("Web3Auth connected:", {
-        connected: readyWeb3Auth.connected,
-        hasProvider: !!readyWeb3Auth.provider,
-        providerName: readyWeb3Auth.connectedConnectorName || "unknown",
-      });
-
       await closeWeb3AuthModal(readyWeb3Auth);
 
       const tokenInfo: any = await readyWeb3Auth.getIdentityToken();
-      console.log("Web3Auth tokenInfo:", tokenInfo);
 
       const idToken =
         typeof tokenInfo === "string" ? tokenInfo : tokenInfo?.idToken;
-
-      console.log("Has idToken:", !!idToken);
-      console.log(
-        "Token preview:",
-        typeof idToken === "string" ? `${idToken.slice(0, 30)}...` : null
-      );
 
       if (!idToken) {
         throw new Error("Failed to get identity token from Web3Auth");
@@ -126,7 +112,6 @@ export default function SignupPage() {
         await getXrplWalletFromWeb3AuthPrivKey(privKeyHexNo0x);
 
       const walletAddress = xrplWallet.classicAddress;
-      console.log("Derived XRPL wallet address:", walletAddress);
 
       const resp = await fetch(`${apiBase}/auth/web3auth/sync`, {
         method: "POST",
@@ -139,12 +124,6 @@ export default function SignupPage() {
       });
 
       const data = await resp.json().catch(() => null);
-
-      console.log("Backend /auth/web3auth/sync response:", {
-        status: resp.status,
-        ok: resp.ok,
-        data,
-      });
 
       if (!resp.ok) {
         throw new Error(data?.message || "Signup failed");

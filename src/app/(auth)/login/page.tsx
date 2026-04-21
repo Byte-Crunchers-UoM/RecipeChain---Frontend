@@ -93,12 +93,9 @@ export default function LoginPage() {
       await closeWeb3AuthModal(readyWeb3Auth);
 
       const tokenInfo: any = await readyWeb3Auth.getIdentityToken();
-      console.log("Web3Auth tokenInfo:", tokenInfo);
 
       const idToken =
         typeof tokenInfo === "string" ? tokenInfo : tokenInfo?.idToken;
-
-      console.log("Has idToken:", !!idToken);
 
       if (!idToken) {
         throw new Error("Failed to get identity token from Web3Auth");
