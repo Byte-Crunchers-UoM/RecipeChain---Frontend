@@ -2,13 +2,11 @@ import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/layout/MainSidebar"; 
-import Header from "@/components/layout/Header"; 
 
 import { RecipeFilterProvider } from "@/lib/context/RecipeFilterContext";
 import { RecipeCartProvider } from "@/lib/context/RecipeCartContext";
 import RecipeCartOverlay from "@/components/recipe/RecipeCartOverlay";
 import { Footer } from "@/components/layout/Footer";
-import { CTASection, HeroSection } from "@/components/home";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
