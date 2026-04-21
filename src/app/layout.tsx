@@ -8,6 +8,7 @@ import { RecipeFilterProvider } from "@/lib/context/RecipeFilterContext";
 import { RecipeCartProvider } from "@/lib/context/RecipeCartContext";
 import RecipeCartOverlay from "@/components/recipe/RecipeCartOverlay";
 import { Footer } from "@/components/layout/Footer";
+import { CTASection, HeroSection } from "@/components/home";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -24,10 +25,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         
         <RecipeCartProvider>
           <RecipeFilterProvider>
-            
-            <Header notificationCount={1} /> 
-
-            {/* The main layout wrapper */}
+           {/* The main layout wrapper */}
             <div className="flex flex-1 overflow-hidden">
               
               <Sidebar />

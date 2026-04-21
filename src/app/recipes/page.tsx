@@ -6,6 +6,7 @@ import {RecipePreview} from '@/components/recipe/RecipePreview';
 import { Recipe } from '@/lib/types/Recipe';
 import { fetchRecipes } from '@/services/recipeService';
 import { useRecipeFilterContext } from '@/lib/context/RecipeFilterContext';
+import Header from '@/components/layout/Header';
 interface MarcketplaceProps {
   Recipe: Recipe;
 }
@@ -37,7 +38,12 @@ export default function MarketplacePage({Recipe}:MarcketplaceProps) {
    
   }, []);
   return (
+
+     <>
+      <Header notificationCount={1} />
+
     <div className="w-full p-8 bg-white min-h-screen">
+      
 
 
       {/* --- MAIN CONTENT: Recipe Grid --- */}
@@ -72,5 +78,6 @@ export default function MarketplacePage({Recipe}:MarcketplaceProps) {
       )}
 
     </div>
+    </>
   );
 }

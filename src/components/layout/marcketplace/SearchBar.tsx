@@ -1,41 +1,38 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { useRecipeFilterContext } from '@/lib/context/RecipeFilterContext';
 import { searchRecipes } from '@/services/recipeService';
+import { useDebounce } from '@/lib/utils/useDebounce';
 
 export function SearchBar() {
   const [text, setText] = useState('');
+  const debouncedText = useDebounce(text, 500); // Debounce the input value
   const { setRecipes, setIsLoading, applyFilters } = useRecipeFilterContext();
-  const isFirstRender = useRef(true);
 
-
+  // Effect runs only when debouncedText changes (after 500ms)
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    if (debouncedText.trim() === '') {
+      applyFilters();
       return;
     }
 
-    const timer = setTimeout(async () => {
-      if (text.trim() === '') {
-        applyFilters();
-        return;
-      }
-
+    const performSearch = async () => {
       setIsLoading(true);
       try {
-        const results = await searchRecipes(text);
+        const results = await searchRecipes(debouncedText);
         setRecipes(results);
       } catch (error) {
         console.error("Search failed:", error);
+        setRecipes([]);
       } finally {
         setIsLoading(false);
       }
-    }, 500);
+    };
 
-    return () => clearTimeout(timer);
-  }, [text]); 
+    performSearch();
+  }, [debouncedText, setRecipes, setIsLoading, applyFilters]);
 
   return (
     <div className="relative w-full max-w-md">
