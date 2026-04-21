@@ -87,7 +87,6 @@ export default function SignupPage() {
       await resetAll();
       await forceFreshWeb3AuthPopup();
 
-      console.log("Starting Web3Auth signup flow...");
       await connect();
 
       const readyWeb3Auth = await waitForConnectedWeb3Auth();
@@ -125,12 +124,6 @@ export default function SignupPage() {
       });
 
       const data = await resp.json().catch(() => null);
-
-      console.log("Backend /auth/web3auth/sync response:", {
-        status: resp.status,
-        ok: resp.ok,
-        data,
-      });
 
       if (!resp.ok) {
         throw new Error(data?.message || "Signup failed");

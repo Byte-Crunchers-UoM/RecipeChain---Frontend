@@ -1,3 +1,39 @@
+/**
+ * Typed error thrown by Seller KYC API calls.
+ *
+ * @property httpStatus  - HTTP status code from the response.
+ * @property messageCode - Machine-readable error code from the API (e.g. "duplicate_seller_identity").
+ * @property field       - Which identity field triggered the error ("nicNo" | "phoneNo").
+ * @property status      - KYC status of the conflicting record ("pending" | "rejected" | "approved").
+ * @property friendlyMessage - Human-readable message suitable for display in the UI.
+ */
+export class ApiError extends Error {
+  messageCode?: string;
+  field?: "nicNo" | "phoneNo";
+  status?: "pending" | "rejected" | "approved";
+  friendlyMessage?: string;
+  httpStatus: number;
+
+  constructor(
+    message: string,
+    httpStatus: number,
+    extra?: {
+      messageCode?: string;
+      field?: string;
+      status?: string;
+      friendlyMessage?: string;
+    }
+  ) {
+    super(message);
+    this.name = "ApiError";
+    this.httpStatus = httpStatus;
+    this.messageCode = extra?.messageCode;
+    this.field = extra?.field as "nicNo" | "phoneNo" | undefined;
+    this.status = extra?.status as "pending" | "rejected" | "approved" | undefined;
+    this.friendlyMessage = extra?.friendlyMessage;
+  }
+}
+
 export type MeResponse = {
   success?: boolean;
   message?: string;
@@ -110,19 +146,19 @@ export async function submitSellerKyc(formData: FormData) {
     body: formData,
   });
 
-  const result: any = await parseApiResponse(response);
+  const result: Record<string, unknown> = await parseApiResponse(response);
 
   if (!response.ok) {
-    const error: any = new Error(
-      result?.friendlyMessage || result?.message || "Failed to submit KYC"
+    throw new ApiError(
+      String(result?.friendlyMessage || result?.message || "Failed to submit KYC"),
+      response.status,
+      {
+        messageCode: result?.message as string | undefined,
+        field: result?.field as string | undefined,
+        status: result?.status as string | undefined,
+        friendlyMessage: result?.friendlyMessage as string | undefined,
+      }
     );
-
-    error.messageCode = result?.message;
-    error.field = result?.field;
-    error.status = result?.status;
-    error.friendlyMessage = result?.friendlyMessage;
-
-    throw error;
   }
 
   return result;
