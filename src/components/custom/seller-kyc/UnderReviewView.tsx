@@ -65,35 +65,6 @@ function ReviewCard({
   );
 }
 
-function SummaryCard({
-  submittedAt,
-  onViewDetails,
-}: {
-  submittedAt?: string | null;
-  onViewDetails: () => void;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-sm text-slate-500">Submitted on</p>
-          <p className="mt-2 text-base font-semibold text-slate-900">
-            {formatSubmittedDate(submittedAt)}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={onViewDetails}
-          className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-teal-700 transition hover:bg-slate-50 hover:border-teal-300"
-        >
-          View Submitted Details
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function UnderReviewView({
   submittedAt,
   onViewDetails,

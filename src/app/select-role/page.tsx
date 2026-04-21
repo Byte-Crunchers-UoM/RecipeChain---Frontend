@@ -233,8 +233,7 @@ export default function SelectRolePage() {
             <div className="flex items-start gap-3">
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
               <p className="text-center text-sm leading-6 text-amber-900">
-                This selection is permanent. Your account role cannot be changed after
-                confirmation. Select Your Account Role.
+                This selection is permanent. Your account role cannot be changed after confirmation.
               </p>
             </div>
           </div>

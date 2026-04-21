@@ -9,7 +9,6 @@ import {
   LayoutGrid,
   TrendingUp,
   BookOpen,
-  Heart,
   User as UserIcon,
   LogOut,
   Bell,

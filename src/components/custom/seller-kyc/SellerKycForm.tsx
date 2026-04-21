@@ -1468,7 +1468,7 @@ export default function SellerKycForm() {
         rejectedAt={kycStatus?.verification_submitted_at}
         rejectionReason={kycStatus?.rejection_reason}
         onResubmit={handleResubmitRejectedKyc}
-        onSupport={() => window.alert("Support page not connected yet.")}
+        onSupport={() => router.push("/contact-us")}
       />
     );
   }
