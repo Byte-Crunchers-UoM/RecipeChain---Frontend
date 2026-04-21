@@ -13,8 +13,8 @@ import { useRouter } from "next/navigation";
 
 type Props = {
   submittedAt?: string | null;
-  onViewDetails: () => void;
-  onLogout: () => void;
+  onViewDetailsAction: () => void;
+  onLogoutAction: () => void | Promise<void>;
 };
 
 function formatSubmittedDate(dateString?: string | null) {
@@ -53,7 +53,7 @@ function ReviewCard({
   description: string;
 }) {
   return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-4">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
       <div className="flex items-start gap-3">
         <FileText className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
         <div>
@@ -67,14 +67,14 @@ function ReviewCard({
 
 export default function UnderReviewView({
   submittedAt,
-  onViewDetails,
-  onLogout,
+  onViewDetailsAction,
+  onLogoutAction,
 }: Props) {
   const router = useRouter();
 
   const handleLogoutClick = async () => {
     try {
-      await onLogout();
+      await onLogoutAction();
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -83,12 +83,12 @@ export default function UnderReviewView({
   return (
     <div className="min-h-screen bg-[#F3F5F7]">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-2">
+        <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-1">
           <Image
             src="/Logo.png"
             alt="RecipeChain logo"
-            width={50}
-            height={50}
+            width={40}
+            height={40}
             className="h-auto w-[50px] object-contain"
             priority
           />
@@ -97,35 +97,31 @@ export default function UnderReviewView({
             <button
               type="button"
               onClick={handleLogoutClick}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               <LogOut className="h-4 w-4" />
               Logout
             </button>
 
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-            >
+            <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800">
               Status: Under Review
-              
-            </button>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1280px] px-6 py-8">
-        <div className="mx-auto max-w-[760px] rounded-[24px] border border-slate-200 bg-white px-7 py-7 shadow-[0_8px_24px_rgba(15,23,42,0.07)]">
+      <main className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6 sm:py-8">
+        <div className="mx-auto max-w-[860px] rounded-[24px] border border-slate-200 bg-white px-6 py-6 shadow-[0_8px_24px_rgba(15,23,42,0.07)] sm:px-7 sm:py-7">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-medium text-amber-700">
             <Clock3 className="h-4 w-4" />
             Under Review
           </div>
 
-          <h1 className="text-[34px] font-bold leading-[1.1] tracking-[-0.02em] text-slate-800 sm:text-[44px]">
+          <h1 className="text-[32px] font-bold leading-[1.1] tracking-[-0.02em] text-slate-800 sm:text-[44px]">
             Your Verification Is Being Reviewed
           </h1>
 
-          <p className="mt-4 max-w-2xl text-[15px] leading-7 text-slate-500 sm:text-[16px]">
+          <p className="mt-4 max-w-3xl text-[15px] leading-7 text-slate-500 sm:text-[16px]">
             Our compliance team is carefully reviewing your submission. This
             process typically takes 24–48 hours to ensure security and accuracy.
           </p>
@@ -182,81 +178,80 @@ export default function UnderReviewView({
             </div>
           </div>
 
-          <div className="mt-8 flex justify-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-teal-50">
-              <Clock3 className="h-10 w-10 text-teal-600" />
-            </div>
-          </div>
-
-          <div className="mt-8">
-            <h2 className="text-2xl font-semibold tracking-[-0.01em] text-slate-800">
-              What&apos;s being reviewed:
-            </h2>
-
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <ReviewCard
-                title="Identity Documents"
-                description="Verifying authenticity and validity"
-              />
-              <ReviewCard
-                title="Personal Information"
-                description="Cross-checking details for accuracy"
-              />
-              <ReviewCard
-                title="Compliance Check"
-                description="Ensuring regulatory requirements"
-              />
-              <ReviewCard
-                title="Fraud Prevention"
-                description="Security and risk assessment"
-              />
-            </div>
-          </div>
-
-          <div className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-sm text-slate-500">Submitted on</p>
-                <p className="mt-2 text-base font-semibold text-slate-900">
-                  {formatSubmittedDate(submittedAt)}
-                </p>
+          <div className="mt-8 grid items-stretch gap-5 lg:grid-cols-2">
+            <div className="h-full rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex justify-center lg:justify-start">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-teal-50">
+                  <Clock3 className="h-8 w-8 text-teal-600" />
+                </div>
               </div>
 
-              <button
-                type="button"
-                onClick={onViewDetails}
-                className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-teal-700 hover:bg-slate-50"
-              >
-                View Submitted Details
-              </button>
+              <h2 className="mt-5 text-2xl font-semibold text-slate-800">
+                What&apos;s being reviewed:
+              </h2>
+
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <ReviewCard
+                  title="Identity Documents"
+                  description="Verifying authenticity and validity"
+                />
+                <ReviewCard
+                  title="Personal Information"
+                  description="Cross-checking details for accuracy"
+                />
+                <ReviewCard
+                  title="Compliance Check"
+                  description="Ensuring regulatory requirements"
+                />
+                <ReviewCard
+                  title="Fraud Prevention"
+                  description="Security and risk assessment"
+                />
+              </div>
+            </div>
+
+            <div className="flex h-full flex-col justify-between space-y-4">
+              <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">Submitted on</p>
+                    <p className="mt-2 text-base font-semibold text-slate-900">
+                      {formatSubmittedDate(submittedAt)}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={onViewDetailsAction}
+                    className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-teal-700 transition-all duration-200 hover:border-teal-600 hover:bg-teal-600 hover:text-white"
+                  >
+                    View Submitted Details
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white px-5 py-5">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">
+                    Need help?
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Contact support if you have questions about your seller
+                    verification or submitted details.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => router.push("/contact-us")}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-[15px] font-semibold text-slate-800 transition-all duration-200 hover:border-teal-600 hover:bg-teal-600 hover:text-white"
+                >
+                  <Headphones className="h-4 w-4" />
+                  Contact Support
+                </button>
+              </div>
             </div>
           </div>
-
-          <div className="mt-7">
-            <button
-              type="button"
-              onClick={() => router.push("/contact-us")}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-[15px] font-semibold text-slate-800 hover:bg-slate-50 sm:w-auto sm:min-w-[280px]"
-            >
-              <Headphones className="h-4 w-4" />
-              Contact Support
-            </button>
-          </div>
-
-          <p className="mt-7 text-center text-sm text-slate-500">
-            Seller features are temporarily disabled during the review process.
-          </p>
-        </div>
-
-        <div className="mt-6 flex justify-center">
-          <button
-            type="button"
-            onClick={handleLogoutClick}
-            className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-10 py-4 text-base font-semibold text-white shadow-sm hover:bg-teal-700"
-          >
-            <LogOut className="h-5 w-5" />
-            Logout
-          </button>
         </div>
       </main>
     </div>

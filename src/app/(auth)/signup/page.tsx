@@ -10,9 +10,6 @@ import { useAuth } from "@/context/AuthContext";
 import { getWeb3AuthPrivateKey } from "@/lib/web3/getWeb3AuthPrivKey";
 import { getXrplWalletFromWeb3AuthPrivKey } from "@/lib/xrpl/getXrplWallet";
 import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
-import { getSellerEntryRoute } from "@/lib/getSellerEntryRoute";
-
-const BUYER_HOME = "/buyer/profile";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -24,14 +21,13 @@ export default function SignupPage() {
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
 
-  const routeByRole = async (role: any) => {
-    let target = "/select-role";
-
-    if (role === "seller") {
-      target = await getSellerEntryRoute();
-    } else if (role === "buyer") {
-      target = BUYER_HOME;
-    }
+  const routeByRole = (role: any) => {
+    const target =
+      role === "seller"
+        ? "/seller/dashboard"
+        : role === "buyer"
+        ? "/marketplace"
+        : "/select-role";
 
     if (typeof window !== "undefined") {
       window.location.replace(target);
@@ -89,7 +85,6 @@ export default function SignupPage() {
       await resetAll();
       await forceFreshWeb3AuthPopup();
 
-      console.log("Starting Web3Auth signup flow...");
       await connect();
 
       const readyWeb3Auth = await waitForConnectedWeb3Auth();
@@ -99,25 +94,11 @@ export default function SignupPage() {
         );
       }
 
-      console.log("Web3Auth connected:", {
-        connected: readyWeb3Auth.connected,
-        hasProvider: !!readyWeb3Auth.provider,
-        providerName: readyWeb3Auth.connectedConnectorName || "unknown",
-      });
-
       await closeWeb3AuthModal(readyWeb3Auth);
 
       const tokenInfo: any = await readyWeb3Auth.getIdentityToken();
-      console.log("Web3Auth tokenInfo:", tokenInfo);
-
       const idToken =
         typeof tokenInfo === "string" ? tokenInfo : tokenInfo?.idToken;
-
-      console.log("Has idToken:", !!idToken);
-      console.log(
-        "Token preview:",
-        typeof idToken === "string" ? `${idToken.slice(0, 30)}...` : null
-      );
 
       if (!idToken) {
         throw new Error("Failed to get identity token from Web3Auth");
@@ -128,7 +109,6 @@ export default function SignupPage() {
         await getXrplWalletFromWeb3AuthPrivKey(privKeyHexNo0x);
 
       const walletAddress = xrplWallet.classicAddress;
-      console.log("Derived XRPL wallet address:", walletAddress);
 
       const resp = await fetch(`${apiBase}/auth/web3auth/sync`, {
         method: "POST",
@@ -137,82 +117,25 @@ export default function SignupPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ walletAddress }),
+        body: JSON.stringify({ walletAddress, mode: "signup" }),
       });
 
       const data = await resp.json().catch(() => null);
 
-      console.log("Backend /auth/web3auth/sync response:", {
-        status: resp.status,
-        ok: resp.ok,
-        data,
-      });
-
       if (!resp.ok) {
-        if (resp.status === 409) {
-          throw new Error(
-            data?.message || "Please use your original sign-in method."
-          );
-        }
-
         throw new Error(data?.message || "Signup failed");
       }
 
       await closeWeb3AuthModal(readyWeb3Auth);
 
       const me = await refreshSession();
-
-      if (me?.role === "buyer") {
-        if (typeof window !== "undefined") {
-          window.location.replace(BUYER_HOME);
-          return;
-        }
-        router.replace(BUYER_HOME);
-        return;
-      }
-
-      if (me?.role === "seller") {
-        const sellerTarget = await getSellerEntryRoute();
-
-        if (typeof window !== "undefined") {
-          window.location.replace(sellerTarget);
-          return;
-        }
-        router.replace(sellerTarget);
-        return;
-      }
-
-      await routeByRole(me?.role);
+      routeByRole(me?.role);
     } catch (e: any) {
       console.error("Signup error:", e);
       await closeWeb3AuthModal(web3Auth);
 
-      const msg = e?.message || "Failed to create account. Please try again.";
-
-      if (
-        msg.includes("Wallet is not connected") ||
-        msg.includes("Wallet is not ready yet") ||
-        msg.includes("fetch project configurations")
-      ) {
-        setError(
-          "Web3Auth is not ready right now. Please check your internet connection and try again."
-        );
-        return;
-      }
-
-      if (msg.includes("Invalid Web3Auth token")) {
-        setError(
-          "Web3Auth token verification failed. Check the backend terminal logs for the exact reason."
-        );
-        return;
-      }
-
-      if (msg.includes("Email missing in Web3Auth token")) {
-        setError(
-          "This login provider did not return an email. Check your Web3Auth provider settings."
-        );
-        return;
-      }
+      const msg =
+        e?.message || "Failed to create account. Please try again.";
 
       setError(msg);
     }

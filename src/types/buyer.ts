@@ -3,6 +3,8 @@ export type BuyerBadge = {
   title: string;
   description: string;
   earned: boolean;
+  progress?: number;
+  target?: number;
 };
 
 export type BuyerActivityItem = {
@@ -10,7 +12,7 @@ export type BuyerActivityItem = {
   title: string;
   amount_xrp: number;
   status: string;
-  type: "purchase";
+  type: "purchase" | "sale" | "review";
   date: string;
 };
 
@@ -28,9 +30,8 @@ export type BuyerProfile = {
   account_balance: number;
   saved_recipes_count: number;
   feedback_count: number;
-  badges: BuyerBadge[];
-  recent_activity: BuyerActivityItem[];
   notification_count?: number;
   cart_count?: number;
-  account_status?: "active" | "deletion_requested";
+  recent_activity?: BuyerActivityItem[];
+  badges?: BuyerBadge[];
 };

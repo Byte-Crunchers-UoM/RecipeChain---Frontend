@@ -82,7 +82,6 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
 
   const [profile, setProfile] = useState<BuyerProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
-  const [editRedirectLoading, setEditRedirectLoading] = useState(false);
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -109,19 +108,21 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        console.error("Buyer layout profile load error:", data?.message);
         setProfile(null);
         return;
       }
 
       setProfile(data?.profile || null);
-    } catch (error) {
-      console.error("Buyer layout profile load error:", error);
+    } catch {
       setProfile(null);
     } finally {
       setProfileLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -141,18 +142,9 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
   }, [notifOpen, profileOpen]);
 
   useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
-
-  useEffect(() => {
-    const onProfileUpdated = () => {
-      loadProfile();
-    };
-
+    const onProfileUpdated = () => loadProfile();
     const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        loadProfile();
-      }
+      if (document.visibilityState === "visible") loadProfile();
     };
 
     window.addEventListener(
@@ -188,8 +180,7 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
 
   const displayName = getDisplayName(profile, user);
   const profileEmail =
-    String(profile?.email || user?.email || "").trim() ||
-    "buyer@recipechain.io";
+    String(profile?.email || user?.email || "").trim() || "buyer@recipechain.io";
   const avatarText = getInitials(displayName, profileEmail);
   const profileBio =
     String(profile?.bio || "").trim() || "XRPL buyer • Recipe collector";
@@ -207,210 +198,225 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
   const isCookbookPage = pathname === "/buyer/cookbook";
   const isProfilePage = pathname === "/buyer/profile";
 
+  const openEditProfile = () => {
+    setProfileOpen(false);
+
+    if (pathname === "/buyer/profile") {
+      router.replace("/buyer/profile?edit=1", { scroll: false });
+      return;
+    }
+
+    router.push("/buyer/profile?edit=1");
+  };
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <aside className="flex w-[240px] flex-col border-r border-gray-200 bg-white">
-        <div className="flex h-16 items-center gap-3 border-b border-gray-200 px-5">
-          <Image src="/Logo.png" alt="RecipeChain" width={34} height={34} />
-          <div className="font-semibold text-gray-900">RecipeChain</div>
-        </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Unified top header */}
+      <header className="border-b border-slate-200 bg-white">
+        <div className="flex h-[108px] items-center">
+          {/* Left brand area aligns to sidebar width */}
+          <div className="flex w-[288px] items-center border-r border-slate-200 px-10">
+            <div className="flex items-center gap-4">
+              <Image
+                src="/Logo.png"
+                alt="RecipeChain"
+                width={42}
+                height={42}
+                className="h-auto w-[42px]"
+              />
+              <div className="text-[20px] font-semibold leading-none text-slate-900">
+                RecipeChain
+              </div>
+            </div>
+          </div>
 
-        <nav className="space-y-2 px-4 py-6">
-          {navItems.map((item) => {
-            const Icon = item.icon;
+          {/* Center title/search */}
+          <div className="flex min-w-0 flex-1 items-center px-8">
+            {isCookbookPage ? (
+              <div className="max-w-2xl flex-1">
+                <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <input
+                    value={topSearch}
+                    onChange={(e) => setTopSearch(e.target.value)}
+                    placeholder="Search your cookbook"
+                    className="w-full bg-transparent text-sm text-slate-700 outline-none"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") runTopSearch();
+                    }}
+                  />
+                  <button
+                    onClick={runTopSearch}
+                    className="rounded-lg p-1 transition hover:bg-white"
+                    aria-label="Search"
+                  >
+                    <Search size={18} className="text-slate-500" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex min-w-0 flex-1 flex-col justify-center">
+                <div className="text-[20px] font-semibold leading-tight text-slate-900">
+                  {isProfilePage ? "My Profile" : ""}
+                </div>
+                <div className="mt-2 text-[14px] leading-none text-slate-500">
+                  {isProfilePage
+                    ? "Manage your account, wallet, and activity"
+                    : ""}
+                </div>
+              </div>
+            )}
 
-            const active =
-              pathname === item.href ||
-              (pathname === "/buyer/cookbook" &&
-                item.href.startsWith("/buyer/cookbook"));
-
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={[
-                  "relative flex items-center gap-4 rounded-2xl px-4 py-3 text-[16px] transition",
-                  active
-                    ? "bg-teal-50 font-semibold text-teal-700"
-                    : "text-slate-600 hover:bg-slate-50",
-                ].join(" ")}
-              >
-                {active && (
-                  <span className="absolute bottom-2 left-0 top-2 w-2 rounded-r-xl bg-teal-700" />
-                )}
-
-                <Icon
-                  size={22}
-                  className={active ? "text-teal-700" : "text-slate-500"}
-                />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="mt-auto border-t border-gray-200 p-4">
-          <button
-            onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm text-red-600 transition hover:bg-red-50"
-          >
-            <LogOut size={18} />
-            Logout
-          </button>
-        </div>
-      </aside>
-
-      <div className="min-w-0 flex-1">
-        <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-5">
-          {isCookbookPage ? (
-            <div className="max-w-2xl flex-1">
-              <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2">
-                <input
-                  value={topSearch}
-                  onChange={(e) => setTopSearch(e.target.value)}
-                  placeholder="Search your cookbook"
-                  className="w-full bg-transparent text-sm text-gray-700 outline-none"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") runTopSearch();
-                  }}
-                />
-
+            {/* Right action area */}
+            <div className="relative ml-6 flex items-center gap-4 py-2">
+              <div ref={notifRef} className="relative">
                 <button
-                  onClick={runTopSearch}
-                  className="rounded-lg p-1 transition hover:bg-white"
-                  aria-label="Search"
+                  onClick={() => {
+                    setNotifOpen((s) => !s);
+                    setCartOpen(false);
+                    setProfileOpen(false);
+                  }}
+                  className="relative flex h-11 w-11 items-center justify-center rounded-xl transition hover:bg-slate-50"
+                  aria-label="Notifications"
                 >
-                  <Search size={18} className="text-gray-500" />
+                  <Bell size={23} className="text-slate-600" />
+                  {notificationCount > 0 ? (
+                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-teal-600 text-[10px] text-white">
+                      {notificationCount}
+                    </span>
+                  ) : null}
                 </button>
               </div>
-            </div>
-          ) : (
-            <div className="flex-1">
-              <div className="text-lg font-semibold text-gray-900">
-                {isProfilePage ? "My Profile" : ""}
-              </div>
-              <div className="text-xs text-gray-500">
-                {isProfilePage ? "Manage your account, wallet, and activity" : ""}
-              </div>
-            </div>
-          )}
 
-          <div className="relative ml-5 flex items-center gap-3">
-            <div ref={notifRef} className="relative">
               <button
                 onClick={() => {
-                  setNotifOpen((s) => !s);
-                  setCartOpen(false);
+                  setCartOpen(true);
+                  setNotifOpen(false);
                   setProfileOpen(false);
                 }}
-                className="relative rounded-xl p-2 transition hover:bg-gray-50"
-                aria-label="Notifications"
+                className="relative flex h-11 w-11 items-center justify-center rounded-xl transition hover:bg-slate-50"
+                aria-label="Cart"
               >
-                <Bell size={20} className="text-slate-600" />
-                {notificationCount > 0 ? (
+                <ShoppingCart size={23} className="text-slate-600" />
+                {cartCount > 0 ? (
                   <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-teal-600 text-[10px] text-white">
-                    {notificationCount}
+                    {cartCount}
                   </span>
                 ) : null}
               </button>
 
-              {notifOpen && (
-                <div className="absolute right-0 top-12 z-50 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
-                  <div className="border-b px-4 py-3 text-sm font-medium text-gray-900">
-                    Notifications
-                  </div>
-                  <div className="px-4 py-5 text-sm text-gray-500">
-                    Notifications are not connected yet.
-                  </div>
-                </div>
-              )}
-            </div>
+              <div ref={profileRef} className="relative">
+                <button
+                  onClick={() => {
+                    setProfileOpen((s) => !s);
+                    setNotifOpen(false);
+                    setCartOpen(false);
+                  }}
+                  className="flex h-[46px] w-[46px] items-center justify-center overflow-hidden rounded-full bg-teal-600 font-semibold text-white ring-2 ring-slate-100"
+                  aria-label="Profile"
+                >
+                  {profile?.profile_picture ? (
+                    <img
+                      src={profile.profile_picture}
+                      alt={displayName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    avatarText
+                  )}
+                </button>
 
-            <button
-              onClick={() => {
-                setCartOpen(true);
-                setNotifOpen(false);
-                setProfileOpen(false);
-              }}
-              className="relative rounded-xl p-2 transition hover:bg-gray-50"
-              aria-label="Cart"
-            >
-              <ShoppingCart size={20} className="text-slate-600" />
-              {cartCount > 0 ? (
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-teal-600 text-[10px] text-white">
-                  {cartCount}
-                </span>
-              ) : null}
-            </button>
+                {profileOpen && (
+                  <div className="absolute right-0 top-14 z-50 w-72 overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-2xl">
+                    <div className="flex gap-3 p-4">
+                      {profile?.profile_picture ? (
+                        <img
+                          src={profile.profile_picture}
+                          alt={displayName}
+                          className="h-14 w-14 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-600 font-semibold text-white">
+                          {avatarText}
+                        </div>
+                      )}
 
-            <div ref={profileRef} className="relative">
-              <button
-                onClick={() => {
-                  setProfileOpen((s) => !s);
-                  setNotifOpen(false);
-                  setCartOpen(false);
-                }}
-                className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-teal-600 font-semibold text-white"
-                aria-label="Profile"
-              >
-                {profile?.profile_picture ? (
-                  <img
-                    src={profile.profile_picture}
-                    alt={displayName}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  avatarText
-                )}
-              </button>
-
-              {profileOpen && (
-                <div className="absolute right-0 top-12 z-50 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
-                  <div className="flex gap-3 p-4">
-                    {profile?.profile_picture ? (
-                      <img
-                        src={profile.profile_picture}
-                        alt={displayName}
-                        className="h-12 w-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-600 font-semibold text-white">
-                        {avatarText}
-                      </div>
-                    )}
-
-                    <div className="min-w-0">
-                      <div className="truncate font-semibold text-gray-900">
-                        {profileLoading ? "Loading..." : displayName}
-                      </div>
-                      <div className="truncate text-xs text-gray-500">
-                        {profileLoading ? "Loading..." : profileEmail}
-                      </div>
-                      <div className="mt-1 text-xs text-gray-400">
-                        {profileLoading ? "Loading..." : profileBio}
+                      <div className="min-w-0">
+                        <div className="truncate text-base font-semibold text-slate-900">
+                          {profileLoading ? "Loading..." : displayName}
+                        </div>
+                        <div className="truncate text-sm text-slate-500">
+                          {profileLoading ? "Loading..." : profileEmail}
+                        </div>
+                        <div className="mt-1.5 line-clamp-2 text-xs text-slate-400">
+                          {profileLoading ? "Loading..." : profileBio}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="px-4 pb-4">
-                    <button
-                      onClick={() => {
-                        setEditRedirectLoading(true);
-                        setProfileOpen(false);
-                        router.push("/buyer/profile?edit=1");
-                      }}
-                      className="w-full rounded-xl bg-teal-600 py-2 text-sm font-medium text-white transition hover:bg-teal-700"
-                    >
-                      {editRedirectLoading ? "Opening..." : "Edit Profile"}
-                    </button>
+                    <div className="px-4 pb-4">
+                      <button
+                        onClick={openEditProfile}
+                        className="w-full rounded-2xl bg-teal-600 py-3 text-sm font-semibold text-white transition hover:bg-teal-700"
+                      >
+                        Edit Profile
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <main className="p-5">{children}</main>
+      {/* Main body below unified header */}
+      <div className="flex">
+        <aside className="flex min-h-[calc(100vh-108px)] w-[288px] flex-col border-r border-slate-200 bg-white">
+          <nav className="space-y-2 px-4 py-6">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active =
+                pathname === item.href ||
+                (pathname === "/buyer/cookbook" &&
+                  item.href.startsWith("/buyer/cookbook"));
+
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={[
+                    "relative flex items-center gap-4 rounded-2xl px-5 py-4 text-[16px] transition",
+                    active
+                      ? "bg-teal-50 font-semibold text-teal-700"
+                      : "text-slate-600 hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  {active && (
+                    <span className="absolute bottom-2 left-0 top-2 w-2 rounded-r-xl bg-teal-700" />
+                  )}
+
+                  <Icon
+                    size={24}
+                    className={active ? "text-teal-700" : "text-slate-500"}
+                  />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="mt-auto border-t border-slate-200 p-4">
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm text-red-600 transition hover:bg-red-50"
+            >
+              <LogOut size={18} />
+              Logout
+            </button>
+          </div>
+        </aside>
+
+        <main className="min-w-0 flex-1 p-6">{children}</main>
       </div>
 
       {cartOpen && (
@@ -419,28 +425,28 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
           onClick={() => setCartOpen(false)}
         >
           <div
-            className="w-full max-w-lg overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+            className="w-full max-w-lg overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b px-5 py-4">
-              <div className="font-semibold text-gray-900">Your Cart</div>
+              <div className="font-semibold text-slate-900">Your Cart</div>
               <button
                 onClick={() => setCartOpen(false)}
-                className="rounded-lg px-2 py-1 hover:bg-gray-100"
+                className="rounded-lg px-2 py-1 hover:bg-slate-100"
                 aria-label="Close cart"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-5 text-sm text-gray-500">
+            <div className="p-5 text-sm text-slate-500">
               Cart is not connected yet.
             </div>
 
             <div className="border-t p-5">
               <button
                 onClick={() => setCartOpen(false)}
-                className="w-full rounded-xl bg-teal-600 py-3 text-sm font-medium text-white transition hover:bg-teal-700"
+                className="w-full rounded-2xl bg-teal-600 py-3 text-sm font-semibold text-white transition hover:bg-teal-700"
               >
                 Continue
               </button>

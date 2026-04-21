@@ -1,3 +1,39 @@
+/**
+ * Typed error thrown by Seller KYC API calls.
+ *
+ * @property httpStatus  - HTTP status code from the response.
+ * @property messageCode - Machine-readable error code from the API (e.g. "duplicate_seller_identity").
+ * @property field       - Which identity field triggered the error ("nicNo" | "phoneNo").
+ * @property status      - KYC status of the conflicting record ("pending" | "rejected" | "approved").
+ * @property friendlyMessage - Human-readable message suitable for display in the UI.
+ */
+export class ApiError extends Error {
+  messageCode?: string;
+  field?: "nicNo" | "phoneNo";
+  status?: "pending" | "rejected" | "approved";
+  friendlyMessage?: string;
+  httpStatus: number;
+
+  constructor(
+    message: string,
+    httpStatus: number,
+    extra?: {
+      messageCode?: string;
+      field?: string;
+      status?: string;
+      friendlyMessage?: string;
+    }
+  ) {
+    super(message);
+    this.name = "ApiError";
+    this.httpStatus = httpStatus;
+    this.messageCode = extra?.messageCode;
+    this.field = extra?.field as "nicNo" | "phoneNo" | undefined;
+    this.status = extra?.status as "pending" | "rejected" | "approved" | undefined;
+    this.friendlyMessage = extra?.friendlyMessage;
+  }
+}
+
 export type MeResponse = {
   success?: boolean;
   message?: string;
@@ -20,10 +56,24 @@ export type SellerKycStatus = {
   nationality?: string | null;
   address?: string | null;
   phone_no?: string | null;
+  phone_no_normalized?: string | null;
   nic_no?: string | null;
+  nic_no_normalized?: string | null;
+
+  id_document_front_url?: string | null;
+  id_document_front_public_id?: string | null;
+  id_document_front_resource_type?: "image" | "raw" | null;
+  id_document_front_original_name?: string | null;
+
+  id_document_back_url?: string | null;
+  id_document_back_public_id?: string | null;
+  id_document_back_resource_type?: "image" | "raw" | null;
+  id_document_back_original_name?: string | null;
+
   cloudinary_public_id?: string | null;
   id_document_resource_type?: "image" | "raw" | null;
   id_document_original_name?: string | null;
+
   kyc_approval_page_seen?: boolean | null;
 };
 
@@ -96,10 +146,19 @@ export async function submitSellerKyc(formData: FormData) {
     body: formData,
   });
 
-  const result: SellerKycResponse = await parseApiResponse(response);
+  const result: Record<string, unknown> = await parseApiResponse(response);
 
   if (!response.ok) {
-    throw new Error(result?.message || "Failed to submit KYC");
+    throw new ApiError(
+      String(result?.friendlyMessage || result?.message || "Failed to submit KYC"),
+      response.status,
+      {
+        messageCode: result?.message as string | undefined,
+        field: result?.field as string | undefined,
+        status: result?.status as string | undefined,
+        friendlyMessage: result?.friendlyMessage as string | undefined,
+      }
+    );
   }
 
   return result;

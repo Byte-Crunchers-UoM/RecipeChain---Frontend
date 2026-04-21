@@ -43,16 +43,13 @@ export async function updateMyBuyerProfile(payload: {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data?.message || "Failed to update buyer profile");
+    throw new Error(data?.message || "Failed to update profile");
   }
 
   return data.profile;
 }
 
-export async function deleteMyAccountPermanently(): Promise<{
-  ok?: boolean;
-  message?: string;
-}> {
+export async function deleteMyAccountPermanently(): Promise<void> {
   const response = await fetch(`${API_URL}/users/me`, {
     method: "DELETE",
     credentials: "include",
@@ -66,6 +63,4 @@ export async function deleteMyAccountPermanently(): Promise<{
   if (!response.ok) {
     throw new Error(data?.message || "Failed to delete account");
   }
-
-  return data;
 }

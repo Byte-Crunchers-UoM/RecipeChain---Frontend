@@ -56,8 +56,8 @@ export default function SellerVerificationRejectedView({
 
   return (
     <div className="min-h-screen bg-[#F4F6F7]">
-      <header className="border-b border-[#ECECEC] bg-white">
-        <div className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between px-6">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-1">
           <Image
             src="/Logo.png"
             alt="RecipeChain Logo"

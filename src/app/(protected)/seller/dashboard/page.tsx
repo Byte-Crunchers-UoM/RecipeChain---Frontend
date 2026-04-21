@@ -26,10 +26,10 @@ export default function SellerDashboardPage() {
         if (cancelled) return;
 
         if (status?.verification_status !== "approved") {
-          router.replace("/seller-kyc");
+          router.replace("/seller/kyc");
           return;
         }
-      } catch (error) {
+      } catch {
         if (!cancelled) {
           router.replace("/login");
         }
@@ -43,10 +43,5 @@ export default function SellerDashboardPage() {
     };
   }, [router]);
 
-  return (
-    <div>
-      {/* your dashboard UI */}
-      Seller Dashboard
-    </div>
-  );
+  return <div>Seller Dashboard</div>;
 }
