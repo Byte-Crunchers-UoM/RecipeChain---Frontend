@@ -27,13 +27,3 @@ input[type=number]::-webkit-inner-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
-
-.no-autofill:-webkit-autofill,
-.no-autofill:-webkit-autofill:hover,
-.no-autofill:-webkit-autofill:focus,
-.no-autofill:-webkit-autofill:active {
-  -webkit-text-fill-color: #1a2632 !important;
-  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
-  box-shadow: 0 0 0 1000px #ffffff inset !important;
-  transition: background-color 9999s ease-out 0s;
-}
