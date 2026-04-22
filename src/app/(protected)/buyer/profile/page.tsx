@@ -14,14 +14,21 @@ import {
   Activity,
   Trophy,
   Trash2,
+  PlusCircle,
+  ArrowUpRight,
 } from "lucide-react";
 import EditProfileModal from "@/components/buyer/EditProfileModal";
+import WalletTopUpModal from "@/components/buyer/WalletTopUpModal";
+import WalletWithdrawModal from "@/components/buyer/WalletWithdrawModal";
+import WalletTransactionHistory from "@/components/buyer/WalletTransactionHistory";
 import {
   deleteMyAccountPermanently,
   getMyBuyerProfile,
   updateMyBuyerProfile,
 } from "@/lib/api/buyer";
+import { getMyWalletOverview } from "@/lib/api/wallet";
 import type { BuyerProfile } from "@/types/buyer";
+import type { WalletOverview } from "@/types/wallet";
 import { useAuth } from "@/context/AuthContext";
 
 const XRPL_EXPLORER_BASE =
@@ -77,7 +84,9 @@ function StatCard({
 }) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className={`mb-4 inline-flex rounded-2xl p-3 shadow-sm ${iconWrapClassName}`}>
+      <div
+        className={`mb-4 inline-flex rounded-2xl p-3 shadow-sm ${iconWrapClassName}`}
+      >
         {icon}
       </div>
       <p className="text-sm text-slate-600">{label}</p>
@@ -89,7 +98,9 @@ function StatCard({
 
 function ProgressBar({ value, target }: { value?: number; target?: number }) {
   const percentage =
-    target && target > 0 ? Math.min((Number(value || 0) / target) * 100, 100) : 0;
+    target && target > 0
+      ? Math.min((Number(value || 0) / target) * 100, 100)
+      : 0;
 
   return (
     <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
@@ -108,15 +119,35 @@ function BuyerProfileContent() {
   const { resetAll } = useAuth();
 
   const [profile, setProfile] = useState<BuyerProfile | null>(null);
+  const [walletData, setWalletData] = useState<WalletOverview | null>(null);
+
   const [loading, setLoading] = useState(true);
+  const [walletLoading, setWalletLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [modalOpen, setModalOpen] = useState(false);
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const shouldAutoOpenEdit = searchParams.get("edit") === "1";
+
+  const loadWallet = async () => {
+    try {
+      setWalletLoading(true);
+      const data = await getMyWalletOverview();
+      setWalletData(data);
+    } catch (err) {
+      console.error("Failed to load wallet overview:", err);
+      setWalletData(null);
+    } finally {
+      setWalletLoading(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -125,14 +156,27 @@ function BuyerProfileContent() {
       try {
         setLoading(true);
         setError("");
-        const data = await getMyBuyerProfile();
-        if (active) setProfile(data);
+
+        const [profileData, walletOverview] = await Promise.all([
+          getMyBuyerProfile(),
+          getMyWalletOverview().catch(() => null),
+        ]);
+
+        if (!active) return;
+
+        setProfile(profileData);
+        setWalletData(walletOverview);
       } catch (err) {
         if (active) {
-          setError(err instanceof Error ? err.message : "Failed to load profile");
+          setError(
+            err instanceof Error ? err.message : "Failed to load profile"
+          );
         }
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setWalletLoading(false);
+        }
       }
     };
 
@@ -151,14 +195,69 @@ function BuyerProfileContent() {
     }
   }, [loading, profile, shouldAutoOpenEdit]);
 
+useEffect(() => {
+  const topupStatus = searchParams.get("topup");
+
+  if (topupStatus === "cancelled") {
+    router.replace(pathname, { scroll: false });
+    return;
+  }
+
+  if (topupStatus !== "success") {
+    return;
+  }
+
+  let cancelled = false;
+
+  const refreshAfterTopup = async () => {
+    const currentBalance = Number(
+      walletData?.account_balance ?? profile?.account_balance ?? 0
+    );
+
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      if (cancelled) return;
+
+      try {
+        const latestWallet = await getMyWalletOverview();
+
+        if (cancelled) return;
+
+        setWalletData(latestWallet);
+
+        if (Number(latestWallet.account_balance || 0) > currentBalance) {
+          router.replace(pathname, { scroll: false });
+          return;
+        }
+      } catch (error) {
+        console.error("Top-up refresh failed:", error);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+
+    router.replace(pathname, { scroll: false });
+  };
+
+  void refreshAfterTopup();
+
+  return () => {
+    cancelled = true;
+  };
+}, [searchParams, router, pathname, walletData, profile]);
+
   const initials = useMemo(() => {
     return getInitials(profile?.display_name, profile?.email);
   }, [profile?.display_name, profile?.email]);
 
-  const walletExplorerUrl = getWalletExplorerUrl(profile?.wallet_address);
+  const effectiveWalletAddress =
+    walletData?.wallet_address || profile?.wallet_address || "";
+  const walletExplorerUrl = getWalletExplorerUrl(effectiveWalletAddress);
   const recentActivity = profile?.recent_activity || [];
   const badges = profile?.badges || [];
   const earnedBadges = badges.filter((badge) => badge.earned).length;
+  const effectiveBalance = Number(
+    walletData?.account_balance ?? profile?.account_balance ?? 0
+  );
 
   const closeModal = () => {
     setModalOpen(false);
@@ -187,10 +286,10 @@ function BuyerProfileContent() {
   };
 
   const handleCopyWallet = async () => {
-    if (!profile?.wallet_address) return;
+    if (!effectiveWalletAddress) return;
 
     try {
-      await navigator.clipboard.writeText(profile.wallet_address);
+      await navigator.clipboard.writeText(effectiveWalletAddress);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {
@@ -238,14 +337,21 @@ function BuyerProfileContent() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             iconWrapClassName="bg-green-50"
-            icon={<DollarSign className="h-5 w-5 text-green-600" strokeWidth={2.4} />}
+            icon={
+              <DollarSign
+                className="h-5 w-5 text-green-600"
+                strokeWidth={2.4}
+              />
+            }
             label="Total Spent"
             value={`${Number(profile.total_spent_xrp || 0).toFixed(2)} XRP`}
             subtext={`${profile.total_purchases || 0} purchases`}
           />
           <StatCard
             iconWrapClassName="bg-blue-50"
-            icon={<BookOpen className="h-5 w-5 text-blue-600" strokeWidth={2.4} />}
+            icon={
+              <BookOpen className="h-5 w-5 text-blue-600" strokeWidth={2.4} />
+            }
             label="Recipes Owned"
             value={String(profile.total_purchases || 0)}
             subtext={`${profile.saved_recipes_count || 0} saved`}
@@ -259,10 +365,12 @@ function BuyerProfileContent() {
           />
           <StatCard
             iconWrapClassName="bg-purple-50"
-            icon={<Wallet className="h-5 w-5 text-purple-600" strokeWidth={2.4} />}
+            icon={
+              <Wallet className="h-5 w-5 text-purple-600" strokeWidth={2.4} />
+            }
             label="Balance"
-            value={`${Number(profile.account_balance || 0).toFixed(2)} XRP`}
-            subtext="XRPL wallet balance"
+            value={`${effectiveBalance.toFixed(2)} XRP`}
+            subtext={walletLoading ? "Loading wallet..." : "RecipeChain wallet balance"}
           />
         </div>
 
@@ -338,14 +446,14 @@ function BuyerProfileContent() {
                 <div className="min-w-0">
                   <p className="text-sm text-slate-500">Wallet Address</p>
                   <p className="mt-2 break-all text-[15px] font-semibold text-slate-900">
-                    {formatWallet(profile.wallet_address)}
+                    {formatWallet(effectiveWalletAddress)}
                   </p>
                 </div>
 
                 <div className="min-w-0">
                   <p className="text-sm text-slate-500">Preferred Network</p>
                   <p className="mt-2 text-[15px] font-semibold text-slate-900">
-                    XRPL
+                    XRPL Testnet
                   </p>
                 </div>
 
@@ -370,14 +478,14 @@ function BuyerProfileContent() {
                 <div>
                   <p className="text-sm text-slate-500">Connected Wallet</p>
                   <p className="mt-2 break-all text-[15px] font-semibold text-slate-900">
-                    {formatWallet(profile.wallet_address)}
+                    {formatWallet(effectiveWalletAddress)}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-sm text-slate-500">Network</p>
                   <p className="mt-2 text-[15px] font-semibold text-slate-900">
-                    XRP Ledger (XRPL)
+                    XRP Ledger (XRPL) Testnet
                   </p>
                 </div>
 
@@ -386,6 +494,16 @@ function BuyerProfileContent() {
                   <span className="mt-2 inline-flex rounded-full bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700">
                     Wallet Connected
                   </span>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">RecipeChain Balance</p>
+                  <p className="mt-2 text-2xl font-bold text-slate-900">
+                    {effectiveBalance.toFixed(2)} XRP
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Use this balance to buy recipes instantly.
+                  </p>
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-2">
@@ -426,8 +544,32 @@ function BuyerProfileContent() {
                     </button>
                   )}
                 </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setTopUpOpen(true)}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-teal-700"
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    Top Up Wallet
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setWithdrawOpen(true)}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+                  >
+                    <ArrowUpRight className="h-4 w-4" />
+                    Withdraw Balance
+                  </button>
+                </div>
               </div>
             </section>
+
+            <WalletTransactionHistory
+              transactions={walletData?.recent_transactions || []}
+            />
 
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2">
@@ -609,13 +751,31 @@ function BuyerProfileContent() {
         onCloseAction={closeModal}
         onSaveAction={handleSave}
       />
+
+      <WalletTopUpModal
+        open={topUpOpen}
+        onCloseAction={() => setTopUpOpen(false)}
+        onSuccessAction={loadWallet}
+      />
+
+      <WalletWithdrawModal
+        open={withdrawOpen}
+        onCloseAction={() => setWithdrawOpen(false)}
+        onSuccessAction={loadWallet}
+      />
     </>
   );
 }
 
 export default function BuyerProfilePage() {
   return (
-    <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-teal-600" /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-teal-600" />
+        </div>
+      }
+    >
       <BuyerProfileContent />
     </Suspense>
   );
