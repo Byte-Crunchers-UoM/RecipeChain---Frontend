@@ -1,6 +1,6 @@
 import { Recipe, RecipeApiResponsed } from "@/lib/types/Recipe";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 const FETCH_TIMEOUT = 10000; // 10 seconds timeout
 
 /**
@@ -19,7 +19,7 @@ export async function fetchCart(userId: string, token: string): Promise<Recipe[]
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
-        const response = await fetch(`${BASE_URL}/api/savedrecipes/user/${userId}`,{
+        const response = await fetch(`${BASE_URL}/savedrecipes/user/${userId}`,{
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ export async function addToCart(userId: string, recipeId: string, token: string)
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
-        const response = await fetch(`${BASE_URL}/api/savedrecipes/`, {
+        const response = await fetch(`${BASE_URL}/savedrecipes/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -127,7 +127,7 @@ export async function removeFromCart(userId: string, recipeId: string, token: st
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
-        const response = await fetch(`${BASE_URL}/api/savedrecipes`, {
+        const response = await fetch(`${BASE_URL}/savedrecipes`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',

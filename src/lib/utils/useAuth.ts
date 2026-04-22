@@ -10,7 +10,7 @@ export const useAuth = () => {
     return{
         userId: "07c35d27-b6fc-4a1d-8534-e0cdf4db6138", 
         token: "fake-jwt-token-for-testing",
-        isAuthenticated: true, // Change this to 'false' if you want to test the logged-out UI!
+        isAuthenticated: false, // Change this to 'false' if you want to test the logged-out UI!
         isLoading
     };
 };

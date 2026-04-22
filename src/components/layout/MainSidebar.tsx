@@ -31,12 +31,12 @@ const menuItems: MenuItem[] = [
 export default function Sidebar() {
   const pathname = usePathname()
   
-  // 1. Hide the entire sidebar if we are on the Home page
-  if (pathname === '/') {
+  // Only show sidebar on the recipes/marketplace page
+  if (pathname !== '/recipes') {
     return null;
   }
 
-  // 2. Otherwise, calculate states for the current page
+  // Calculate states for the current page
   const isMarketplace = pathname === '/recipes'
 
   return (

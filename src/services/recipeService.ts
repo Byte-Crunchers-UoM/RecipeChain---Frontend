@@ -1,44 +1,84 @@
 import { Recipe, RecipeApiResponsed } from "@/lib/types/Recipe";
 
-export async function fetchRecipes(): Promise<Recipe[]>{
-    const response = await fetch( process.env.NEXT_PUBLIC_API_URL + "/api/recipes/");
-    const recipes:RecipeApiResponsed = await response.json();
-    return recipes.data;
-}
 
-export async function fetchFilteredRecipe(queryString: string): Promise<Recipe[]>{
-    try{
-        const url = queryString
-        ?`${process.env.NEXT_PUBLIC_API_URL}/api/recipes/filter?${queryString}`
-        :`${process.env.NEXT_PUBLIC_API_URL}/api/recipes`;
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const FETCH_TIMEOUT = 10000;
 
-        const response = await fetch(url);
+export async function fetchRecipes(): Promise<Recipe[]> {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
-        if(!response.ok){
-            throw new Error('Failed to fetch filtered recipes')
+        const response = await fetch(`${BASE_URL}/recipes`, {
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            console.error(`Failed to fetch recipes: ${response.status}`);
+            return []; 
         }
 
-        const recipes:RecipeApiResponsed =await response.json();
+        const recipes: RecipeApiResponsed = await response.json();
+        return recipes.data || [];
 
-        return recipes.data;
-    }catch(error){
+    } catch (error) {
+        console.error("Fetch Recipes Error:", error);
+        return [];
+    }
+}
+
+export async function fetchFilteredRecipe(queryString: string): Promise<Recipe[]> {
+    try {
+        const url = queryString 
+            ? `${BASE_URL}/recipes/filter?${queryString}` 
+            : `${BASE_URL}/recipes`;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+        const response = await fetch(url, {
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            console.error(`Failed to fetch filtered recipes: ${response.status}`);
+            return [];
+        }
+
+        const recipes: RecipeApiResponsed = await response.json();
+        return recipes.data || [];
+
+    } catch (error) {
         console.error("Fetch Filtered Recipes Error:", error);
-    throw error;
+        return [];
     }
 }
 
 export const searchRecipes = async (query: string): Promise<Recipe[]> => {
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/recipes/search?q=${query}`);
-    
-    if (!response.ok) {
-      throw new Error('Search failed');
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+        const response = await fetch(`${BASE_URL}/recipes/search?q=${query}`, {
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            console.error(`Search failed: ${response.status}`);
+            return [];
+        }
+
+        const data: RecipeApiResponsed = await response.json();
+        return data.data || [];
+
+    } catch (error) {
+        console.error("Search Error:", error);
+        return [];
     }
-    
-    const data = await response.json();
-    return data.data || [];
-  } catch (error) {
-    console.error("Search Error:", error);
-    return [];
-  }
 };
