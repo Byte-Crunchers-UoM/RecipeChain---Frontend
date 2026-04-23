@@ -10,7 +10,7 @@ import {
   useEffect,
   useCallback,
 } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Home,
   LayoutGrid,
@@ -21,14 +21,17 @@ import {
   Bell,
   ShoppingCart,
   Search,
+  X,
+  ChevronRight,
+  History,
+  Flame,
 } from "lucide-react";
-
 import { useAuth } from "@/context/AuthContext";
 
 type NavItem = {
   label: string;
   href: string;
-  icon: any;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
 };
 
 type BuyerProfile = {
@@ -49,8 +52,16 @@ type BuyerProfile = {
   cart_count?: number;
 };
 
+type SearchSuggestion = {
+  recipe_id: string;
+  title: string;
+  difficulty_level: string | null;
+};
+
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const RECENT_SEARCHES_KEY = "buyer-cookbook-recent-searches";
+const MAX_RECENT_SEARCHES = 5;
 
 function getInitials(name?: string, email?: string) {
   const source = String(name || email || "U").trim();
@@ -75,9 +86,30 @@ function getDisplayName(profile: BuyerProfile | null, authUser: any) {
   return "Buyer";
 }
 
+function readRecentSearches(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(RECENT_SEARCHES_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((item) => typeof item === "string" && item.trim())
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentSearches(values: string[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(values));
+  } catch {}
+}
+
 export default function BuyerLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { resetAll, user } = useAuth() as any;
 
   const [profile, setProfile] = useState<BuyerProfile | null>(null);
@@ -88,9 +120,24 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const [topSearch, setTopSearch] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>(
+    []
+  );
+  const [popularSuggestions, setPopularSuggestions] = useState<
+    SearchSuggestion[]
+  >([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number>(-1);
 
   const notifRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
+  const searchRef = useRef<HTMLDivElement | null>(null);
+
+  const isCookbookPage = pathname === "/buyer/cookbook";
+  const isProfilePage = pathname === "/buyer/profile";
+  const qParam = searchParams.get("q") || "";
 
   const loadProfile = useCallback(async () => {
     try {
@@ -122,7 +169,22 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadProfile();
+    setRecentSearches(readRecentSearches());
   }, [loadProfile]);
+
+  useEffect(() => {
+    if (isCookbookPage) {
+      setTopSearch(qParam);
+    } else {
+      setTopSearch("");
+      setSearchSuggestions([]);
+      setSearchFocused(false);
+    }
+  }, [isCookbookPage, qParam]);
+
+  useEffect(() => {
+    setActiveSuggestionIndex(-1);
+  }, [topSearch, searchSuggestions, recentSearches, popularSuggestions]);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -134,6 +196,10 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
 
       if (profileOpen && profileRef.current && !profileRef.current.contains(target)) {
         setProfileOpen(false);
+      }
+
+      if (searchRef.current && !searchRef.current.contains(target)) {
+        setSearchFocused(false);
       }
     };
 
@@ -162,6 +228,97 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
     };
   }, [loadProfile]);
 
+  useEffect(() => {
+    if (!isCookbookPage) return;
+
+    const loadPopular = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/buyer/me/cookbook`, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          cache: "no-store",
+        });
+
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+          setPopularSuggestions([]);
+          return;
+        }
+
+        const items = Array.isArray(data?.items) ? data.items : [];
+        const popular = [...items]
+          .sort((a, b) => Number(b.rating_avg || 0) - Number(a.rating_avg || 0))
+          .slice(0, 5)
+          .map((item: any) => ({
+            recipe_id: item.recipe_id,
+            title: item.title,
+            difficulty_level: item.difficulty_level || null,
+          }));
+
+        setPopularSuggestions(popular);
+      } catch {
+        setPopularSuggestions([]);
+      }
+    };
+
+    void loadPopular();
+  }, [isCookbookPage]);
+
+  useEffect(() => {
+    if (!isCookbookPage) return;
+
+    const term = topSearch.trim();
+
+    if (!term) {
+      setSearchSuggestions([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        setSearchLoading(true);
+
+        const response = await fetch(
+          `${API_BASE}/buyer/me/cookbook?q=${encodeURIComponent(term)}`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            cache: "no-store",
+          }
+        );
+
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          setSearchSuggestions([]);
+          return;
+        }
+
+        const items = Array.isArray(data?.items) ? data.items : [];
+        const suggestions = items.slice(0, 6).map((item: any) => ({
+          recipe_id: item.recipe_id,
+          title: item.title,
+          difficulty_level: item.difficulty_level || null,
+        }));
+
+        setSearchSuggestions(suggestions);
+      } catch {
+        setSearchSuggestions([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [topSearch, isCookbookPage]);
+
   const navItems: NavItem[] = useMemo(
     () => [
       { label: "Home", href: "/buyer/dashboard", icon: Home },
@@ -188,41 +345,84 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
   const notificationCount = Number(profile?.notification_count || 0);
   const cartCount = Number(profile?.cart_count || 0);
 
-  const runTopSearch = () => {
-    const q = topSearch.trim();
-    router.push(
-      q ? `/buyer/cookbook?q=${encodeURIComponent(q)}` : "/buyer/cookbook"
+  const saveRecentSearch = (value: string) => {
+    const clean = value.trim();
+    if (!clean) return;
+
+    const next = [clean, ...recentSearches.filter((item) => item !== clean)].slice(
+      0,
+      MAX_RECENT_SEARCHES
     );
+    setRecentSearches(next);
+    writeRecentSearches(next);
   };
 
-  const isCookbookPage = pathname === "/buyer/cookbook";
-  const isProfilePage = pathname === "/buyer/profile";
+  const runTopSearch = (explicitValue?: string) => {
+    const q = (explicitValue ?? topSearch).trim();
 
-  const openEditProfile = () => {
-    setProfileOpen(false);
-
-    if (pathname === "/buyer/profile") {
-      router.replace("/buyer/profile?edit=1", { scroll: false });
+    if (!q) {
+      router.push("/buyer/cookbook");
+      setSearchSuggestions([]);
       return;
     }
 
-    router.push("/buyer/profile?edit=1");
+    saveRecentSearch(q);
+    router.push(`/buyer/cookbook?q=${encodeURIComponent(q)}`);
+    setSearchFocused(false);
   };
+
+  const clearTopSearch = () => {
+    setTopSearch("");
+    setSearchSuggestions([]);
+    router.push("/buyer/cookbook");
+  };
+
+  const goToProfile = () => {
+    setProfileOpen(false);
+    router.push("/buyer/profile");
+  };
+
+  const combinedSuggestionItems = topSearch.trim()
+    ? searchSuggestions.map((item) => ({
+        kind: "result" as const,
+        label: item.title,
+        difficulty_level: item.difficulty_level,
+      }))
+    : [
+        ...recentSearches.map((item) => ({
+          kind: "recent" as const,
+          label: item,
+          difficulty_level: null,
+        })),
+        ...popularSuggestions
+          .filter((item) => !recentSearches.includes(item.title))
+          .map((item) => ({
+            kind: "popular" as const,
+            label: item.title,
+            difficulty_level: item.difficulty_level,
+          })),
+      ].slice(0, 8);
+
+  const showSearchDropdown =
+    searchFocused &&
+    ((topSearch.trim().length > 0 &&
+      (searchLoading || combinedSuggestionItems.length >= 0)) ||
+      (!topSearch.trim() &&
+        (recentSearches.length > 0 || popularSuggestions.length > 0)));
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Unified top header */}
-      <header className="border-b border-slate-200 bg-white">
-        <div className="flex h-[108px] items-center">
-          {/* Left brand area aligns to sidebar width */}
-          <div className="flex w-[288px] items-center border-r border-slate-200 px-10">
+      <div className="flex">
+        <aside className="flex min-h-screen w-64 flex-col border-r border-slate-200 bg-white">
+          <div className="flex h-20 items-center border-b border-slate-200 px-6">
             <div className="flex items-center gap-4">
               <Image
                 src="/Logo.png"
                 alt="RecipeChain"
                 width={42}
                 height={42}
-                className="h-auto w-[42px]"
+                className="h-auto w-[42px] object-contain"
+                priority
               />
               <div className="text-[20px] font-semibold leading-none text-slate-900">
                 RecipeChain
@@ -230,176 +430,27 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          {/* Center title/search */}
-          <div className="flex min-w-0 flex-1 items-center px-8">
-            {isCookbookPage ? (
-              <div className="max-w-2xl flex-1">
-                <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <input
-                    value={topSearch}
-                    onChange={(e) => setTopSearch(e.target.value)}
-                    placeholder="Search your cookbook"
-                    className="w-full bg-transparent text-sm text-slate-700 outline-none"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") runTopSearch();
-                    }}
-                  />
-                  <button
-                    onClick={runTopSearch}
-                    className="rounded-lg p-1 transition hover:bg-white"
-                    aria-label="Search"
-                  >
-                    <Search size={18} className="text-slate-500" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex min-w-0 flex-1 flex-col justify-center">
-                <div className="text-[20px] font-semibold leading-tight text-slate-900">
-                  {isProfilePage ? "My Profile" : ""}
-                </div>
-                <div className="mt-2 text-[14px] leading-none text-slate-500">
-                  {isProfilePage
-                    ? "Manage your account, wallet, and activity"
-                    : ""}
-                </div>
-              </div>
-            )}
-
-            {/* Right action area */}
-            <div className="relative ml-6 flex items-center gap-4 py-2">
-              <div ref={notifRef} className="relative">
-                <button
-                  onClick={() => {
-                    setNotifOpen((s) => !s);
-                    setCartOpen(false);
-                    setProfileOpen(false);
-                  }}
-                  className="relative flex h-11 w-11 items-center justify-center rounded-xl transition hover:bg-slate-50"
-                  aria-label="Notifications"
-                >
-                  <Bell size={23} className="text-slate-600" />
-                  {notificationCount > 0 ? (
-                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-teal-600 text-[10px] text-white">
-                      {notificationCount}
-                    </span>
-                  ) : null}
-                </button>
-              </div>
-
-              <button
-                onClick={() => {
-                  setCartOpen(true);
-                  setNotifOpen(false);
-                  setProfileOpen(false);
-                }}
-                className="relative flex h-11 w-11 items-center justify-center rounded-xl transition hover:bg-slate-50"
-                aria-label="Cart"
-              >
-                <ShoppingCart size={23} className="text-slate-600" />
-                {cartCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-teal-600 text-[10px] text-white">
-                    {cartCount}
-                  </span>
-                ) : null}
-              </button>
-
-              <div ref={profileRef} className="relative">
-                <button
-                  onClick={() => {
-                    setProfileOpen((s) => !s);
-                    setNotifOpen(false);
-                    setCartOpen(false);
-                  }}
-                  className="flex h-[46px] w-[46px] items-center justify-center overflow-hidden rounded-full bg-teal-600 font-semibold text-white ring-2 ring-slate-100"
-                  aria-label="Profile"
-                >
-                  {profile?.profile_picture ? (
-                    <img
-                      src={profile.profile_picture}
-                      alt={displayName}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    avatarText
-                  )}
-                </button>
-
-                {profileOpen && (
-                  <div className="absolute right-0 top-14 z-50 w-72 overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-2xl">
-                    <div className="flex gap-3 p-4">
-                      {profile?.profile_picture ? (
-                        <img
-                          src={profile.profile_picture}
-                          alt={displayName}
-                          className="h-14 w-14 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-600 font-semibold text-white">
-                          {avatarText}
-                        </div>
-                      )}
-
-                      <div className="min-w-0">
-                        <div className="truncate text-base font-semibold text-slate-900">
-                          {profileLoading ? "Loading..." : displayName}
-                        </div>
-                        <div className="truncate text-sm text-slate-500">
-                          {profileLoading ? "Loading..." : profileEmail}
-                        </div>
-                        <div className="mt-1.5 line-clamp-2 text-xs text-slate-400">
-                          {profileLoading ? "Loading..." : profileBio}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="px-4 pb-4">
-                      <button
-                        onClick={openEditProfile}
-                        className="w-full rounded-2xl bg-teal-600 py-3 text-sm font-semibold text-white transition hover:bg-teal-700"
-                      >
-                        Edit Profile
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main body below unified header */}
-      <div className="flex">
-        <aside className="flex min-h-[calc(100vh-108px)] w-[288px] flex-col border-r border-slate-200 bg-white">
           <nav className="space-y-2 px-4 py-6">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const active =
-                pathname === item.href ||
-                (pathname === "/buyer/cookbook" &&
-                  item.href.startsWith("/buyer/cookbook"));
+              const active = pathname === item.href;
 
               return (
                 <Link
-                  key={item.label}
+                  key={item.href}
                   href={item.href}
                   className={[
-                    "relative flex items-center gap-4 rounded-2xl px-5 py-4 text-[16px] transition",
+                    "flex items-center gap-4 rounded-2xl px-5 py-4 transition",
                     active
-                      ? "bg-teal-50 font-semibold text-teal-700"
+                      ? "bg-teal-50 text-teal-700"
                       : "text-slate-600 hover:bg-slate-50",
                   ].join(" ")}
                 >
-                  {active && (
-                    <span className="absolute bottom-2 left-0 top-2 w-2 rounded-r-xl bg-teal-700" />
-                  )}
-
                   <Icon
-                    size={24}
+                    size={28}
                     className={active ? "text-teal-700" : "text-slate-500"}
                   />
-                  <span>{item.label}</span>
+                  <span className="text-[18px] font-medium">{item.label}</span>
                 </Link>
               );
             })}
@@ -408,15 +459,287 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
           <div className="mt-auto border-t border-slate-200 p-4">
             <button
               onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm text-red-600 transition hover:bg-red-50"
+              className="flex w-full items-center gap-3 rounded-2xl px-5 py-4 text-left text-red-600 transition hover:bg-red-50"
             >
-              <LogOut size={18} />
-              Logout
+              <LogOut size={24} />
+              <span className="text-lg font-medium">Logout</span>
             </button>
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 p-6">{children}</main>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="h-20 border-b border-slate-200 bg-white px-6">
+            <div className="flex h-full w-full items-center gap-6">
+              <div className="min-w-0 flex-1">
+                {isCookbookPage ? (
+                  <div ref={searchRef} className="relative w-full max-w-3xl">
+                    <div className="flex items-center rounded-full border border-slate-200 bg-white px-5 py-3 shadow-sm transition duration-200 focus-within:ring-2 focus-within:ring-teal-200">
+                      <input
+                        value={topSearch}
+                        onChange={(e) => setTopSearch(e.target.value)}
+                        onFocus={() => setSearchFocused(true)}
+                        placeholder="Search your cookbook"
+                        className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowDown") {
+                            e.preventDefault();
+                            if (combinedSuggestionItems.length > 0) {
+                              setActiveSuggestionIndex((prev) =>
+                                prev < combinedSuggestionItems.length - 1 ? prev + 1 : 0
+                              );
+                            }
+                          } else if (e.key === "ArrowUp") {
+                            e.preventDefault();
+                            if (combinedSuggestionItems.length > 0) {
+                              setActiveSuggestionIndex((prev) =>
+                                prev > 0 ? prev - 1 : combinedSuggestionItems.length - 1
+                              );
+                            }
+                          } else if (e.key === "Enter") {
+                            if (
+                              activeSuggestionIndex >= 0 &&
+                              combinedSuggestionItems[activeSuggestionIndex]
+                            ) {
+                              e.preventDefault();
+                              const selected =
+                                combinedSuggestionItems[activeSuggestionIndex].label;
+                              setTopSearch(selected);
+                              runTopSearch(selected);
+                            } else {
+                              runTopSearch();
+                            }
+                          }
+                        }}
+                      />
+
+                      {topSearch.trim() ? (
+                        <button
+                          onClick={clearTopSearch}
+                          className="rounded-lg p-1 transition hover:bg-slate-50"
+                          aria-label="Clear search"
+                        >
+                          <X size={18} className="text-slate-400" />
+                        </button>
+                      ) : null}
+
+                      <button
+                        onClick={() => runTopSearch()}
+                        className="rounded-lg p-1 transition hover:bg-slate-50"
+                        aria-label="Search"
+                      >
+                        <Search size={19} className="text-slate-500" />
+                      </button>
+                    </div>
+
+                    {showSearchDropdown ? (
+                      <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-50 overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur transition-all duration-200 ease-out">
+                        <div className="border-b border-slate-100 px-5 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                          {topSearch.trim() ? "Search suggestions" : "Recent & popular"}
+                        </div>
+
+                        {searchLoading ? (
+                          <div className="px-5 py-4 text-sm text-slate-500">
+                            Searching...
+                          </div>
+                        ) : combinedSuggestionItems.length > 0 ? (
+                          <div className="py-2">
+                            {combinedSuggestionItems.map((item, index) => (
+                              <button
+                                key={`${item.kind}-${item.label}-${index}`}
+                                type="button"
+                                onClick={() => {
+                                  setTopSearch(item.label);
+                                  runTopSearch(item.label);
+                                }}
+                                className={[
+                                  "flex w-full items-center justify-between px-5 py-3 text-left transition",
+                                  activeSuggestionIndex === index
+                                    ? "bg-slate-50"
+                                    : "hover:bg-slate-50",
+                                ].join(" ")}
+                              >
+                                <div className="flex min-w-0 items-center gap-3">
+                                  {item.kind === "recent" ? (
+                                    <History size={16} className="text-slate-400" />
+                                  ) : item.kind === "popular" ? (
+                                    <Flame size={16} className="text-amber-500" />
+                                  ) : (
+                                    <Search size={16} className="text-slate-400" />
+                                  )}
+
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-medium text-slate-800">
+                                      {item.label}
+                                    </p>
+                                    <p className="mt-1 text-xs text-slate-400">
+                                      {item.kind === "recent"
+                                        ? "Recent search"
+                                        : item.kind === "popular"
+                                        ? `Popular recipe${
+                                            item.difficulty_level
+                                              ? ` • ${item.difficulty_level}`
+                                              : ""
+                                          }`
+                                        : item.difficulty_level || "Recipe"}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <ChevronRight
+                                  size={16}
+                                  className="shrink-0 text-slate-400"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="px-5 py-4 text-sm text-slate-500">
+                            No matching recipes found.
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
+                          <button
+                            type="button"
+                            onClick={() => runTopSearch()}
+                            className="text-sm font-medium text-teal-700 hover:underline"
+                          >
+                            View all search results
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={clearTopSearch}
+                            className="text-sm font-medium text-slate-500 hover:text-slate-700"
+                          >
+                            Back to all recipes
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="flex min-w-0 flex-1 flex-col justify-center">
+                    <div className="text-[20px] font-semibold leading-tight text-slate-900">
+                      {isProfilePage ? "My Profile" : ""}
+                    </div>
+                    <div className="mt-1 text-[14px] leading-none text-slate-500">
+                      {isProfilePage
+                        ? "Manage your account, wallet, and activity"
+                        : ""}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="ml-auto flex shrink-0 items-center justify-end gap-3">
+                <div ref={notifRef} className="relative">
+                  <button
+                    onClick={() => {
+                      setNotifOpen((s) => !s);
+                      setCartOpen(false);
+                      setProfileOpen(false);
+                    }}
+                    className="relative flex h-11 w-11 items-center justify-center rounded-xl transition hover:bg-slate-50"
+                    aria-label="Notifications"
+                  >
+                    <Bell size={22} className="text-slate-600" />
+                    {notificationCount > 0 ? (
+                      <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-teal-600 text-[10px] text-white">
+                        {notificationCount}
+                      </span>
+                    ) : null}
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setCartOpen(true);
+                    setNotifOpen(false);
+                    setProfileOpen(false);
+                  }}
+                  className="relative flex h-11 w-11 items-center justify-center rounded-xl transition hover:bg-slate-50"
+                  aria-label="Cart"
+                >
+                  <ShoppingCart size={22} className="text-slate-600" />
+                  {cartCount > 0 ? (
+                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-teal-600 text-[10px] text-white">
+                      {cartCount}
+                    </span>
+                  ) : null}
+                </button>
+
+                <div ref={profileRef} className="relative">
+                  <button
+                    onClick={() => {
+                      setProfileOpen((s) => !s);
+                      setNotifOpen(false);
+                      setCartOpen(false);
+                    }}
+                    className="flex h-[46px] w-[46px] items-center justify-center overflow-hidden rounded-full bg-teal-600 font-semibold text-white ring-2 ring-slate-100"
+                    aria-label="Profile"
+                  >
+                    {profile?.profile_picture ? (
+                      <img
+                        src={profile.profile_picture}
+                        alt={displayName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      avatarText
+                    )}
+                  </button>
+
+                  {profileOpen && (
+                    <div className="absolute right-0 top-14 z-50 w-80 overflow-hidden rounded-[32px] border border-slate-500 bg-white shadow-2xl">
+                      <div className="px-7 pt-6">
+                        <div className="flex gap-4">
+                          {profile?.profile_picture ? (
+                            <img
+                              src={profile.profile_picture}
+                              alt={displayName}
+                              className="h-14 w-14 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-600 font-semibold text-white">
+                              {avatarText}
+                            </div>
+                          )}
+
+                          <div className="min-w-0">
+                            <div className="truncate text-[18px] font-semibold text-slate-900">
+                              {profileLoading ? "Loading..." : displayName}
+                            </div>
+                            <div className="truncate text-sm text-slate-500">
+                              {profileLoading ? "Loading..." : profileEmail}
+                            </div>
+                            <div className="mt-2 line-clamp-2 text-sm leading-6 text-slate-400">
+                              {profileLoading ? "Loading..." : profileBio}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="px-5 pb-5 pt-5">
+                        <button
+                          onClick={() => {
+                            setProfileOpen(false);
+                            router.push("/buyer/profile");
+                          }}
+                          className="w-full rounded-full bg-teal-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-700 mb-4"
+                        >
+                          {isProfilePage ? "Edit Profile" : "Go to Profile"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <main className="px-6 py-6">{children}</main>
+        </div>
       </div>
 
       {cartOpen && (
