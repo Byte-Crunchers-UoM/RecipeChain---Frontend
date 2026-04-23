@@ -31,6 +31,9 @@ export default function AnalyticsChart({
         className="w-full"
         style={{ maxWidth: '100%', height: '150px' }}
       >
+        className="w-full"
+        style={{ maxWidth: '100%' }}
+      >
         {/* Grid lines */}
         {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => (
           <line

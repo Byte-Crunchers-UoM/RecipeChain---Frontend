@@ -16,20 +16,20 @@ export default function AnalyticsChart({
   data,
   maxValue = 100,
 }: AnalyticsChartProps) {
-  const height = 150;
-  const padding = 25;
+  const height = 250;
+  const padding = 40;
   const chartHeight = height - padding * 2;
   const chartWidth = 400;
   const barWidth = chartWidth / (data.length * 2);
 
   return (
     <div className="bg-white rounded-lg border border-[#e5e7eb] p-6">
-      <h3 className="text-xl font-bold text-[#1a2632] mb-4 font-roboto">{title}</h3>
+      <h3 className="text-xl font-bold text-[#1a2632] mb-6 font-roboto">{title}</h3>
       
       <svg
         viewBox={`0 0 ${chartWidth} ${height}`}
         className="w-full"
-        style={{ maxWidth: '100%', height: '150px' }}
+        style={{ maxWidth: '100%' }}
       >
         {/* Grid lines */}
         {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => (

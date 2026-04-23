@@ -16,8 +16,8 @@ export default function AnalyticsChart({
   data,
   maxValue = 100,
 }: AnalyticsChartProps) {
-  const height = 150;
-  const padding = 25;
+  const height = 160;
+  const padding = 30;
   const chartHeight = height - padding * 2;
   const chartWidth = 400;
   const barWidth = chartWidth / (data.length * 2);
@@ -29,7 +29,7 @@ export default function AnalyticsChart({
       <svg
         viewBox={`0 0 ${chartWidth} ${height}`}
         className="w-full"
-        style={{ maxWidth: '100%', height: '150px' }}
+        style={{ maxWidth: '100%', height: '160px' }}
       >
         {/* Grid lines */}
         {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => (

@@ -44,8 +44,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {isSidebarOpen && <span>Dashboard</span>}
           </Link>
           <Link href="/recipes" className="flex items-center gap-3 px-4 py-3 text-[#1a2632] hover:bg-[#f8fafb] rounded-lg text-[14px] font-roboto">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-              <path d="M6 14h12M6 14c0 1 0 2 6 2s6-1 6-2M9 8h6c.5 0 1 1.5 1 3h-8c0-1.5.5-3 1-3z" strokeLinecap="round" strokeLinejoin="round" />
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 14H6M18 14a3 3 0 00-3-3h-6a3 3 0 00-3 3m12 0v2a1 1 0 01-1 1H7a1 1 0 01-1-1v-2m12 0a9 9 0 00-18 0M9 7h6v4H9V7z" />
             </svg>
             {isSidebarOpen && <span>My Recipes</span>}
           </Link>
