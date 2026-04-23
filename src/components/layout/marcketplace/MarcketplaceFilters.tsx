@@ -7,7 +7,7 @@ import { FilterCheckbox } from '@/components/ui/FilterCheckBox';
 import { useRecipeFilterContext } from '@/lib/context/RecipeFilterContext';
 
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
-const DIETARY_TAGS = ['vegan', 'Party', 'Gluten-Free', 'Dairy-Free', 'Keto', 'Paleo'];
+const DIETARY_TAGS = ['vegan', 'Gluten-Free', 'Dairy-Free', 'Keto', 'Paleo'];
 const OCCASIONS = [ 'Party', 'Holiday','weekend'];
 const GOALS = ['High Protein', 'Low Carb', 'Budget'];
 const CUISINES = ['Italian', 'Asian', 'Mexican', 'Indian','Sri Lankan'];

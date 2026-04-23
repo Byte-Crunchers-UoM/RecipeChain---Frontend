@@ -1,5 +1,5 @@
 "use client"
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useRef } from 'react';
 import { FilterState, Recipe } from '@/lib/types/Recipe';
 import { fetchFilteredRecipe } from '@/services/recipeService';
 
@@ -14,7 +14,7 @@ interface FilterContextType {
   hasFilter: (category: keyof FilterState, value: string) => boolean;
   toggleFilter: (category: keyof FilterState, value: string) => void;
   clearFilters: () => void;
-  applyFilters: (isFromButton?: boolean) => void; 
+  applyFilters: (isFromButton?: boolean) => Promise<void>; 
 }
 
 const RecipeFilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -34,26 +34,28 @@ export function RecipeFilterProvider({ children }: { children: ReactNode }) {
     goal: ''
   });
 
+  const filtersRef = useRef<FilterState>(filters);
+
   const hasFilter = (category: keyof FilterState, value: string) => {
     return filters[category] === value;
   };
 
   const toggleFilter = (category: keyof FilterState, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [category]: prev[category] === value ? '' : value
-    }));
+    const newFilters = {
+      ...filters,
+      [category]: filters[category] === value ? '' : value
+    };
+    setFilters(newFilters);
+    filtersRef.current = newFilters; 
   }; 
 
   const clearFilters = () => {
-    setFilters({
-      difficulty_level: '', 
-      meal_type: '', 
-      occasion: '', 
-      cuisine: '', 
-      dietary_tags: '', 
-      goal: '' 
-    });
+    const emptyFilters = {
+      difficulty_level: '', meal_type: '', occasion: '', cuisine: '', dietary_tags: '', goal: '' 
+    };
+    setFilters(emptyFilters);
+    filtersRef.current = emptyFilters;
+    applyFilters(false); 
   };
 
   const applyFilters = useCallback(async (isFromButton = false) => {
@@ -65,9 +67,9 @@ export function RecipeFilterProvider({ children }: { children: ReactNode }) {
       }
       
       setError(null);
-      
+
       const activeFilters: Record<string, string> = Object.fromEntries(
-        Object.entries(filters).filter(([_, value]) => value !== '')
+        Object.entries(filtersRef.current).filter(([_, value]) => value !== '')
       );
       
       const queryString = new URLSearchParams(activeFilters).toString();
@@ -80,8 +82,7 @@ export function RecipeFilterProvider({ children }: { children: ReactNode }) {
       setIsFiltering(false);
       setIsLoading(false);
     }
-  }, [filters]);
-
+  }, []);
   return(
     <RecipeFilterContext.Provider value={{
       recipes, setRecipes, isLoading, isFiltering, setIsLoading, 
