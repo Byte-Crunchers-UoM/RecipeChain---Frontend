@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { Recipe } from '@/lib/types/Recipe';
-import { Flame, Clock, Coins, Users, Star } from 'lucide-react';
+// 1. Added Lock icon to imports
+import { Flame, Clock, Coins, Users, Star, Lock } from 'lucide-react'; 
 import SaveRecipeButton from './SaveRecipeButton';
 
 interface RecipeModalProps {
@@ -34,13 +35,20 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
     };
   }, [isOpen, onClose]);
 
-  // Safety check: if no recipe is provided, don't render the modal content
   if (!mounted || !isOpen || !recipe) return null;
 
-  // Safely extract the chef's name whether it comes back as an array or object
   const chefName = Array.isArray(recipe.sellers) 
     ? recipe.sellers[0]?.full_name 
     : recipe.sellers?.full_name || 'Unknown Chef';
+
+  // 2. Data Slicing Logic
+  const hasIngredients = recipe.ingredients && Array.isArray(recipe.ingredients);
+  const displayIngredients = hasIngredients ? recipe.ingredients.slice(0, 2) : [];
+  const hiddenIngredientsCount = hasIngredients ? recipe.ingredients.length - 2 : 0;
+
+  const hasInstructions = recipe.instructions && Array.isArray(recipe.instructions);
+  const displayInstructions = hasInstructions ? recipe.instructions.slice(0, 2) : [];
+  const hiddenInstructionsCount = hasInstructions ? recipe.instructions.length - 2 : 0;
 
   return createPortal(
     <div
@@ -54,7 +62,6 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
         className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-10 bg-white/80 backdrop-blur-md p-2 rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition shadow-sm"
@@ -81,7 +88,6 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
               </span>
             </div>
 
-            {/* Recipe Title & Rating */}
             <div className="mt-4">
               <h2 id="recipe-title" className="text-xl font-bold text-gray-900 leading-tight">
                 {recipe.title}
@@ -98,7 +104,7 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
 
           {/* Right - Content Section */}
           <div className="flex-1 min-w-0 mt-4 md:mt-0">
-            {/* Stats Cards (Updated to match your DB schema) */}
+            {/* Stats Cards */}
             <div className="grid grid-cols-4 gap-2 md:gap-3 mb-6">
               <div className="bg-gray-50 p-2 md:p-4 rounded-lg text-center shadow-sm border border-gray-100">
                 <div className="flex justify-center mb-1">
@@ -138,38 +144,70 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
               </p>
             </div>
 
-            {/* Dynamic Ingredients */}
+            {/* Premium Ingredients Section */}
             <div className="mb-6">
               <h3 className="text-lg font-bold text-gray-900 mb-3">Ingredients</h3>
               <ul className="space-y-2 text-sm text-gray-600">
-                {recipe.ingredients && Array.isArray(recipe.ingredients) ? (
-                  recipe.ingredients.map((ing: any, idx: number) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <span className="text-teal-600 mt-0.5">•</span>
-                      <span>{typeof ing === 'string' ? ing : ing.name || JSON.stringify(ing)}</span>
-                    </li>
-                  ))
+                {hasIngredients ? (
+                  <>
+                    {displayIngredients.map((ing: any, idx: number) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-teal-600 mt-0.5">•</span>
+                        <span>{typeof ing === 'string' ? ing : ing.name || JSON.stringify(ing)}</span>
+                      </li>
+                    ))}
+                    
+                    {/* Locked Ingredients Indicator */}
+                    {hiddenIngredientsCount > 0 && (
+                      <li className="flex items-center gap-2 mt-3 p-2 bg-gray-50 rounded-md text-gray-500 border border-dashed border-gray-200">
+                        <Lock size={14} />
+                        <span className="italic font-medium">
+                          + {hiddenIngredientsCount} more hidden ingredients
+                        </span>
+                      </li>
+                    )}
+                  </>
                 ) : (
                   <li className="text-gray-400 italic">Ingredients not listed.</li>
                 )}
               </ul>
             </div>
 
-            {/* Dynamic Instructions */}
+            {/* Premium Instructions Section */}
             <div className="mb-8">
               <h3 className="text-lg font-bold text-gray-900 mb-3">Instructions</h3>
-              <div className="space-y-3 text-sm">
-                {recipe.instructions && Array.isArray(recipe.instructions) ? (
-                  recipe.instructions.map((step: any, idx: number) => (
-                    <div key={idx} className="flex gap-3">
-                      <span className="shrink-0 w-6 h-6 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center font-semibold text-xs">
-                        {idx + 1}
-                      </span>
-                      <span className="text-gray-600 mt-0.5 leading-relaxed">
-                        {typeof step === 'string' ? step : step.instruction || step.step || JSON.stringify(step)}
-                      </span>
-                    </div>
-                  ))
+              <div className="space-y-3 text-sm relative">
+                {hasInstructions ? (
+                  <>
+                    {displayInstructions.map((step: any, idx: number) => (
+                      <div key={idx} className="flex gap-3">
+                        <span className="shrink-0 w-6 h-6 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center font-semibold text-xs">
+                          {idx + 1}
+                        </span>
+                        <span className="text-gray-600 mt-0.5 leading-relaxed">
+                          {typeof step === 'string' ? step : step.instruction || step.step || JSON.stringify(step)}
+                        </span>
+                      </div>
+                    ))}
+
+                    {/* Locked Instructions Blur Effect */}
+                    {hiddenInstructionsCount > 0 && (
+                      <div className="relative pt-2">
+                        {/* Faux blurred content */}
+                        <div className="flex gap-3 opacity-20 select-none blur-[2px] pointer-events-none">
+                          <span className="shrink-0 w-6 h-6 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center font-semibold text-xs">3</span>
+                          <span className="mt-0.5 bg-gray-300 text-transparent rounded w-full">This is a secret instruction that is hidden behind the paywall to encourage unlocking.</span>
+                        </div>
+                        
+                        {/* Gradient Overlay & Lock Message */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-linear-to-t from-white via-white/70 to-transparent">
+                           <span className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md text-teal-600 font-bold border border-teal-100 mt-4">
+                             <Lock size={16} /> Unlock to see {hiddenInstructionsCount} more steps
+                           </span>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="text-gray-400 italic">Instructions not listed.</div>
                 )}
