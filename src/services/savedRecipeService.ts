@@ -5,47 +5,45 @@ const FETCH_TIMEOUT = 10000; // 10 seconds timeout
 
 /**
  * Fetches saved recipes for a user with timeout and error handling
- * @param userId - The user ID
- * @param token - The authentication token
+ * @param userId - The user ID (typically the user's email now)
  * @returns Promise of Recipe array, or empty array on error
  */
-export async function fetchCart(userId: string, token: string): Promise<Recipe[]>{
-    if (!userId || !token) {
-        console.warn('fetchCart: Missing userId or token');
+export async function fetchCart(userId: string): Promise<Recipe[]> {
+    // 🛠️ token check එක අයින් කළා
+    if (!userId) {
+        console.warn('fetchCart: Missing userId');
         return [];
     }
 
-    try{
+    try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
-        const response = await fetch(`${BASE_URL}/savedrecipes/user/${userId}`,{
+        const response = await fetch(`${BASE_URL}/savedrecipes/user/${userId}`, {
             method: 'GET',
+            credentials: 'include', // 🛠️ මේක අනිවාර්යයෙන්ම තියෙන්න ඕනේ
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                // 🛠️ Authorization header එක අයින් කළා (Cookies හරහා යන නිසා)
             },
             signal: controller.signal
         });
 
         clearTimeout(timeoutId);
 
-        if(!response.ok){
+        if (!response.ok) {
             console.error(`fetchCart failed: ${response.status} ${response.statusText}`);
             
-            // Return empty array instead of throwing on non-critical errors
-            // This allows the app to continue functioning
             if (response.status === 404) {
                 console.info('No saved recipes found for user');
                 return [];
             }
             
             if (response.status === 401) {
-                console.warn('Unauthorized: Token may be invalid');
+                console.warn('Unauthorized: Session may be invalid');
                 return [];
             }
 
-            // For 5xx errors, log but don't crash
             console.error(`Server error fetching cart: ${response.status}`);
             return [];
         }
@@ -53,7 +51,7 @@ export async function fetchCart(userId: string, token: string): Promise<Recipe[]
         const cartItems: RecipeApiResponsed = await response.json();
         return cartItems.data || [];
 
-    } catch(error) {
+    } catch (error) {
         if (error instanceof Error) {
             if (error.name === 'AbortError') {
                 console.error('fetchCart: Request timeout');
@@ -63,7 +61,6 @@ export async function fetchCart(userId: string, token: string): Promise<Recipe[]
         } else {
             console.error('fetchCart error:', error);
         }
-        // Return empty array to allow app to continue functioning
         return [];
     }
 }
@@ -72,12 +69,12 @@ export async function fetchCart(userId: string, token: string): Promise<Recipe[]
  * Adds a recipe to user's saved recipes
  * @param userId - The user ID
  * @param recipeId - The recipe ID to save
- * @param token - The authentication token
  * @throws Error if the operation fails
  */
-export async function addToCart(userId: string, recipeId: string, token: string): Promise<void> {
-    if (!userId || !recipeId || !token) {
-        throw new Error('Missing required parameters: userId, recipeId, or token');
+export async function addToCart(userId: string, recipeId: string): Promise<void> {
+    // 🛠️ token check එක අයින් කළා
+    if (!userId || !recipeId) {
+        throw new Error('Missing required parameters: userId or recipeId');
     }
 
     try {
@@ -86,9 +83,9 @@ export async function addToCart(userId: string, recipeId: string, token: string)
 
         const response = await fetch(`${BASE_URL}/savedrecipes/`, {
             method: 'POST',
+            credentials: 'include', // 🛠️ අනිවාර්යයි
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
                 user_id: userId,
@@ -115,12 +112,12 @@ export async function addToCart(userId: string, recipeId: string, token: string)
  * Removes a recipe from user's saved recipes
  * @param userId - The user ID
  * @param recipeId - The recipe ID to remove
- * @param token - The authentication token
  * @throws Error if the operation fails
  */
-export async function removeFromCart(userId: string, recipeId: string, token: string): Promise<void> {
-    if (!userId || !recipeId || !token) {
-        throw new Error('Missing required parameters: userId, recipeId, or token');
+export async function removeFromCart(userId: string, recipeId: string): Promise<void> {
+    // 🛠️ token check එක අයින් කළා
+    if (!userId || !recipeId) {
+        throw new Error('Missing required parameters: userId or recipeId');
     }
 
     try {
@@ -129,9 +126,9 @@ export async function removeFromCart(userId: string, recipeId: string, token: st
 
         const response = await fetch(`${BASE_URL}/savedrecipes`, {
             method: 'DELETE',
+            credentials: 'include', // 🛠️ අනිවාර්යයි
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
                 user_id: userId,
@@ -142,7 +139,7 @@ export async function removeFromCart(userId: string, recipeId: string, token: st
 
         clearTimeout(timeoutId);
 
-        if(!response.ok){
+        if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`Failed to remove recipe from cart: ${response.status} ${response.statusText}. ${errorText}`);
         }

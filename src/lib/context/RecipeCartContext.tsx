@@ -2,8 +2,8 @@
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { Recipe } from '../types/Recipe';
-import { useAuth } from '../utils/useAuth';
-import { fetchCart, addToCart, removeFromCart } from '@/services/savedRecipeService';
+import { useAuth } from '@/context/AuthContext';
+import { fetchCart, addToCart as apiAddToCart, removeFromCart as apiRemoveFromCart } from '@/services/savedRecipeService';
 
 interface RecipeCartContextType {
     cartItems: Recipe[];
@@ -16,12 +16,10 @@ interface RecipeCartContextType {
     error: string | null;
 }
 
-// 2. Create the Context with an initial undefined value
 const RecipeCartContext = createContext<RecipeCartContextType | undefined>(undefined);
 
-// 3. Create the Provider Component
 export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
-    const { userId, token, isAuthenticated } = useAuth();
+    const { user, isAuthenticated } = useAuth(); 
     const [cartItems, setCartItems] = useState<Recipe[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -30,31 +28,32 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
     const toggleCart = () => setIsOpen((prev) => !prev);
     const closeCart = () => setIsOpen(false);
 
-    // Load cart on mount (gracefully handles failures)
-    useEffect(()=>{
-        if(!isAuthenticated || !userId || !token) return;
-        const loadCart = async () =>{
+    // Load cart on mount
+    useEffect(() => {
+        if (!isAuthenticated || !user?.email) {
+            setCartItems([]);
+            return;
+        }
+
+        const loadCart = async () => {
             setIsLoading(true);
             setError(null);
-            try{
-                const recipes = await fetchCart(userId, token);
+            try {
+                const recipes = await fetchCart(user.email); 
                 setCartItems(recipes || []);
-            } catch (error){
-                // Log error but don't break the app
+            } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
                 console.warn("Warning: Could not load saved recipes from server:", errorMessage);
-                // Don't set error state for fetch failures - let user continue using the app
-                // Cart will be empty until server recovers
                 setCartItems([]);
             } finally {
                 setIsLoading(false);
             }
         };
         loadCart();
-    },[isAuthenticated, userId, token]);
+    }, [isAuthenticated, user]);
 
     const handleAddToCart = async (recipe: Recipe) => {
-        if (!userId || !token) {
+        if (!user?.email) {
             setError("User not authenticated");
             return;
         }
@@ -63,18 +62,15 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
             setIsLoading(true);
             setError(null);
 
-            // Prevent duplicate saves
             if (cartItems.find((item) => item.recipe_id === recipe.recipe_id)) {
                 setError("Recipe already in cart");
                 return;
             }
 
-            // Make API call
-            await addToCart(userId, recipe.recipe_id, token);
+            await apiAddToCart(user.email, recipe.recipe_id);
             
-            // Update local state
             setCartItems((prev) => [...prev, recipe]);
-            setIsOpen(true); // Pop open the cart to show the user it worked
+            setIsOpen(true);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to add recipe to cart';
             console.error("Failed to add recipe to cart:", err);
@@ -85,7 +81,7 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const handleRemoveFromCart = async (recipe_id: string) => {
-        if (!userId || !token) {
+        if (!user?.email) {
             setError("User not authenticated");
             return;
         }
@@ -94,10 +90,8 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
             setIsLoading(true);
             setError(null);
 
-            // Make API call
-            await removeFromCart(userId, recipe_id, token);
+            await apiRemoveFromCart(user.email, recipe_id);
             
-            // Update local state
             setCartItems((prev) => prev.filter((item) => item.recipe_id !== recipe_id));
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to remove recipe from cart';
@@ -126,7 +120,6 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
-// 4. Custom Hook with a safety check
 export const useRecipeCart = () => {
     const context = useContext(RecipeCartContext);
     if (!context) {
