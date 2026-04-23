@@ -24,6 +24,18 @@ export default function BuyRecipeButton({
 
       const data = await buyRecipeWithWalletBalance(recipeId);
       setMessage(data?.message || "Recipe purchased successfully");
+
+      window.dispatchEvent(
+        new CustomEvent("recipe-purchased-successfully", {
+          detail: {
+            title: data?.payment?.recipe_title || data?.recipe?.title || "",
+            amount:
+              Number(data?.payment?.amount || 0) ||
+              Number(data?.recipe?.price || 0),
+          },
+        })
+      );
+
       onSuccessAction?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Purchase failed");

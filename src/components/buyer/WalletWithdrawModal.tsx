@@ -27,11 +27,19 @@ export default function WalletWithdrawModal({
       setSubmitting(true);
       setError("");
 
+      const numericAmount = Number(amount);
+
       await createWithdrawalRequest({
-        amount: Number(amount),
+        amount: numericAmount,
         destinationWallet,
         note,
       });
+
+      window.dispatchEvent(
+        new CustomEvent("wallet-withdrawal-submitted", {
+          detail: { amount: numericAmount },
+        })
+      );
 
       setAmount("");
       setDestinationWallet("");

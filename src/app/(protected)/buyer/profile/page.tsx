@@ -16,6 +16,8 @@ import {
   Trash2,
   PlusCircle,
   ArrowUpRight,
+  CheckCircle2,
+  X,
 } from "lucide-react";
 import EditProfileModal from "@/components/buyer/EditProfileModal";
 import WalletTopUpModal from "@/components/buyer/WalletTopUpModal";
@@ -33,6 +35,12 @@ import { useAuth } from "@/context/AuthContext";
 
 const XRPL_EXPLORER_BASE =
   process.env.NEXT_PUBLIC_XRPL_EXPLORER_BASE_URL || "";
+
+type ToastState = {
+  open: boolean;
+  title: string;
+  message: string;
+};
 
 function formatJoinedYear(dateString?: string) {
   if (!dateString) return "Recently";
@@ -112,6 +120,46 @@ function ProgressBar({ value, target }: { value?: number; target?: number }) {
   );
 }
 
+function AppToast({
+  open,
+  title,
+  message,
+  onCloseAction,
+}: {
+  open: boolean;
+  title: string;
+  message: string;
+  onCloseAction: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed right-4 top-4 z-[120] w-full max-w-sm">
+      <div className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-xl">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-full bg-emerald-100 p-2">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-slate-900">{title}</p>
+            <p className="mt-1 text-sm text-slate-700">{message}</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onCloseAction}
+            className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Close notification"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BuyerProfileContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -134,16 +182,32 @@ function BuyerProfileContent() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
+  const [toast, setToast] = useState<ToastState>({
+    open: false,
+    title: "",
+    message: "",
+  });
+
   const shouldAutoOpenEdit = searchParams.get("edit") === "1";
+
+  const showToast = (title: string, message: string) => {
+    setToast({
+      open: true,
+      title,
+      message,
+    });
+  };
 
   const loadWallet = async () => {
     try {
       setWalletLoading(true);
       const data = await getMyWalletOverview();
       setWalletData(data);
+      return data;
     } catch (err) {
       console.error("Failed to load wallet overview:", err);
       setWalletData(null);
+      return null;
     } finally {
       setWalletLoading(false);
     }
@@ -195,55 +259,181 @@ function BuyerProfileContent() {
     }
   }, [loading, profile, shouldAutoOpenEdit]);
 
-useEffect(() => {
-  const topupStatus = searchParams.get("topup");
+  useEffect(() => {
+    if (!toast.open) return;
 
-  if (topupStatus === "cancelled") {
-    router.replace(pathname, { scroll: false });
-    return;
-  }
+    const timer = window.setTimeout(() => {
+      setToast((prev) => ({ ...prev, open: false }));
+    }, 4500);
 
-  if (topupStatus !== "success") {
-    return;
-  }
+    return () => window.clearTimeout(timer);
+  }, [toast.open]);
 
-  let cancelled = false;
+  useEffect(() => {
+    const topupStatus = searchParams.get("topup");
+    const amountParam = Number(searchParams.get("amount") || 0);
 
-  const refreshAfterTopup = async () => {
-    const currentBalance = Number(
-      walletData?.account_balance ?? profile?.account_balance ?? 0
-    );
-
-    for (let attempt = 0; attempt < 6; attempt += 1) {
-      if (cancelled) return;
-
-      try {
-        const latestWallet = await getMyWalletOverview();
-
-        if (cancelled) return;
-
-        setWalletData(latestWallet);
-
-        if (Number(latestWallet.account_balance || 0) > currentBalance) {
-          router.replace(pathname, { scroll: false });
-          return;
-        }
-      } catch (error) {
-        console.error("Top-up refresh failed:", error);
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+    if (topupStatus === "cancelled") {
+      router.replace(pathname, { scroll: false });
+      return;
     }
 
-    router.replace(pathname, { scroll: false });
-  };
+    if (topupStatus !== "success") {
+      return;
+    }
 
-  void refreshAfterTopup();
+    let cancelled = false;
 
-  return () => {
-    cancelled = true;
-  };
-}, [searchParams, router, pathname, walletData, profile]);
+    const refreshAfterTopup = async () => {
+      const currentBalance = Number(
+        walletData?.account_balance ?? profile?.account_balance ?? 0
+      );
+
+      const currentTopupCount = (
+        walletData?.recent_transactions || []
+      ).filter(
+        (tx) =>
+          tx.type === "topup" &&
+          tx.direction === "credit" &&
+          tx.status === "completed"
+      ).length;
+
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        if (cancelled) return;
+
+        try {
+          const latestWallet = await getMyWalletOverview();
+
+          if (cancelled) return;
+
+          setWalletData(latestWallet);
+
+          const latestBalance = Number(latestWallet.account_balance || 0);
+          const latestTopups = (latestWallet.recent_transactions || []).filter(
+            (tx) =>
+              tx.type === "topup" &&
+              tx.direction === "credit" &&
+              tx.status === "completed"
+          );
+
+          const hasNewTopup = latestTopups.length > currentTopupCount;
+          const balanceIncreased = latestBalance > currentBalance;
+
+          if (balanceIncreased && hasNewTopup) {
+            const addedAmount =
+              amountParam > 0
+                ? amountParam
+                : Number((latestBalance - currentBalance).toFixed(2));
+
+            showToast(
+              "Top-up successful",
+              `${addedAmount.toFixed(
+                2
+              )} XRP has been added to your RecipeChain wallet.`
+            );
+
+            router.replace(pathname, { scroll: false });
+            return;
+          }
+        } catch (refreshError) {
+          console.error("Top-up refresh failed:", refreshError);
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+      }
+
+      router.replace(pathname, { scroll: false });
+    };
+
+    void refreshAfterTopup();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, router, pathname, walletData, profile]);
+
+  useEffect(() => {
+    const handleWithdrawalSubmitted = (event: Event) => {
+      const customEvent = event as CustomEvent<{ amount?: number }>;
+      const amount = Number(customEvent.detail?.amount || 0);
+
+      showToast(
+        "Withdrawal request submitted",
+        amount > 0
+          ? `${amount.toFixed(
+              2
+            )} XRP withdrawal request has been submitted successfully.`
+          : "Your withdrawal request has been submitted successfully."
+      );
+
+      void loadWallet();
+    };
+
+    const handleRefundSubmitted = (event: Event) => {
+      const customEvent = event as CustomEvent<{ amount?: number }>;
+      const amount = Number(customEvent.detail?.amount || 0);
+
+      showToast(
+        "Refund request submitted",
+        amount > 0
+          ? `${amount.toFixed(
+              2
+            )} XRP refund request has been submitted successfully.`
+          : "Your refund request has been submitted successfully."
+      );
+
+      void loadWallet();
+    };
+
+    const handleRecipePurchased = (event: Event) => {
+      const customEvent = event as CustomEvent<{ title?: string; amount?: number }>;
+      const title = String(customEvent.detail?.title || "").trim();
+      const amount = Number(customEvent.detail?.amount || 0);
+
+      let message = "Your recipe purchase has been completed successfully.";
+
+      if (title && amount > 0) {
+        message = `${title} purchased successfully for ${amount.toFixed(
+          2
+        )} XRP.`;
+      } else if (title) {
+        message = `${title} purchased successfully.`;
+      } else if (amount > 0) {
+        message = `Recipe purchased successfully for ${amount.toFixed(2)} XRP.`;
+      }
+
+      showToast("Purchase successful", message);
+      void loadWallet();
+    };
+
+    window.addEventListener(
+      "wallet-withdrawal-submitted",
+      handleWithdrawalSubmitted as EventListener
+    );
+    window.addEventListener(
+      "wallet-refund-submitted",
+      handleRefundSubmitted as EventListener
+    );
+    window.addEventListener(
+      "recipe-purchased-successfully",
+      handleRecipePurchased as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "wallet-withdrawal-submitted",
+        handleWithdrawalSubmitted as EventListener
+      );
+      window.removeEventListener(
+        "wallet-refund-submitted",
+        handleRefundSubmitted as EventListener
+      );
+      window.removeEventListener(
+        "recipe-purchased-successfully",
+        handleRecipePurchased as EventListener
+      );
+    };
+  }, []);
 
   const initials = useMemo(() => {
     return getInitials(profile?.display_name, profile?.email);
@@ -333,6 +523,13 @@ useEffect(() => {
 
   return (
     <>
+      <AppToast
+        open={toast.open}
+        title={toast.title}
+        message={toast.message}
+        onCloseAction={() => setToast((prev) => ({ ...prev, open: false }))}
+      />
+
       <div className="mx-auto max-w-[1320px] space-y-5">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
@@ -370,7 +567,9 @@ useEffect(() => {
             }
             label="Balance"
             value={`${effectiveBalance.toFixed(2)} XRP`}
-            subtext={walletLoading ? "Loading wallet..." : "RecipeChain wallet balance"}
+            subtext={
+              walletLoading ? "Loading wallet..." : "RecipeChain wallet balance"
+            }
           />
         </div>
 
@@ -501,7 +700,7 @@ useEffect(() => {
                   <p className="mt-2 text-2xl font-bold text-slate-900">
                     {effectiveBalance.toFixed(2)} XRP
                   </p>
-                  <p className="mt-1 text-xs text-slate-400">
+                  <p className="mt-1 text-xs text-slate-500">
                     Use this balance to buy recipes instantly.
                   </p>
                 </div>
@@ -589,7 +788,7 @@ useEffect(() => {
                   <p className="text-[16px] font-medium text-slate-800">
                     No recent buyer activity yet.
                   </p>
-                  <p className="mt-2 text-sm text-slate-400">
+                  <p className="mt-2 text-sm text-slate-500">
                     Start exploring recipes and your purchases will appear here.
                   </p>
                 </div>
@@ -605,7 +804,7 @@ useEffect(() => {
                           <p className="truncate text-[15px] font-semibold text-slate-900">
                             {item.title}
                           </p>
-                          <p className="mt-1 text-sm text-slate-500">
+                          <p className="mt-1 text-sm text-slate-600">
                             {formatDate(item.date)} •{" "}
                             {Number(item.amount_xrp || 0).toFixed(2)} XRP
                           </p>
@@ -618,7 +817,7 @@ useEffect(() => {
                               ? "bg-green-50 text-green-700"
                               : item.status === "pending"
                               ? "bg-amber-50 text-amber-700"
-                              : "bg-slate-100 text-slate-600",
+                              : "bg-slate-100 text-slate-700",
                           ].join(" ")}
                         >
                           {item.status}
@@ -664,7 +863,7 @@ useEffect(() => {
                     >
                       {badge.title}
                     </p>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="mt-1 text-sm text-slate-600">
                       {badge.description}
                     </p>
 
@@ -674,7 +873,7 @@ useEffect(() => {
                           value={badge.progress}
                           target={badge.target}
                         />
-                        <p className="mt-2 text-xs font-medium text-slate-400">
+                        <p className="mt-2 text-xs font-medium text-slate-500">
                           {badge.progress || 0}/{badge.target || 0}
                         </p>
                       </>
@@ -761,7 +960,9 @@ useEffect(() => {
       <WalletWithdrawModal
         open={withdrawOpen}
         onCloseAction={() => setWithdrawOpen(false)}
-        onSuccessAction={loadWallet}
+        onSuccessAction={() => {
+          void loadWallet();
+        }}
       />
     </>
   );
