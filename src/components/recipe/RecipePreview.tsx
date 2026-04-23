@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation'; 
 import { Recipe } from '@/lib/types/Recipe';
-// 1. Added Lock icon to imports
 import { Flame, Clock, Coins, Users, Star, Lock } from 'lucide-react'; 
 import SaveRecipeButton from './SaveRecipeButton';
 
@@ -17,6 +17,7 @@ interface RecipeModalProps {
 export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
   const [mounted, setMounted] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const router = useRouter(); 
 
   useEffect(() => {
     setMounted(true);
@@ -41,7 +42,7 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
     ? recipe.sellers[0]?.full_name 
     : recipe.sellers?.full_name || 'Unknown Chef';
 
-  // 2. Data Slicing Logic
+  // Data Slicing Logic
   const hasIngredients = recipe.ingredients && Array.isArray(recipe.ingredients);
   const displayIngredients = hasIngredients ? recipe.ingredients.slice(0, 2) : [];
   const hiddenIngredientsCount = hasIngredients ? recipe.ingredients.length - 2 : 0;
@@ -49,6 +50,17 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
   const hasInstructions = recipe.instructions && Array.isArray(recipe.instructions);
   const displayInstructions = hasInstructions ? recipe.instructions.slice(0, 2) : [];
   const hiddenInstructionsCount = hasInstructions ? recipe.instructions.length - 2 : 0;
+
+  const handleUnlockClick = () => {
+    setIsUnlocking(true); // 
+    
+    setTimeout(() => {
+      router.push(`/recipes/${recipe.recipe_id}`); 
+      
+      onClose();
+      setIsUnlocking(false);
+    }, 500);
+  };
 
   return createPortal(
     <div
@@ -136,7 +148,6 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
               </div>
             </div>
 
-            {/* About Section */}
             <div className="mb-6">
               <h3 className="text-lg font-bold text-gray-900 mb-2">About This Recipe</h3>
               <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
@@ -144,7 +155,6 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
               </p>
             </div>
 
-            {/* Premium Ingredients Section */}
             <div className="mb-6">
               <h3 className="text-lg font-bold text-gray-900 mb-3">Ingredients</h3>
               <ul className="space-y-2 text-sm text-gray-600">
@@ -157,7 +167,6 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
                       </li>
                     ))}
                     
-                    {/* Locked Ingredients Indicator */}
                     {hiddenIngredientsCount > 0 && (
                       <li className="flex items-center gap-2 mt-3 p-2 bg-gray-50 rounded-md text-gray-500 border border-dashed border-gray-200">
                         <Lock size={14} />
@@ -173,7 +182,6 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
               </ul>
             </div>
 
-            {/* Premium Instructions Section */}
             <div className="mb-8">
               <h3 className="text-lg font-bold text-gray-900 mb-3">Instructions</h3>
               <div className="space-y-3 text-sm relative">
@@ -190,16 +198,13 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
                       </div>
                     ))}
 
-                    {/* Locked Instructions Blur Effect */}
                     {hiddenInstructionsCount > 0 && (
                       <div className="relative pt-2">
-                        {/* Faux blurred content */}
                         <div className="flex gap-3 opacity-20 select-none blur-[2px] pointer-events-none">
                           <span className="shrink-0 w-6 h-6 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center font-semibold text-xs">3</span>
                           <span className="mt-0.5 bg-gray-300 text-transparent rounded w-full">This is a secret instruction that is hidden behind the paywall to encourage unlocking.</span>
                         </div>
                         
-                        {/* Gradient Overlay & Lock Message */}
                         <div className="absolute inset-0 flex items-center justify-center bg-linear-to-t from-white via-white/70 to-transparent">
                            <span className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md text-teal-600 font-bold border border-teal-100 mt-4">
                              <Lock size={16} /> Unlock to see {hiddenInstructionsCount} more steps
@@ -214,9 +219,9 @@ export function RecipePreview({ isOpen, onClose, recipe }: RecipeModalProps) {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex gap-3 sticky bottom-0 pt-4 bg-linear-to-t from-white via-white to-transparent backdrop-blur-sm border-t border-gray-100">
               <button 
+                onClick={handleUnlockClick} 
                 className="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl transition shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isUnlocking}
               >
