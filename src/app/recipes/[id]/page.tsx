@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { FullRecipeView } from '@/components/recipe/FullRecipeView';
+import { FullRecipeView } from '@/components/recipe/FullRecipeview';
 import { Recipe } from '@/lib/types/Recipe';
 import { fetchRecipes } from '@/services/recipeService';
 import { Loader2 } from 'lucide-react';

@@ -25,7 +25,7 @@ const menuItems: MenuItem[] = [
   { label: 'Trending Recipes', path: '/trending', icon: TrendingUp },
   { label: 'My Cookbook', path: '/cookbook', icon: BookOpen },
   { label: 'Chefs', path: '/chefs', icon: ChefHat },
-  { label: 'Profile', path: '/profile', icon: User }
+  { label: 'Profile', path: 'buyer/profile', icon: User }
 ]
 
 export default function Sidebar() {

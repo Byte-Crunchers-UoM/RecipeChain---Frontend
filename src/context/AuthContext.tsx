@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import type { UserRole } from "@/types";
 
 export type MeUser = {
@@ -18,8 +24,12 @@ export type AuthContextType = {
 
   setRole: (role: UserRole | null) => void;
 
-  // ✅ now RETURNS user (or null)
   refreshSession: () => Promise<MeUser | null>;
+
+  syncWeb3AuthSession: (payload: {
+    idToken: string;
+    walletAddress?: string | null;
+  }) => Promise<MeUser | null>;
 
   logout: () => Promise<void>;
 
@@ -29,61 +39,148 @@ export type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+
+async function safeJson(response: Response) {
+  const text = await response.text();
+
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(
+      `Server returned non-JSON response. Status: ${response.status}`
+    );
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<MeUser | null>(null);
   const [role, setRoleState] = useState<UserRole | null>(null);
   const [authed, setAuthedState] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL;
-
-  const refreshSession = async (): Promise<MeUser | null> => {
-    if (!apiBase) {
+  const applyUser = (me: MeUser | null) => {
+    if (!me) {
       setAuthedState(false);
       setRoleState(null);
       setUser(null);
-      return null;
+      return;
     }
 
+    setAuthedState(true);
+    setUser(me);
+    setRoleState((me.role as UserRole | null) ?? null);
+  };
+
+  const refreshSession = async (): Promise<MeUser | null> => {
     try {
-      const resp = await fetch(`${apiBase}/me`, {
+      const resp = await fetch(`${API_BASE}/buyer/me/profile`, {
         method: "GET",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Accept: "application/json",
+        },
+        cache: "no-store",
       });
 
-      const json = await resp.json().catch(() => null);
+      const json = await safeJson(resp).catch(() => null);
 
-      if (!resp.ok || !json?.success || !json?.data) {
-        setAuthedState(false);
-        setRoleState(null);
-        setUser(null);
+      if (!resp.ok || !json?.profile) {
+        applyUser(null);
         return null;
       }
 
-      const me: MeUser = json.data;
+      const profile = json.profile;
 
-      setAuthedState(true);
-      setUser(me);
-      setRoleState((me.role as UserRole | null) ?? null);
+      const me: MeUser = {
+        user_id: profile.user_id,
+        email: profile.email,
+        role: (profile.role as UserRole | null) ?? "buyer",
+        wallet_address: profile.wallet_address ?? null,
+      };
 
+      applyUser(me);
       return me;
-    } catch (e) {
-      console.error("refreshSession error:", e);
-      setAuthedState(false);
-      setRoleState(null);
-      setUser(null);
+    } catch (error) {
+      console.error("refreshSession error:", error);
+      applyUser(null);
       return null;
     }
   };
 
+  const syncWeb3AuthSession = async (payload: {
+    idToken: string;
+    walletAddress?: string | null;
+  }): Promise<MeUser | null> => {
+    try {
+      if (!payload.idToken) {
+        throw new Error("Missing Web3Auth ID token");
+      }
+
+      const resp = await fetch(`${API_BASE}/auth/web3auth/sync`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${payload.idToken}`,
+        },
+        body: JSON.stringify({
+          walletAddress: payload.walletAddress || "",
+        }),
+      });
+
+      const json = await safeJson(resp);
+
+      if (!resp.ok || !json?.ok) {
+        throw new Error(json?.message || "Failed to sync Web3Auth session");
+      }
+
+      const syncedUser = json.user;
+
+      const me: MeUser = {
+        user_id: syncedUser.user_id,
+        email: syncedUser.email,
+        role: (syncedUser.role as UserRole | null) ?? null,
+        wallet_address: syncedUser.wallet_address ?? payload.walletAddress ?? null,
+      };
+
+      applyUser(me);
+
+      return me;
+    } catch (error) {
+      console.error("syncWeb3AuthSession error:", error);
+      applyUser(null);
+      throw error instanceof Error
+        ? error
+        : new Error("Failed to sync Web3Auth session");
+    }
+  };
+
   useEffect(() => {
-    (async () => {
+    let active = true;
+
+    const init = async () => {
       setIsLoading(true);
-      await refreshSession();
+
+      const me = await refreshSession();
+
+      if (!active) return;
+
+      if (!me) {
+        applyUser(null);
+      }
+
       setIsLoading(false);
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    };
+
+    void init();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const setRole = (newRole: UserRole | null) => {
@@ -98,17 +195,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      if (apiBase) {
-        await fetch(`${apiBase}/auth/logout`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        }).catch(() => null);
-      }
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).catch(() => null);
     } finally {
-      setAuthedState(false);
-      setRoleState(null);
-      setUser(null);
+      applyUser(null);
     }
   };
 
@@ -124,6 +219,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       setRole,
       refreshSession,
+      syncWeb3AuthSession,
       logout,
       clearRole,
       resetAll,
