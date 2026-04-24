@@ -198,15 +198,42 @@ export default function RecipesPage() {
                   </p>
                 </div>
 
+                {/* Performance Stats */}
+                <div className="bg-[#f8fafb] rounded-lg p-4 mb-4">
+                  <p className="text-[12px] font-bold text-[#1a2632] mb-3">Performance</p>
+                  
+                  {/* Views & Unlocks Row */}
+                  <div className="flex items-center gap-6 mb-2">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-[#64748b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <span className="text-[12px] font-bold text-[#1a2632]">{recipe.views}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-[#64748b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      <span className="text-[12px] font-bold text-[#1a2632]">{recipe.unlocks}</span>
+                    </div>
+                  </div>
+
+                  {/* Updated Time */}
+                  <div className="flex items-center gap-2 text-[11px] text-[#64748b]">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Updated {recipe.updatedAt}</span>
+                  </div>
+                </div>
+
                 {/* Stats */}
                 <div className="flex items-center gap-4 text-[12px] text-[#64748b] font-roboto mb-4 border-t border-[#e5e7eb] pt-3">
                   <span>👁 {recipe.views} views</span>
                   <span>🔓 {recipe.unlocks} unlocks</span>
                   <span>⭐ {recipe.rating}</span>
                 </div>
-
-                {/* Updated At */}
-                <p className="text-[11px] text-[#64748b] font-roboto mb-4">Updated {recipe.updatedAt}</p>
 
                 {/* Action Buttons */}
                 <div className="flex gap-2">

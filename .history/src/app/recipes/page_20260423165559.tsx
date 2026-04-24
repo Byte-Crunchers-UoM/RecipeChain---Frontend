@@ -167,65 +167,72 @@ export default function RecipesPage() {
           </div>
         </div>
 
-        {/* Recipe Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {mockRecipes.map((recipe) => (
-            <div key={recipe.id} className="bg-white rounded-lg border border-[#e5e7eb] overflow-hidden hover:shadow-lg transition">
-              {/* Recipe Image */}
-              <div className="relative h-48 bg-gray-300 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-20" />
-                <span className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[12px] font-bold ${getStatusColor(recipe.status)}`}>
-                  {recipe.status}
-                </span>
-              </div>
-
-              {/* Recipe Info */}
-              <div className="p-4">
-                <h3 className="text-[14px] font-bold text-[#1a2632] font-roboto mb-2">{recipe.name}</h3>
-                
-                {/* Category Badge */}
-                <div className="mb-3">
-                  <span className={`inline-block px-2 py-1 rounded text-[11px] font-medium ${getCategoryColor(recipe.category)}`}>
-                    {recipe.category}
-                  </span>
-                </div>
-
-                {/* Price */}
-                <div className="mb-3">
-                  <p className="text-[14px] font-bold text-[#1a2632] font-roboto">
-                    {recipe.price} XRP
-                    <span className="text-[12px] text-[#64748b] font-roboto ml-1">({(recipe.price * 2.5).toFixed(2)} ETH)</span>
-                  </p>
-                </div>
-
-                {/* Stats */}
-                <div className="flex items-center gap-4 text-[12px] text-[#64748b] font-roboto mb-4 border-t border-[#e5e7eb] pt-3">
-                  <span>👁 {recipe.views} views</span>
-                  <span>🔓 {recipe.unlocks} unlocks</span>
-                  <span>⭐ {recipe.rating}</span>
-                </div>
-
-                {/* Updated At */}
-                <p className="text-[11px] text-[#64748b] font-roboto mb-4">Updated {recipe.updatedAt}</p>
-
-                {/* Action Buttons */}
-                <div className="flex gap-2">
-                  {recipe.status === 'Draft' ? (
-                    <button className="flex-1 px-3 py-2 bg-[#0d9488] text-white rounded text-[12px] font-medium hover:opacity-90 transition">
-                      Publish
-                    </button>
-                  ) : (
-                    <button className="flex-1 px-3 py-2 border border-[#0d9488] text-[#0d9488] rounded text-[12px] font-medium hover:bg-[#e0f2f1] transition">
-                      View
-                    </button>
-                  )}
-                  <button className="flex-1 px-3 py-2 bg-red-500 text-white rounded text-[12px] font-medium hover:opacity-90 transition">
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+        {/* Recipe Table */}
+        <div className="bg-white rounded-lg border border-[#e5e7eb] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-[#f8fafb] border-b border-[#e5e7eb]">
+                <tr>
+                  <th className="px-6 py-4 text-left text-[12px] font-bold text-[#1a2632] font-roboto">Recipe</th>
+                  <th className="px-6 py-4 text-left text-[12px] font-bold text-[#1a2632] font-roboto">Price</th>
+                  <th className="px-6 py-4 text-left text-[12px] font-bold text-[#1a2632] font-roboto">Status</th>
+                  <th className="px-6 py-4 text-left text-[12px] font-bold text-[#1a2632] font-roboto">Performance</th>
+                  <th className="px-6 py-4 text-left text-[12px] font-bold text-[#1a2632] font-roboto">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mockRecipes.map((recipe) => (
+                  <tr key={recipe.id} className="border-b border-[#e5e7eb] hover:bg-[#f8fafb] transition">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-300 rounded-lg flex-shrink-0" />
+                        <div>
+                          <p className="text-[14px] font-medium text-[#1a2632] font-roboto">{recipe.name}</p>
+                          <p className="text-[12px] text-[#64748b] font-roboto">{recipe.views} views</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-[14px] font-medium text-[#1a2632] font-roboto">{recipe.price} XRP</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-block px-3 py-1 rounded-full text-[12px] font-medium ${getStatusColor(recipe.status)}`}>
+                        {recipe.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-[#64748b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span className="text-[12px] font-bold text-[#1a2632]">{recipe.views}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-[#64748b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            <span className="text-[12px] font-bold text-[#1a2632]">{recipe.unlocks}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] text-[#64748b]">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Updated {recipe.updatedAt}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button className="text-[#64748b] hover:text-[#1a2632] text-lg">⋮</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

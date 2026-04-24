@@ -99,7 +99,7 @@ export default function RecipesTable({ recipes }: RecipesTableProps) {
         </table>
       </div>
       <div className="px-6 py-4 border-t border-[#e5e7eb]">
-        <a href="/recipes" className="text-[12px] text-[#0d9488] hover:text-[#0d9488] opacity-80 font-medium font-roboto">
+        <a href="#" className="text-[12px] text-[#0d9488] hover:text-[#0d9488] opacity-80 font-medium font-roboto">
           View all recipes →
         </a>
       </div>

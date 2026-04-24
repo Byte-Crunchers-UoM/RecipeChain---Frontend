@@ -6,9 +6,8 @@ interface Recipe {
   image: string;
   price: number;
   status: 'Active' | 'Draft' | 'Deactivate';
+  performance: number;
   views: number;
-  unlocks: number;
-  updatedAt: string;
   earnings: number;
 }
 
@@ -66,28 +65,14 @@ export default function RecipesTable({ recipes }: RecipesTableProps) {
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4 text-[#64748b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        <span className="text-[12px] font-bold text-[#1a2632]">{recipe.views}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4 text-[#64748b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                        <span className="text-[12px] font-bold text-[#1a2632]">{recipe.unlocks}</span>
-                      </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-12 h-1 bg-[#e5e7eb] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#0d9488]"
+                        style={{ width: `${recipe.performance}%` }}
+                      />
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-[#64748b]">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>Updated: {recipe.updatedAt}</span>
-                    </div>
+                    <span className="text-[12px] text-[#64748b] font-roboto">{recipe.performance}%</span>
                   </div>
                 </td>
                 <td className="px-6 py-4">
@@ -99,7 +84,7 @@ export default function RecipesTable({ recipes }: RecipesTableProps) {
         </table>
       </div>
       <div className="px-6 py-4 border-t border-[#e5e7eb]">
-        <a href="/recipes" className="text-[12px] text-[#0d9488] hover:text-[#0d9488] opacity-80 font-medium font-roboto">
+        <a href="#" className="text-[12px] text-[#0d9488] hover:text-[#0d9488] opacity-80 font-medium font-roboto">
           View all recipes →
         </a>
       </div>

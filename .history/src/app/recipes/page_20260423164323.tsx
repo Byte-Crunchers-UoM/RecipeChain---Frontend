@@ -9,9 +9,9 @@ interface Recipe {
   image: string;
   category: string;
   price: number;
-  status: 'Active' | 'Draft' | 'Deactivate';
+  status: 'Active' | 'Draft' | 'Discontinued';
   views: number;
-  unlocks: number;
+  wishlist: number;
   rating: number;
   updatedAt: string;
 }
@@ -25,7 +25,7 @@ const mockRecipes: Recipe[] = [
     price: 5.99,
     status: 'Active',
     views: 1240,
-    unlocks: 45,
+    wishlist: 45,
     rating: 4.9,
     updatedAt: '2 days ago',
   },
@@ -37,7 +37,7 @@ const mockRecipes: Recipe[] = [
     price: 3.99,
     status: 'Draft',
     views: 0,
-    unlocks: 0,
+    wishlist: 0,
     rating: 0,
     updatedAt: '1 year ago',
   },
@@ -47,9 +47,9 @@ const mockRecipes: Recipe[] = [
     image: '/recipes/salmon.jpg',
     category: 'Seafood',
     price: 8.99,
-    status: 'Deactivate',
+    status: 'Discontinued',
     views: 3200,
-    unlocks: 120,
+    wishlist: 120,
     rating: 4.8,
     updatedAt: '1 month ago',
   },
@@ -61,7 +61,7 @@ const mockRecipes: Recipe[] = [
     price: 4.99,
     status: 'Active',
     views: 890,
-    unlocks: 45,
+    wishlist: 45,
     rating: 4.7,
     updatedAt: '3 days ago',
   },
@@ -83,7 +83,7 @@ const getStatusColor = (status: string) => {
       return 'bg-[#0d9488] text-white';
     case 'Draft':
       return 'bg-yellow-500 text-white';
-    case 'Deactivate':
+    case 'Discontinued':
       return 'bg-red-500 text-white';
     default:
       return 'bg-gray-500 text-white';
@@ -138,7 +138,7 @@ export default function RecipesPage() {
               <option>All Status</option>
               <option>Active</option>
               <option>Draft</option>
-              <option>Deactivate</option>
+              <option>Discontinued</option>
             </select>
 
             {/* Category Filter */}
@@ -201,7 +201,7 @@ export default function RecipesPage() {
                 {/* Stats */}
                 <div className="flex items-center gap-4 text-[12px] text-[#64748b] font-roboto mb-4 border-t border-[#e5e7eb] pt-3">
                   <span>👁 {recipe.views} views</span>
-                  <span>🔓 {recipe.unlocks} unlocks</span>
+                  <span>❤ {recipe.wishlist} wishlists</span>
                   <span>⭐ {recipe.rating}</span>
                 </div>
 
