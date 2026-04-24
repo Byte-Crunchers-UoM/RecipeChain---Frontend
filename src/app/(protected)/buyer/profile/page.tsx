@@ -580,10 +580,14 @@ function BuyerProfileContent() {
                 <img
                   src={profile.profile_picture}
                   alt={profile.display_name || profile.email}
-                  className="h-[76px] w-[76px] rounded-full object-cover shadow-md ring-4 ring-slate-50"
+                  className="shrink-0 rounded-full object-cover shadow-md ring-4 ring-slate-50"
+                  style={{ width: "76px", height: "76px" }}
                 />
               ) : (
-                <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-teal-500 text-2xl font-bold text-white shadow-md">
+                <div
+                  className="flex shrink-0 items-center justify-center rounded-full bg-teal-500 text-2xl font-bold text-white shadow-md"
+                  style={{ width: "76px", height: "76px" }}
+                >
                   {initials}
                 </div>
               )}
