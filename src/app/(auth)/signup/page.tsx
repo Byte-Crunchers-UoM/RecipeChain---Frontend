@@ -10,6 +10,17 @@ import { useAuth } from "@/context/AuthContext";
 import { getWeb3AuthPrivateKey } from "@/lib/web3/getWeb3AuthPrivKey";
 import { getXrplWalletFromWeb3AuthPrivKey } from "@/lib/xrpl/getXrplWallet";
 import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
+import { getSellerEntryRoute } from "@/lib/getSellerEntryRoute";
+
+type IdentityTokenResult =
+  | string
+  | {
+      idToken?: string;
+    }
+  | null
+  | undefined;
+
+type AppRole = "seller" | "buyer" | null | undefined;
 
 export default function SignupPage() {
   const router = useRouter();
@@ -21,13 +32,14 @@ export default function SignupPage() {
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
 
-  const routeByRole = (role: any) => {
-    const target =
-      role === "seller"
-        ? "/seller/dashboard"
-        : role === "buyer"
-        ? "/marketplace"
-        : "/select-role";
+  const routeByRole = async (role: AppRole) => {
+    let target = "/select-role";
+
+    if (role === "seller") {
+      target = await getSellerEntryRoute();
+    } else if (role === "buyer") {
+      target = "/marketplace";
+    }
 
     if (typeof window !== "undefined") {
       window.location.replace(target);
@@ -59,7 +71,9 @@ export default function SignupPage() {
         return instance;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 250);
+      });
     }
 
     return null;
@@ -96,7 +110,9 @@ export default function SignupPage() {
 
       await closeWeb3AuthModal(readyWeb3Auth);
 
-      const tokenInfo: any = await readyWeb3Auth.getIdentityToken();
+      const tokenInfo: IdentityTokenResult =
+        await readyWeb3Auth.getIdentityToken();
+
       const idToken =
         typeof tokenInfo === "string" ? tokenInfo : tokenInfo?.idToken;
 
@@ -123,27 +139,49 @@ export default function SignupPage() {
       }),
       });
 
-      const data = await resp.json().catch(() => null);
+      const data: { message?: string } | null = await resp.json().catch(() => null);
 
       if (!resp.ok) {
-        if (resp.status === 409) {
-          setError(data?.message || "Please use your original sign-in method.");
-          return;
-        }
-
         throw new Error(data?.message || "Signup failed");
       }
 
       await closeWeb3AuthModal(readyWeb3Auth);
 
       const me = await refreshSession();
-      routeByRole(me?.role);
-    } catch (e: any) {
+      await routeByRole(me?.role);
+    } catch (e: unknown) {
       console.error("Signup error:", e);
       await closeWeb3AuthModal(web3Auth);
 
       const msg =
-        e?.message || "Failed to create account. Please try again.";
+        e instanceof Error
+          ? e.message
+          : "Failed to create account. Please try again.";
+
+      if (
+        msg.includes("Wallet is not connected") ||
+        msg.includes("Wallet is not ready yet") ||
+        msg.includes("fetch project configurations")
+      ) {
+        setError(
+          "Web3Auth is not ready right now. Please check your internet connection and try again."
+        );
+        return;
+      }
+
+      if (msg.includes("Invalid Web3Auth token")) {
+        setError(
+          "Web3Auth token verification failed. Check the backend terminal logs for the exact reason."
+        );
+        return;
+      }
+
+      if (msg.includes("Email missing in Web3Auth token")) {
+        setError(
+          "This login provider did not return an email. Check your Web3Auth provider settings."
+        );
+        return;
+      }
 
       setError(msg);
     }

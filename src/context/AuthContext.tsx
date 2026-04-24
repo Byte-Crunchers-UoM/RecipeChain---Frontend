@@ -1,6 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import type { UserRole } from "@/types";
 
 export type MeUser = {
@@ -8,6 +15,8 @@ export type MeUser = {
   email: string;
   role: UserRole | null;
   wallet_address?: string | null;
+  name?: string | null;
+  bio?: string | null;
 };
 
 export type AuthContextType = {
@@ -15,14 +24,9 @@ export type AuthContextType = {
   role: UserRole | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-
   setRole: (role: UserRole | null) => void;
-
-  // ✅ now RETURNS user (or null)
   refreshSession: () => Promise<MeUser | null>;
-
   logout: () => Promise<void>;
-
   clearRole: () => void;
   resetAll: () => Promise<void>;
 };
@@ -37,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL;
 
-  const refreshSession = async (): Promise<MeUser | null> => {
+  const refreshSession = useCallback(async (): Promise<MeUser | null> => {
     if (!apiBase) {
       setAuthedState(false);
       setRoleState(null);
@@ -52,51 +56,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: { "Content-Type": "application/json" },
       });
 
-      const json = await resp.json().catch(() => null);
+      const json: unknown = await resp.json().catch(() => null);
 
-      if (!resp.ok || !json?.success || !json?.data) {
+      const parsed = json as
+        | {
+            success?: boolean;
+            data?: MeUser;
+          }
+        | null;
+
+      if (!resp.ok || !parsed?.success || !parsed?.data) {
         setAuthedState(false);
         setRoleState(null);
         setUser(null);
         return null;
       }
 
-      const me: MeUser = json.data;
+      const me = parsed.data;
 
       setAuthedState(true);
       setUser(me);
-      setRoleState((me.role as UserRole | null) ?? null);
+      setRoleState(me.role ?? null);
 
       return me;
-    } catch (e) {
-      console.error("refreshSession error:", e);
+    } catch (error) {
+      console.error("refreshSession error:", error);
       setAuthedState(false);
       setRoleState(null);
       setUser(null);
       return null;
     }
-  };
+  }, [apiBase]);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       setIsLoading(true);
       await refreshSession();
       setIsLoading(false);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshSession]);
 
-  const setRole = (newRole: UserRole | null) => {
+  const setRole = useCallback((newRole: UserRole | null) => {
     setRoleState(newRole);
     setUser((prev) => (prev ? { ...prev, role: newRole } : prev));
-  };
+  }, []);
 
-  const clearRole = () => {
+  const clearRole = useCallback(() => {
     setRoleState(null);
     setUser((prev) => (prev ? { ...prev, role: null } : prev));
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       if (apiBase) {
         await fetch(`${apiBase}/auth/logout`, {
@@ -110,11 +120,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setRoleState(null);
       setUser(null);
     }
-  };
+  }, [apiBase]);
 
-  const resetAll = async () => {
+  const resetAll = useCallback(async () => {
     await logout();
-  };
+  }, [logout]);
 
   const value = useMemo<AuthContextType>(
     () => ({
@@ -128,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearRole,
       resetAll,
     }),
-    [user, role, authed, isLoading]
+    [user, role, authed, isLoading, setRole, refreshSession, logout, clearRole, resetAll]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
