@@ -1482,6 +1482,7 @@ export default function SellerKycForm() {
         rejectionReason={kycStatus?.rejection_reason}
         onResubmit={handleResubmitRejectedKyc}
         onSupport={() => router.push("/contact-us")}
+        onLogout={handleLogout}
       />
     );
   }

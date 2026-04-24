@@ -5,6 +5,7 @@ import {
   CircleX,
   Headphones,
   RefreshCcw,
+  LogOut,
 } from "lucide-react";
 import Image from "next/image";
 import { parseSellerKycRejection } from "@/lib/kycRejection";
@@ -14,6 +15,7 @@ type Props = {
   rejectionReason?: string | null;
   onResubmit: () => void;
   onSupport?: () => void;
+  onLogout?: () => void;
 };
 
 function formatDecisionDate(value?: string | null) {
@@ -51,23 +53,36 @@ export default function SellerVerificationRejectedView({
   rejectionReason,
   onResubmit,
   onSupport,
+  onLogout,
 }: Props) {
   const parsed = parseSellerKycRejection(rejectionReason);
 
   return (
     <div className="min-h-screen bg-[#F4F6F7]">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-1">
+        <div className="mx-auto flex h-[58px] max-w-[1280px] items-center justify-between px-4">
           <Image
             src="/Logo.png"
             alt="RecipeChain Logo"
-            width={46}
-            height={46}
-            className="h-auto w-[46px] object-contain"
+            width={42}
+            height={42}
+            className="h-auto w-[34px] object-contain"
             priority
           />
-          <div className="rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-2 text-sm font-medium text-[#3B4552]">
-            Status: Rejected
+          <div className="flex items-center gap-3">
+            <div className="rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-1.5 text-sm font-medium text-[#3B4552]">
+              Status: Rejected
+            </div>
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="flex items-center justify-center gap-2 rounded-[12px] border border-slate-200 bg-white px-4 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -222,6 +237,19 @@ export default function SellerVerificationRejectedView({
               Get Help from Support
             </button>
           </div>
+
+          {onLogout && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={onLogout}
+                className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#D7DCE2] bg-white px-5 py-4 text-sm font-semibold text-[#2E3742] transition hover:bg-[#F8FAFC]"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout Securely
+              </button>
+            </div>
+          )}
 
           <p className="mt-8 text-center text-sm text-[#98A2B3]">
             Need help? Your support team can assist with the verification process.
