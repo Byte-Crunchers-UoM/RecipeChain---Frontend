@@ -117,7 +117,10 @@ export default function SignupPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ walletAddress }),
+        body: JSON.stringify({
+         walletAddress,
+         mode: "signup"
+      }),
       });
 
       const data = await resp.json().catch(() => null);
