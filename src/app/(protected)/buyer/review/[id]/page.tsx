@@ -190,42 +190,20 @@ export default function BuyerRecipeReviewPage() {
       setFormError("");
       setSuccessMessage("");
 
-      const result = await saveCookbookRecipeReview({
+      await saveCookbookRecipeReview({
         recipeId,
         rating,
         comment: comment.trim(),
         photos: selectedPhotos,
       });
 
-      const fresh = await getCookbookRecipeForReview(recipeId);
-      setRecipe(fresh);
-      setSelectedPhotos([]);
-
-      if (typeof result?.rating_avg === "number") {
-        setRecipe((prev) =>
-          prev
-            ? {
-                ...prev,
-                rating_avg: result.rating_avg,
-              }
-            : prev
-        );
-      }
-
-      setSuccessMessage(
-        hasExistingReview
-          ? "Your review was updated successfully."
-          : "Your review was submitted successfully."
-      );
-      
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      router.replace("/buyer/cookbook");
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Failed to save review");
     } finally {
       setSaving(false);
     }
   };
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 pb-20">
@@ -347,8 +325,8 @@ export default function BuyerRecipeReviewPage() {
             </div>
 
             {successMessage && (
-              <div className="mb-8 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 shadow-sm">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+              <div className="mb-8 flex items-start gap-3 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-800 shadow-sm">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-teal-600" />
                 <span className="font-medium">{successMessage}</span>
               </div>
             )}
@@ -419,7 +397,7 @@ export default function BuyerRecipeReviewPage() {
                   Written Review <span className="text-red-500">*</span>
                 </label>
 
-                <div className="relative mt-3">
+                <div className="mt-3">
                   <textarea
                     value={comment}
                     onChange={(e) => {
@@ -432,7 +410,7 @@ export default function BuyerRecipeReviewPage() {
                     className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/50 p-5 text-base leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-teal-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-400/10 transition-all duration-200 min-h-[160px]"
                     style={{ minHeight: "160px" }}
                   />
-                  <div className={`absolute bottom-4 right-4 text-xs font-medium ${commentCounterColor}`}>
+                  <div className={`mt-2 flex justify-end text-xs font-medium ${commentCounterColor}`}>
                     {comment.length} / {MAX_COMMENT_LENGTH}
                   </div>
                 </div>
