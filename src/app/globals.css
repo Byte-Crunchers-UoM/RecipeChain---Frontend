@@ -1,18 +1,62 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary: #0d9488;
+  --background: #f8fafb;
+  --secondary: #e0f2f1;
+  --text: #1a2632;
+  --muted: #64748b;
+  --white: #ffffff;
+
+  --font-heading: 24px;
+  --font-subheading: 16px;
+  --font-description: 12px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  --font-roboto: var(--font-roboto);
+  --color-primary: var(--primary);
+  --color-background: var(--background);
+  --color-secondary: var(--secondary);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: var(--background);
+  color: var(--text);
+  font-family: var(--font-roboto), sans-serif;
+}
+
+h1,
+.heading {
+  font-size: var(--font-heading);
+  font-weight: 700;
+}
+
+h2,
+.sub-heading {
+  font-size: var(--font-subheading);
+  font-weight: 600;
+}
+
+p,
+.description {
+  font-size: var(--font-description);
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
