@@ -1,9 +1,18 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
 import Sidebar from "@/components/Sidebar";
 import ChefProfileCard from "@/components/ChefProfileCard";
 import AboutSpecialties from "@/components/AboutSpecialties";
 import CookbookSection from "@/components/CookbookSection";
 
-export default function Home() {
+export default async function Home() {
+  const cookieStore = await cookies();
+  const role = cookieStore.get("recipe_chain_role")?.value;
+
+  if (role === "seller") redirect("/seller/dashboard");
+  if (role === "buyer") redirect("/buyer/dashboard");
+
   return (
     <div className="flex flex-row min-h-screen bg-[var(--background)]">
       <Sidebar />
@@ -23,4 +32,7 @@ export default function Home() {
       </main>
     </div>
   );
+
+  redirect("/signup");
+
 }
