@@ -1,3 +1,5 @@
+//src/app/(protected)/buyer/layout.jsx
+
 "use client";
 
 import Image from "next/image";

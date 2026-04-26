@@ -15,9 +15,11 @@ export interface Recipe {
     servings: number;
     difficdifficulty_level?: string;
     image_url: string;
-    priceXrp?: number;
+    price: number;
     blockchainHash?: string;
     description : string;
+    is_premium_locked?: boolean;
+    is_purchased?: boolean;
 }
 
 export interface RecipeApiResponsed {
@@ -46,3 +48,4 @@ export interface FilterState{
 
 
 }
+

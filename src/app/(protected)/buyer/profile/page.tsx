@@ -1,3 +1,4 @@
+//src/app/(protected)/buyer/profile/page.jsx)
 "use client";
 
 import { useEffect, useMemo, useState, Suspense } from "react";

@@ -1,3 +1,4 @@
+//src/components/custom/protectedRoute.tsx
 "use client";
 
 import { useEffect } from "react";

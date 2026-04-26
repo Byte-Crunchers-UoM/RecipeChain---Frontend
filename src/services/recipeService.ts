@@ -10,7 +10,9 @@ export async function fetchRecipes(): Promise<Recipe[]> {
         const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
         const response = await fetch(`${BASE_URL}/recipes`, {
-            signal: controller.signal
+            signal: controller.signal,
+            credentials: 'include', 
+            cache: 'no-store'
         });
         
         clearTimeout(timeoutId);
@@ -29,6 +31,27 @@ export async function fetchRecipes(): Promise<Recipe[]> {
     }
 }
 
+export const fetchRecipeById = async (id: string) => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+  
+  const response = await fetch(`${apiUrl}/recipes/${id}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include', // 🛠️ This ensures the browser automatically sends the rc_session cookie
+    cache: 'no-store'      
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to fetch recipe');
+  }
+
+  return data.recipe; 
+};
+
 export async function fetchFilteredRecipe(queryString: string): Promise<Recipe[]> {
     try {
         const url = queryString 
@@ -39,7 +62,9 @@ export async function fetchFilteredRecipe(queryString: string): Promise<Recipe[]
         const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
         const response = await fetch(url, {
-            signal: controller.signal
+            signal: controller.signal,
+            credentials: 'include', 
+            cache: 'no-store'
         });
 
         clearTimeout(timeoutId);
@@ -64,7 +89,9 @@ export const searchRecipes = async (query: string): Promise<Recipe[]> => {
         const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
         const response = await fetch(`${BASE_URL}/recipes/search?q=${query}`, {
-            signal: controller.signal
+            signal: controller.signal,
+            credentials: 'include', 
+            cache: 'no-store'
         });
         
         clearTimeout(timeoutId);

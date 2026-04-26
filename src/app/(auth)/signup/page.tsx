@@ -1,3 +1,4 @@
+//src/app/(auth)/signup/page.jsx
 "use client";
 
 import Image from "next/image";
