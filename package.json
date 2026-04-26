@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.1",
+    "next-cloudinary": "^6.17.5",
     "@web3auth/modal": "^10.7.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
