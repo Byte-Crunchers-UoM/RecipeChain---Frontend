@@ -10,7 +10,6 @@ import { useAuth } from "@/context/AuthContext";
 import { getWeb3AuthPrivateKey } from "@/lib/web3/getWeb3AuthPrivKey";
 import { getXrplWalletFromWeb3AuthPrivKey } from "@/lib/xrpl/getXrplWallet";
 import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
-import { getSellerEntryRoute } from "@/lib/getSellerEntryRoute";
 
 type IdentityTokenResult =
   | string
@@ -36,7 +35,7 @@ export default function SignupPage() {
     let target = "/select-role";
 
     if (role === "seller") {
-      target = await getSellerEntryRoute();
+      target = "/dashboard"; 
     } else if (role === "buyer") {
       target = "/marketplace";
     }

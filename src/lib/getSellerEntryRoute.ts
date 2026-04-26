@@ -10,7 +10,7 @@ export async function getSellerEntryRoute() {
 
     if (status.verification_status === "approved") {
       if (status.kyc_approval_page_seen === true) {
-        return "/seller/dashboard";
+        return "/dashboard";
       }
       return "/seller/kyc";
     }
