@@ -1,4 +1,5 @@
-//src/components/custom/protectedRoute.tsx
+// src/components/custom/protectedRoute.tsx
+"use strict";
 "use client";
 
 import { useEffect } from "react";
@@ -32,22 +33,22 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
     // Role mismatch => send to correct dashboard
     if (requiredRole && role !== requiredRole) {
-      router.replace(role === "seller" ? "/seller/dashboard" : "/buyer/dashboard");
+      router.replace(role === "seller" ? "/seller/dashboard" : "/marketplace");
     }
   }, [isLoading, isAuthenticated, role, requiredRole, router]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F7FAFC]">
-        <div className="animate-spin h-10 w-10 border-4 border-gray-300 border-t-transparent rounded-full" />
+        <div className="animate-spin h-10 w-10 border-4 border-teal-500 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   // While redirecting, render nothing
-  if (!isAuthenticated) return null;
-  if (!role) return null;
-  if (requiredRole && role !== requiredRole) return null;
+  if (!isAuthenticated || !role || (requiredRole && role !== requiredRole)) {
+    return null; 
+  }
 
   return <>{children}</>;
 }
