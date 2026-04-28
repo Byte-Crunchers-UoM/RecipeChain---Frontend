@@ -10,22 +10,18 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.99.1",
-
-    "@web3auth/modal": "^10.7.0",
-    "viem": "^2.41.2",
-    "xrpl": "^2.14.3",
-    "ox": "^0.9.17",
-
-    "clsx": "^2.1.1",
+    "@web3auth/modal": "^10.15.0",
     "class-variance-authority": "^0.7.1",
-    "tailwind-merge": "^3.3.1",
-
+    "clsx": "^2.1.1",
     "lucide-react": "^0.577.0",
-    "react-icons": "^5.6.0",
-
     "next": "16.1.6",
+    "ox": "^0.9.17",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "react-icons": "^5.6.0",
+    "tailwind-merge": "^3.3.1",
+    "viem": "^2.41.2",
+    "xrpl": "^2.14.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

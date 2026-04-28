@@ -21,7 +21,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const id = Math.random().toString(36).substr(2, 9);
         setNotifications((prev) => [...prev, { id, message, type }]);
 
-        // Auto-remove after 4 seconds
         setTimeout(() => {
             setNotifications((prev) => prev.filter((n) => n.id !== id));
         }, 4000);

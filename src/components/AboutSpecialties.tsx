@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { supabase } from "@/services/supabaseClient";
+import React, { useState, useEffect } from "react";
+import { getChefProfile, getChefRecipes } from "@/services/api";
 
 interface Specialty {
   tag_id: string;
@@ -13,54 +13,45 @@ const AboutSpecialties = () => {
   const [bio, setBio] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
-  // Hardcoded ID for demonstration purposes (same as ChefProfileCard)
-  const chefId = "d41deb90-482a-4372-9855-c3eb1076538e";
+  const chefId = "c99cbd54-2d6a-40a2-b442-c8c8027d4851";
 
   useEffect(() => {
-    const fetchSpecialties = async () => {
+    const fetchData = async () => {
       setLoading(true);
+      try {
+        const [profile, recipes] = await Promise.all([
+          getChefProfile(chefId),
+          getChefRecipes(chefId)
+        ]);
 
-      // Fetch specialties (via recipes) and bio
-      const [sellerResponse, recipesResponse] = await Promise.all([
-        supabase.from("sellers").select("bio").eq("user_id", chefId).single(),
-        supabase
-          .from("recipes")
-          .select(`
-            tags (
-              tag_id,
-              dietary_tags
-            )
-          `)
-          .eq("chef_id", chefId)
-      ]);
+        if (profile && profile.seller) {
+          setBio(profile.seller.bio || "No bio available.");
+        }
 
-      if (sellerResponse.error) {
-        console.error("Error fetching seller bio:", sellerResponse.error.message);
-      } else {
-        setBio(sellerResponse.data?.bio?.trim() ? sellerResponse.data.bio : "No bio available.");
+        if (recipes && Array.isArray(recipes)) {
+          const allTags: Specialty[] = [];
+          const seenTags = new Set();
+
+          recipes.forEach((recipe: any) => {
+            if (recipe.tags) {
+              const tag = recipe.tags;
+              if (tag && !seenTags.has(tag.tag_id)) {
+                seenTags.add(tag.tag_id);
+                allTags.push(tag);
+              }
+            }
+          });
+          setSpecialties(allTags);
+        }
+      } catch (err) {
+        console.error("Error fetching about data:", err);
+      } finally {
+        setLoading(false);
       }
-
-      if (recipesResponse.error) {
-        console.error("Error fetching specialties:", recipesResponse.error.message);
-      } else {
-        // Extract unique tags from the recipes result
-        const rawTags = recipesResponse.data
-          ?.map((item: any) => item.tags)
-          .filter((tag: any) => tag !== null);
-
-        // Remove duplicates based on tag_id
-        const uniqueTags = Array.from(
-          new Map(rawTags.map((tag: any) => [tag.tag_id, tag])).values()
-        ) as Specialty[];
-
-        setSpecialties(uniqueTags);
-      }
-
-      setLoading(false);
     };
 
-    fetchSpecialties();
-  }, []);
+    fetchData();
+  }, [chefId]);
 
   return (
     <div className="bg-white rounded-[32px] p-10 shadow-sm border border-gray-100 flex flex-col gap-10">

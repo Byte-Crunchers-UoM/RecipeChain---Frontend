@@ -7,7 +7,6 @@ async function test() {
   const { data, error } = await supabase.from('tags').select('*').limit(1);
   console.log('tags columns:', data ? Object.keys(data[0]) : 'no data', error);
   
-  // Also check if sellers table has anything related to specialties
   const { data: sData } = await supabase.from('sellers').select('*').limit(1);
   console.log('sellers columns:', sData ? Object.keys(sData[0]) : 'no data');
 }

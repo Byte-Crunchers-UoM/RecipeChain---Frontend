@@ -4,7 +4,7 @@ const supabaseKey = "sb_publishable_sAbJ4DJwHPK2mD36AArG5A_bcGWCkFW";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function test() {
-  const chefId = "9be5e777-594a-4a3c-bdaa-08f9c3e66eb7";
+  const chefId = "d41deb90-482a-4372-9855-c3eb1076538e7";
   const { data, error } = await supabase
     .from('recipes')
     .select(`
@@ -15,7 +15,7 @@ async function test() {
       )
     `)
     .eq('chef_id', chefId);
-    
+
   console.log('Chef specialties result:', JSON.stringify(data, null, 2), error);
 }
 test();

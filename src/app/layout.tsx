@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Roboto } from "next/font/google";
 import { Geist, Geist_Mono } from "next/font/google";
-// import "./globals.css";
+import "./globals.css";
 
 import { NotificationProvider } from "@/components/NotificationContext";
 import { Web3AuthProvider } from "@/lib/web3/Web3AuthProvider";

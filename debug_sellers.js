@@ -4,11 +4,12 @@ const supabaseKey = "sb_publishable_sAbJ4DJwHPK2mD36AArG5A_bcGWCkFW";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function test() {
-  const { data, error } = await supabase
-    .from('social_links')
-    .select()
-    .limit(0); 
-    
-  console.log('Select limit 0 error:', error);
+  const chefId = "d41deb90-482a-4372-9855-c3eb1076538e";
+  const { data, error } = await supabase.from('sellers').select('*').eq('user_id', chefId).single();
+  if (error) {
+    console.error('Error:', error);
+  } else {
+    console.log('Seller Data:', data);
+  }
 }
 test();

@@ -1,18 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/services/supabaseClient";
+import { getChefRecipes } from "@/services/api";
 
 const RecipeCard = ({ recipe }: { recipe: any }) => {
-    // Use rating_avg from database to determine star coloring
     const rating = Math.round(recipe.rating_avg || 0);
-    // Extract feedback count from the joined data
     const ratingCount = recipe.feedbacks?.[0]?.count || 0;
 
     return (
         <div className="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100 flex flex-col h-full group transition-all hover:shadow-md">
             <div className="h-48 bg-gray-50 relative">
-                {/* Recipe Image Placeholder or Real Image */}
+                {/* Recipe Image Placeholder */}
                 {recipe.image_url ? (
                     <img
                         src={recipe.image_url}
@@ -69,21 +67,24 @@ const RecipeCard = ({ recipe }: { recipe: any }) => {
 const CookbookSection = () => {
     const [recipes, setRecipes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    // Hardcoded ID to match ChefProfileCard
-    const chefId = "d41deb90-482a-4372-9855-c3eb1076538e";
+
+    const chefId = "c99cbd54-2d6a-40a2-b442-c8c8027d4851";
 
     useEffect(() => {
         const fetchRecipes = async () => {
             setLoading(true);
             try {
-                // Fetch recipes for the chef and join with feedbacks to get the count
-                const { data, error } = await supabase
-                    .from('recipes')
-                    .select('*, feedbacks(count)')
-                    .eq('chef_id', chefId);
+                const data = await getChefRecipes(chefId);
+                console.log("Chef Recipes Received from API:", data);
 
-                if (error) throw error;
-                setRecipes(data || []);
+                if (data && data.length > 0) {
+                    console.log("%c✅ SUCCESS: RECIPES LOADED", "color: blue; font-weight: bold; font-size: 14px;");
+                    console.log("Count:", data.length);
+                    setRecipes(data);
+                } else {
+                    console.log("No recipes found for this chef.");
+                    setRecipes([]);
+                }
             } catch (error) {
                 console.error("Error fetching recipes:", error);
             } finally {

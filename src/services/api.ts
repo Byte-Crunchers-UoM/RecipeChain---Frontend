@@ -21,3 +21,33 @@ export const followChef = async (chefId: string | number, buyerId: string | numb
     throw error;
   }
 };
+
+export const getChefProfile = async (chefId: string) => {
+  try {
+    const response = await fetch(`${API_URL}/user/chef/${chefId}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch chef profile");
+    }
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error("Error fetching chef profile:", error);
+    throw error;
+  }
+};
+
+export const getChefRecipes = async (chefId: string) => {
+  try {
+    const response = await fetch(`${API_URL}/recipes/chef/${chefId}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch recipes");
+    }
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error("Error fetching chef recipes:", error);
+    throw error;
+  }
+};
