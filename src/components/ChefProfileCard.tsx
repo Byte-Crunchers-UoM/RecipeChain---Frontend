@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNotifications } from "./NotificationContext";
-import { followChef } from "@/services/api";
-import { supabase } from "@/services/supabaseClient";
+import { followChef, getChefProfile } from "@/services/api";
 import { FaFacebook, FaYoutube, FaTiktok, FaInstagram } from 'react-icons/fa';
 
 const ChefProfileCard = () => {
@@ -15,38 +14,32 @@ const ChefProfileCard = () => {
     const [socialLinks, setSocialLinks] = useState<any>(null);
     const { addNotification } = useNotifications();
 
-    // Hardcoded IDs for demonstration purposes
-    const chefId = "d41deb90-482a-4372-9855-c3eb1076538e";
-    const currentBuyerId = 1; // Simulating logged-in user
+    const chefId = "c99cbd54-2d6a-40a2-b442-c8c8027d4851";
+    const currentBuyerId = 1;
 
     useEffect(() => {
         const fetchSellerData = async () => {
             try {
-                // Querying the sellers table for the chef's details
-                const { data, error } = await supabase
-                    .from("sellers")
-                    .select("*")
-                    .eq("user_id", chefId)
-                    .single();
+                const profile = await getChefProfile(chefId);
+                console.log("Chef Profile Received from API:", profile);
 
-                if (data) {
-                    setSellerData(data);
-                    if (data.verify_badge_status === "verified") {
+                if (profile && profile.seller) {
+                    console.log("%c✅ SUCCESS: CHEF DATA LOADED", "color: green; font-weight: bold; font-size: 14px;");
+                    console.log("Name:", profile.seller.display_name || profile.seller.full_name);
+                    console.log("Location:", profile.seller.address);
+                    console.log("Bio:", profile.seller.bio);
+                    console.log("Socials:", profile.socials);
+
+                    setSellerData(profile.seller);
+                    if (profile.seller.verify_badge_status === "verified") {
                         setIsVerified(true);
                     } else {
                         setIsVerified(false);
                     }
                 }
 
-                // Fetch social links from social_links table
-                const { data: socials, error: socialError } = await supabase
-                    .from('social_links')
-                    .select('*')
-                    .eq('user_id', chefId)
-                    .single();
-
-                if (socials) {
-                    setSocialLinks(socials);
+                if (profile.socials) {
+                    setSocialLinks(profile.socials);
                 }
             } catch (error) {
                 console.error("Error fetching chef data:", error);
@@ -60,7 +53,6 @@ const ChefProfileCard = () => {
         if (isLoading) return;
 
         if (!isFollowing) {
-            // Optimistic UI update
             setIsFollowing(true);
             setFollowerCount((prev) => prev + 1);
             setIsLoading(true);
@@ -70,7 +62,7 @@ const ChefProfileCard = () => {
 
                 // Simultaneous notifications on success
                 addNotification("You are started to following new chef.", "success");
-                // addNotification("New buyer started following you.", "info");
+                addNotification("New buyer started following you.", "info");
             } catch (error) {
                 // Revert on failure
                 setIsFollowing(false);
@@ -80,7 +72,7 @@ const ChefProfileCard = () => {
                 setIsLoading(false);
             }
         } else {
-            // Basic unfollow logic (Frontend only for now)
+            // Basic unfollow logic 
             setIsFollowing(false);
             setFollowerCount((prev) => prev - 1);
         }
