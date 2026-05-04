@@ -213,7 +213,7 @@ export default function RecipePaymentModal({ recipe, isOpen, onClose, onSuccess 
             <div className="bg-slate-50 rounded-2xl p-5 mb-6 border border-slate-100">
               <div className="flex justify-between items-center mb-3">
                 <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Item</span>
-                <span className="text-sm font-semibold text-slate-800 truncate max-w-[180px]">{recipe.title}</span>
+                <span className="text-sm font-semibold text-slate-800 truncate max-w-45">{recipe.title}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Price</span>

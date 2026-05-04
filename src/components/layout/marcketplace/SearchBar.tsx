@@ -22,6 +22,9 @@ export function SearchBar() {
       setIsLoading(true);
       try {
         const results = await searchRecipes(debouncedText);
+        
+        console.log("SEARCH RESULTS FROM SERVICE:", results);
+        
         setRecipes(results);
       } catch (error) {
         console.error("Search failed:", error);

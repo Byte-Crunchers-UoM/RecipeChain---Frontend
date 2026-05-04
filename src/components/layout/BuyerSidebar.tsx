@@ -4,11 +4,11 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   Home,
-  LayoutDashboard,
   TrendingUp,
   BookOpen,
   ChefHat,
   User,
+  Store, // Using Store for Marketplace
   type LucideIcon
 } from 'lucide-react'
 import { MarketplaceFilters } from './marcketplace/MarcketplaceFilters' 
@@ -21,18 +21,20 @@ type MenuItem = {
 
 const menuItems: MenuItem[] = [
   { label: 'Home', path: '/', icon: Home },
-  { label: 'Market Place', path: '/recipes', icon: LayoutDashboard },
+  { label: 'Market Place', path: '/recipes', icon: Store }, 
   { label: 'Trending Recipes', path: '/trending', icon: TrendingUp },
-  { label: 'My Cookbook', path: '/cookbook', icon: BookOpen },
+  { label: 'My Cookbook', path: '/buyer/cookbook', icon: BookOpen },
   { label: 'Chefs', path: '/chefs', icon: ChefHat },
-  { label: 'Profile', path: 'buyer/profile', icon: User }
+  { label: 'Profile', path: '/buyer/profile', icon: User }
 ]
 
-export default function Sidebar() {
+export default function BuyerSideBar() {
   const pathname = usePathname()
   
-  // Only show sidebar on the recipes/marketplace page
-  if (pathname !== '/recipes') {
+  // Show sidebar on /recipes AND all /buyer/... routes
+  const showSidebar = pathname === '/recipes' || pathname?.startsWith('/buyer');
+
+  if (!showSidebar) {
     return null;
   }
 
@@ -45,6 +47,7 @@ export default function Sidebar() {
       {/* Navigation Section */}
       <nav className="flex flex-col gap-1 p-4 pb-6">
         {menuItems.map(item => {
+          // Exact match for the active state
           const isActive = pathname === item.path
           const Icon = item.icon
 

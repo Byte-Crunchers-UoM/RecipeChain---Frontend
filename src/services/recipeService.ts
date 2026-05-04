@@ -39,7 +39,7 @@ export const fetchRecipeById = async (id: string) => {
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include', // 🛠️ This ensures the browser automatically sends the rc_session cookie
+    credentials: 'include',
     cache: 'no-store'      
   });
 
@@ -82,11 +82,10 @@ export async function fetchFilteredRecipe(queryString: string): Promise<Recipe[]
         return [];
     }
 }
-
 export const searchRecipes = async (query: string): Promise<Recipe[]> => {
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // FETCH_TIMEOUT
 
         const response = await fetch(`${BASE_URL}/recipes/search?q=${query}`, {
             signal: controller.signal,
@@ -97,15 +96,16 @@ export const searchRecipes = async (query: string): Promise<Recipe[]> => {
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-            console.error(`Search failed: ${response.status}`);
+            console.error(`Failed to fetch search recipes: ${response.status}`);
             return [];
         }
 
-        const data: RecipeApiResponsed = await response.json();
-        return data.data || [];
+        const data = await response.json();
+        
+        return data.data || []; 
 
     } catch (error) {
-        console.error("Search Error:", error);
+        console.error("Fetch Search Recipes Error:", error);
         return [];
     }
 };

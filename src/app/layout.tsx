@@ -1,7 +1,9 @@
+//src/app/layout.tsx
+
 import type { Metadata } from "next";
 import { Inter, Geist_Mono, Geist } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/layout/MainSidebar"; 
+import BuyerSideBar from "@/components/layout/BuyerSidebar"; 
 
 import { RecipeFilterProvider } from "@/lib/context/RecipeFilterContext";
 import { RecipeCartProvider } from "@/lib/context/RecipeCartContext";
@@ -9,6 +11,7 @@ import RecipeCartOverlay from "@/components/recipe/RecipeCartOverlay";
 import { Footer } from "@/components/layout/Footer";
 import { Web3AuthProvider } from "@/lib/web3/Web3AuthProvider";
 import { AuthProvider } from "@/context/AuthContext";
+import BuyerSidebar from "@/components/layout/BuyerSidebar";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -30,7 +33,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 {/* The main layout wrapper */}
                 <div className="flex flex-1 overflow-hidden">
                   
-                  <Sidebar />
+                  <BuyerSidebar />
                   
                   {/* Added flex flex-col here so the Footer is pushed below the children */}
                   <main className="flex-1 overflow-y-auto flex flex-col bg-white">
