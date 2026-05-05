@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import { Recipe } from '../types/Recipe';
 import { useAuth } from '@/context/AuthContext';
 import { fetchCart, addToCart as apiAddToCart, removeFromCart as apiRemoveFromCart } from '@/services/savedRecipeService';
@@ -25,12 +25,15 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const toggleCart = () => setIsOpen((prev) => !prev);
-    const closeCart = () => setIsOpen(false);
+    // 🛠️ Safely extract the UUID regardless of how your Auth provider names it
+    const actualUserId = user?.user_id || user?.user_id;
+
+    const toggleCart = useCallback(() => setIsOpen((prev) => !prev), []);
+    const closeCart = useCallback(() => setIsOpen(false), []);
 
     // Load cart on mount
     useEffect(() => {
-        if (!isAuthenticated || !user?.email) {
+        if (!isAuthenticated || !actualUserId) {
             setCartItems([]);
             return;
         }
@@ -39,82 +42,76 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
             setIsLoading(true);
             setError(null);
             try {
-                const recipes = await fetchCart(user.email); 
+                const recipes = await fetchCart(actualUserId); 
                 setCartItems(recipes || []);
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : String(error);
-                console.warn("Warning: Could not load saved recipes from server:", errorMessage);
+                console.warn("Could not load saved recipes from server:", error);
                 setCartItems([]);
             } finally {
                 setIsLoading(false);
             }
         };
         loadCart();
-    }, [isAuthenticated, user]);
+    }, [isAuthenticated, actualUserId]);
 
-    const handleAddToCart = async (recipe: Recipe) => {
-        if (!user?.email) {
+    const handleAddToCart = useCallback(async (recipe: Recipe) => {
+        if (!actualUserId) {
             setError("User not authenticated");
             return;
         }
 
-        try {
-            setIsLoading(true);
-            setError(null);
-
-            if (cartItems.find((item) => item.recipe_id === recipe.recipe_id)) {
-                setError("Recipe already in cart");
-                return;
-            }
-
-            await apiAddToCart(user.email, recipe.recipe_id);
-            
-            setCartItems((prev) => [...prev, recipe]);
+        if (cartItems.some((item) => item.recipe_id === recipe.recipe_id)) {
             setIsOpen(true);
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to add recipe to cart';
-            console.error("Failed to add recipe to cart:", err);
-            setError(errorMessage);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleRemoveFromCart = async (recipe_id: string) => {
-        if (!user?.email) {
-            setError("User not authenticated");
             return;
         }
 
-        try {
-            setIsLoading(true);
-            setError(null);
+        // Optimistic UI Update
+        setCartItems((prev) => [recipe, ...prev]);
+        setIsOpen(true);
+        setError(null);
 
-            await apiRemoveFromCart(user.email, recipe_id);
-            
-            setCartItems((prev) => prev.filter((item) => item.recipe_id !== recipe_id));
+        try {
+            await apiAddToCart(actualUserId, recipe.recipe_id);
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to remove recipe from cart';
-            console.error("Failed to remove recipe from cart:", err);
+            // Rollback on failure
+            setCartItems((prev) => prev.filter(item => item.recipe_id !== recipe.recipe_id));
+            const errorMessage = err instanceof Error ? err.message : 'Failed to save recipe';
             setError(errorMessage);
-        } finally {
-            setIsLoading(false);
         }
-    };
+    }, [actualUserId, cartItems]);
+
+    const handleRemoveFromCart = useCallback(async (recipe_id: string) => {
+        if (!actualUserId) return;
+
+        const previousItems = [...cartItems];
+        
+        // Optimistic UI Update
+        setCartItems((prev) => prev.filter((item) => item.recipe_id !== recipe_id));
+        setError(null);
+
+        try {
+            await apiRemoveFromCart(actualUserId, recipe_id);
+        } catch (err) {
+            // Rollback on failure
+            setCartItems(previousItems);
+            const errorMessage = err instanceof Error ? err.message : 'Failed to remove recipe';
+            setError(errorMessage);
+        }
+    }, [actualUserId, cartItems]);
+
+    const contextValue = useMemo(() => ({
+        cartItems,
+        isOpen,
+        toggleCart,
+        closeCart,
+        addToCart: handleAddToCart,
+        removeFromCart: handleRemoveFromCart,
+        isLoading,
+        error
+    }), [cartItems, isOpen, toggleCart, closeCart, handleAddToCart, handleRemoveFromCart, isLoading, error]);
 
     return (
-        <RecipeCartContext.Provider 
-            value={{ 
-                cartItems, 
-                isOpen, 
-                toggleCart, 
-                closeCart, 
-                addToCart: handleAddToCart, 
-                removeFromCart: handleRemoveFromCart,
-                isLoading,
-                error
-            }}
-        >
+        <RecipeCartContext.Provider value={contextValue}>
             {children}
         </RecipeCartContext.Provider>
     );

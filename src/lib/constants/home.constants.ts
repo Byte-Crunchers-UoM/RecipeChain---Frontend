@@ -1,3 +1,4 @@
+//src/lib/constants/home.constants.ts
 import { ChefHat, Bot, TrendingUp, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 

@@ -6,10 +6,10 @@ export interface Recipe {
         full_name: string;
     };
     rating: number;
-    rating_avg?: number;
+    rating_avg: number;
     ingredients: Ingredient[];
     instructions: Instructions[];
-    reviewsCount: number;
+    reviews_count: number;
     prep_time: number;
     cook_time:number;
     servings: number;

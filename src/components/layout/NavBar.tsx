@@ -2,13 +2,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Bell } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
+import { usePathname } from 'next/navigation'; // 🛠️ 1. Import usePathname
 import CartBadge from '../recipe/CartBadge';
 
 export const Navbar = () => {
   const { isAuthenticated, user, isLoading, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  const pathname = usePathname(); // 🛠️ 2. Get the current route
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -20,14 +24,29 @@ export const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // 🛠️ 3. Create a custom scroll handler
+  const handleHowItWorksClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (pathname === '/') {
+      e.preventDefault(); // Stop Next.js from intercepting
+      const section = document.getElementById('how-it-works');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth' }); // Scroll smoothly!
+      }
+    }
+  };
+
   return (
     <nav className="flex items-center justify-between px-8 py-5 bg-white/50 backdrop-blur-sm border-b border-green-100/50">
       
-      {/* 🛠️ Logo Section */}
+      {/* Logo Section */}
       <Link href="/" className="flex items-center gap-2 cursor-pointer">
-        <div className="w-10 h-10 bg-[#16a34a] rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm">
-          RC
-        </div>
+        <Image 
+          src="/Logo.png" 
+          alt="RecipeChain Logo" 
+          width={36} 
+          height={36} 
+          className="h-9 w-auto"
+        />
         <div className="text-xl font-bold text-slate-800 tracking-tight">
           RecipeChain
         </div>
@@ -36,7 +55,16 @@ export const Navbar = () => {
       {/* Middle Links */}
       <div className="hidden md:flex items-center gap-8 font-medium text-slate-600">
         <Link href="/recipes" className="hover:text-[#16a34a] transition-colors">Marketplace</Link>
-        <Link href="/how-it-works" className="hover:text-[#16a34a] transition-colors">How It Works</Link>        
+        
+        {/* 🛠️ 4. Attach the onClick handler to the Link */}
+        <Link 
+          href="/#how-it-works" 
+          onClick={handleHowItWorksClick} 
+          className="hover:text-[#16a34a] transition-colors"
+        >
+          How It Works
+        </Link>        
+        
         <Link href="/ai-assistant" className="hover:text-[#16a34a] transition-colors">AI Assistant</Link>
       </div>
 
@@ -57,7 +85,7 @@ export const Navbar = () => {
             {/* Shopping Cart */}
             <CartBadge />
 
-            {/* 🛠️ Profile Button & Dropdown */}
+            {/* Profile Button & Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -89,7 +117,7 @@ export const Navbar = () => {
                   <button 
                     onClick={() => {
                       setIsProfileOpen(false);
-                      if (logout) logout(); // 🛠️ Call your logout function
+                      if (logout) logout(); 
                     }}
                     className="w-full text-left block px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50"
                   >

@@ -1,8 +1,9 @@
+//src/app/recipes/[id]/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FullRecipeView } from '@/components/recipe/FullRecipeview';
+import { FullRecipeView } from '@/components/recipe/FullRecipeView';
 import RecipePaymentModal from '@/components/recipe/RecipePaymentModel';
 import { Recipe } from '@/lib/types/Recipe';
 import { fetchRecipeById } from '@/services/recipeService';
@@ -59,7 +60,7 @@ export default function RecipeDetailPage() {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Oops!</h2>
           <p className="text-gray-600 mb-6">{error || "Something went wrong."}</p>
           <button 
-            onClick={() => router.push('/marketplace')}
+            onClick={() => router.push('/recipes')}
             className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl transition font-semibold"
           >
             Back to Marketplace
@@ -93,7 +94,7 @@ export default function RecipeDetailPage() {
                 Unlock for {recipe.price || 0} XRP
               </button>
               <button 
-                onClick={() => router.push('/marketplace')}
+                onClick={() => router.push('/recipes')}
                 className="w-full bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 font-medium py-3.5 rounded-xl transition"
               >
                 Back to Marketplace

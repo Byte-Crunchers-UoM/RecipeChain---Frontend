@@ -1,3 +1,4 @@
+//src/components/home/HowItWorksSection.tsx
 'use client';
 
 import React from 'react';
@@ -32,7 +33,7 @@ function StepCard({ step, index, isLast }: StepCardProps): React.ReactElement {
 
 export function HowItWorksSection(): React.ReactElement {
   return (
-    <section className="py-24 bg-white">
+    <section id="how-it-works" className="py-24 bg-white scroll-mt-24">
       <div className="max-w-7xl mx-auto px-8">
         {/* Section Header */}
         <div className="text-center mb-16">

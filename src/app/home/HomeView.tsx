@@ -1,3 +1,4 @@
+//src/app/home/HomeView.tsx
 'use client';
 
 import React from 'react';

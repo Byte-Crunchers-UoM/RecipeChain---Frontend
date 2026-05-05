@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock, Users, ChefHat, Star, ArrowRight, Unlock, Lock } from 'lucide-react'; // 🛠️ Unlock සහ Lock අයිකන එකතු කළා
+import { Clock, Users, ChefHat, Star, ArrowRight, Unlock, Lock } from 'lucide-react'; 
 import { Recipe } from '@/lib/types/Recipe';
 
 interface RecipeCardProps {
@@ -22,10 +22,9 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
   const badgeColor = DIFFICULTY_COLORS[difficulty] || DIFFICULTY_COLORS.default;
   const fallbackImage = "/images/placeholder-recipe.jpg";
 
-  // 🛠️ මිල ගණන් සහ මිලදී ගත් බව පරීක්ෂා කිරීම
   const price = recipe.price || 0; 
-  const isPremium = price > 0; // නොමිලේ දෙන එකක්ද සල්ලි දීලා ගන්න එකක්ද?
-  const isUnlocked = !isPremium || recipe.is_purchased; // මිලදී ගෙන තිබේ නම් හෝ නොමිලේ නම්
+  const isPremium = price > 0; 
+  const isUnlocked = !isPremium || recipe.is_purchased; 
 
   return (
     <article 
@@ -61,7 +60,7 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
         {/* Rating Badge */}
         <div className="absolute top-4 right-4 z-20 bg-gray-900/90 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
           <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-          <span className="font-semibold">{recipe.rating || "0.0"}</span>
+          <span className="font-semibold">{recipe.rating_avg || "0.0"}</span>
         </div>
       </div>
 
@@ -82,7 +81,7 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
             || 'Unknown chef'
           }</span> 
           <span className="text-gray-300">•</span>
-          <span className="text-gray-400 text-xs">{recipe.reviewsCount || 0} reviews</span>
+          <span className="text-gray-400 text-xs">{recipe.reviews_count || 0} reviews</span>
         </div>
         
         {/* Footer Info */}
