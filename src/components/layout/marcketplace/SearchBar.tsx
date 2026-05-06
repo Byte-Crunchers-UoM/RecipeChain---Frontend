@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
-import { useRecipeFilterContext } from '@/lib/context/RecipeFilterContext';
+import { useRecipeFilterContext } from '@/context/RecipeFilterContext';
 import { searchRecipes } from '@/services/recipeService';
 import { useDebounce } from '@/lib/utils/useDebounce';
 

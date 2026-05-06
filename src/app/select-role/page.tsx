@@ -4,8 +4,9 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import type { UserRole } from "@/types";
+import type { UserRole } from "@/lib/types";
 
+/** Main page component allowing authenticated users to select their permanent role (Buyer or Seller) in the marketplace. */
 export default function SelectRolePage() {
   const router = useRouter();
   const { setRole, isAuthenticated, isLoading, role, refreshSession } = useAuth();
@@ -56,6 +57,7 @@ export default function SelectRolePage() {
     []
   );
 
+  /** Saves the user's chosen role to the backend, updates local state, and redirects them to the appropriate dashboard. */
   const saveRoleAndContinue = async (chosen: UserRole) => {
     setError("");
     setSubmitting(true);
@@ -199,6 +201,7 @@ export default function SelectRolePage() {
   );
 }
 
+/** Renders an individual role selection card with an icon, title, description, and list of capabilities. */
 function RoleCard({
   title,
   description,

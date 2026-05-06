@@ -12,6 +12,7 @@ interface StepCardProps {
   isLast: boolean;
 }
 
+/** Renders an individual step within the How It Works section, optionally showing an arrow connector. */
 function StepCard({ step, index, isLast }: StepCardProps): React.ReactElement {
   return (
     <div key={index} className="relative">
@@ -31,6 +32,7 @@ function StepCard({ step, index, isLast }: StepCardProps): React.ReactElement {
   );
 }
 
+/** Renders a section explaining the step-by-step process of using the RecipeChain platform. */
 export function HowItWorksSection(): React.ReactElement {
   return (
     <section id="how-it-works" className="py-24 bg-white scroll-mt-24">

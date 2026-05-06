@@ -9,6 +9,7 @@ import { Recipe } from '@/lib/types/Recipe';
 import { fetchRecipeById } from '@/services/recipeService';
 import { Loader2, Lock } from 'lucide-react';
 
+/** Page component that displays the full details of a specific recipe, or a locked screen if premium access is required. */
 export default function RecipeDetailPage() {
   const params = useParams(); 
   const router = useRouter(); 
@@ -19,6 +20,7 @@ export default function RecipeDetailPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   useEffect(() => {
+    /** Asynchronously loads the recipe details from the backend API using the provided recipe ID. */
     async function loadRecipe() {
       if (!params?.id) return;
 

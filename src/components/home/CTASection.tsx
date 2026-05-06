@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { BrowseMarketplaceBtn } from '@/components/ui/MarcketplaceButton';
 import { CTA_TITLE, CTA_DESCRIPTION, CTA_BECOME_CHEF_TEXT } from '@/lib/constants/home.constants';
 
+/** Renders a Call-To-Action section encouraging users to browse the marketplace or become a chef. */
 export function CTASection(): React.ReactElement {
   return (
     <section className="py-24 bg-linear-to-br from-slate-900 to-slate-800 text-white relative overflow-hidden">

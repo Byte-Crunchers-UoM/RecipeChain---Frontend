@@ -5,8 +5,8 @@ import { Inter, Geist_Mono, Geist } from "next/font/google";
 import "./globals.css";
 import BuyerSideBar from "@/components/layout/BuyerSidebar"; 
 
-import { RecipeFilterProvider } from "@/lib/context/RecipeFilterContext";
-import { RecipeCartProvider } from "@/lib/context/RecipeCartContext";
+import { RecipeFilterProvider } from "@/context/RecipeFilterContext";
+import { RecipeCartProvider } from "@/context/RecipeCartContext";
 import RecipeCartOverlay from "@/components/recipe/RecipeCartOverlay";
 import { Footer } from "@/components/layout/Footer";
 import { Web3AuthProvider } from "@/lib/web3/Web3AuthProvider";
@@ -22,6 +22,7 @@ export const metadata: Metadata = {
   description: "A blockchain-powered recipe marketplace (Recipe • AI • Crypto)",
 };
 
+/** Root layout component that wraps the entire application with global providers, fonts, and UI structure. */
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">

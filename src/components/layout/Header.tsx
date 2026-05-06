@@ -7,7 +7,6 @@ import { SearchBar } from './marcketplace/SearchBar';
 import { usePathname } from 'next/navigation';
 import CartBadge from '../recipe/CartBadge';
 import { useAuth } from '@/context/AuthContext';
-import Image from 'next/image';
 
 interface HeaderProps {
   notificationCount?: number;
@@ -38,17 +37,11 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-6">
         
         {/* Logo and Title */}
-        <Link href="/" className="flex items-center gap-2 cursor-pointer">
-        <Image 
-          src="/Logo.png" 
-          alt="RecipeChain Logo" 
-          width={36} 
-          height={36} 
-          className="h-9 w-auto"
-        />
-        <div className="text-xl font-bold text-slate-800 tracking-tight">
-          RecipeChain
-        </div>
+        <Link href="/" className="flex items-center gap-2 min-w-fit cursor-pointer">
+          <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center shadow-sm">
+            <span className="text-white font-bold text-lg">RC</span>
+          </div>
+          <h1 className="text-xl font-bold text-gray-800 tracking-tight">RecipeChain</h1>
         </Link>
 
         {/* Search Bar */}

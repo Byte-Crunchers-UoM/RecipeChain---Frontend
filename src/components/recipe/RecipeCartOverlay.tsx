@@ -1,6 +1,6 @@
 //src/components/recipe/RecipeCartOverlay.tsx
 "use client";
-import { useRecipeCart } from '@/lib/context/RecipeCartContext';
+import { useRecipeCart } from '@/context/RecipeCartContext';
 import { ShoppingCart } from 'lucide-react';
 import RecipeCartItem from './RecipeCartItem';
 

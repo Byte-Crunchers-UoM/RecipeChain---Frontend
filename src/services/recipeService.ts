@@ -4,6 +4,7 @@ import { Recipe, RecipeApiResponsed } from "@/lib/types/Recipe";
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 const FETCH_TIMEOUT = 10000;
 
+/** Fetches a list of all available recipes from the API. */
 export async function fetchRecipes(): Promise<Recipe[]> {
     try {
         const controller = new AbortController();
@@ -31,6 +32,7 @@ export async function fetchRecipes(): Promise<Recipe[]> {
     }
 }
 
+/** Fetches the details of a specific recipe by its unique identifier. */
 export const fetchRecipeById = async (id: string) => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
   
@@ -52,6 +54,7 @@ export const fetchRecipeById = async (id: string) => {
   return data.recipe; 
 };
 
+/** Fetches a list of recipes that match the provided filter query string. */
 export async function fetchFilteredRecipe(queryString: string): Promise<Recipe[]> {
     try {
         const url = queryString 
@@ -82,6 +85,8 @@ export async function fetchFilteredRecipe(queryString: string): Promise<Recipe[]
         return [];
     }
 }
+
+/** Searches for recipes matching a specific keyword or search query. */
 export const searchRecipes = async (query: string): Promise<Recipe[]> => {
     try {
         const controller = new AbortController();

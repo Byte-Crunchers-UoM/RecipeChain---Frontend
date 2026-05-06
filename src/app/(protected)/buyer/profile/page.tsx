@@ -30,8 +30,8 @@ import {
   updateMyBuyerProfile,
 } from "@/lib/api/buyer";
 import { getMyWalletOverview } from "@/lib/api/wallet";
-import type { BuyerProfile } from "@/types/buyer";
-import type { WalletOverview } from "@/types/wallet";
+import type { BuyerProfile } from "@/lib/types/buyer";
+import type { WalletOverview } from "@/lib/types/wallet";
 import { useAuth } from "@/context/AuthContext";
 
 const XRPL_EXPLORER_BASE =
@@ -43,6 +43,7 @@ type ToastState = {
   message: string;
 };
 
+/** Formats the user's join date to return only the year, or "Recently" if invalid/missing. */
 function formatJoinedYear(dateString?: string) {
   if (!dateString) return "Recently";
   const date = new Date(dateString);
@@ -50,17 +51,20 @@ function formatJoinedYear(dateString?: string) {
   return String(date.getFullYear());
 }
 
+/** Formats a wallet address by truncating the middle part for cleaner UI display. */
 function formatWallet(wallet?: string) {
   if (!wallet) return "Not connected";
   if (wallet.length <= 18) return wallet;
   return `${wallet.slice(0, 7)}...${wallet.slice(-5)}`;
 }
 
+/** Constructs the external XRPL explorer URL for a specific wallet address. */
 function getWalletExplorerUrl(wallet?: string) {
   if (!wallet || !XRPL_EXPLORER_BASE) return "";
   return `${XRPL_EXPLORER_BASE.replace(/\/$/, "")}/${wallet}`;
 }
 
+/** Extracts up to two initials from the user's name or email for the avatar placeholder. */
 function getInitials(name?: string, email?: string) {
   const source = String(name || email || "U").trim();
   return source
@@ -78,6 +82,7 @@ function formatDate(dateString?: string) {
   return date.toLocaleDateString();
 }
 
+/** Component to display a statistic card with an icon, label, value, and subtext. */
 function StatCard({
   iconWrapClassName,
   icon,
@@ -105,6 +110,7 @@ function StatCard({
   );
 }
 
+/** Component to display a progress bar based on a current value and a target goal. */
 function ProgressBar({ value, target }: { value?: number; target?: number }) {
   const percentage =
     target && target > 0
@@ -121,6 +127,7 @@ function ProgressBar({ value, target }: { value?: number; target?: number }) {
   );
 }
 
+/** Component to display a temporary toast notification with a title and message. */
 function AppToast({
   open,
   title,
@@ -161,6 +168,7 @@ function AppToast({
   );
 }
 
+/** Main content component for the buyer profile, handling data fetching, state, and UI rendering. */
 function BuyerProfileContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -190,6 +198,7 @@ function BuyerProfileContent() {
 
   const shouldAutoOpenEdit = searchParams.get("edit") === "1";
 
+  /** Helper function to display the toast notification with a specific title and message. */
   const showToast = (title: string, message: string) => {
     setToast({
       open: true,
@@ -198,6 +207,7 @@ function BuyerProfileContent() {
     });
   };
 
+  /** Fetches the latest wallet overview data from the API and updates the local state. */
   const loadWallet = async () => {
     try {
       setWalletLoading(true);
@@ -216,6 +226,7 @@ function BuyerProfileContent() {
   useEffect(() => {
     let active = true;
 
+    /** Asynchronously loads both the user profile and wallet data on component mount. */
     const load = async () => {
       try {
         setLoading(true);
@@ -284,6 +295,7 @@ function BuyerProfileContent() {
 
     let cancelled = false;
 
+    /** Polls the wallet data to detect balance changes after a top-up action. */
     const refreshAfterTopup = async () => {
       const currentBalance = Number(
         walletData?.account_balance ?? profile?.account_balance ?? 0
@@ -352,6 +364,7 @@ function BuyerProfileContent() {
   }, [searchParams, router, pathname, walletData, profile]);
 
   useEffect(() => {
+    /** Event handler triggered when a withdrawal request is submitted successfully. */
     const handleWithdrawalSubmitted = (event: Event) => {
       const customEvent = event as CustomEvent<{ amount?: number }>;
       const amount = Number(customEvent.detail?.amount || 0);
@@ -368,6 +381,7 @@ function BuyerProfileContent() {
       void loadWallet();
     };
 
+    /** Event handler triggered when a refund request is submitted successfully. */
     const handleRefundSubmitted = (event: Event) => {
       const customEvent = event as CustomEvent<{ amount?: number }>;
       const amount = Number(customEvent.detail?.amount || 0);
@@ -384,6 +398,7 @@ function BuyerProfileContent() {
       void loadWallet();
     };
 
+    /** Event handler triggered when a recipe is purchased successfully. */
     const handleRecipePurchased = (event: Event) => {
       const customEvent = event as CustomEvent<{ title?: string; amount?: number }>;
       const title = String(customEvent.detail?.title || "").trim();
@@ -449,6 +464,7 @@ function BuyerProfileContent() {
     walletData?.account_balance ?? profile?.account_balance ?? 0
   );
 
+  /** Closes the edit profile modal and removes the 'edit' query parameter if present. */
   const closeModal = () => {
     setModalOpen(false);
     if (shouldAutoOpenEdit) {
@@ -456,6 +472,7 @@ function BuyerProfileContent() {
     }
   };
 
+  /** Saves the updated profile details (name, bio, photo) to the backend. */
   const handleSave = async (payload: {
     displayName: string;
     bio: string;
@@ -474,6 +491,7 @@ function BuyerProfileContent() {
     }
   };
 
+  /** Copies the current effective wallet address to the user's clipboard. */
   const handleCopyWallet = async () => {
     if (!effectiveWalletAddress) return;
     try {
@@ -485,6 +503,7 @@ function BuyerProfileContent() {
     }
   };
 
+  /** Permanently deletes the user's account and redirects them to the signup page. */
   const handlePermanentDelete = async () => {
     if (deleteConfirmText !== "DELETE") {
       alert('Type DELETE to confirm permanent account deletion.');
@@ -966,6 +985,7 @@ function BuyerProfileContent() {
   );
 }
 
+/** Page wrapper component that provides a Suspense boundary for the buyer profile content. */
 export default function BuyerProfilePage() {
   return (
     <Suspense

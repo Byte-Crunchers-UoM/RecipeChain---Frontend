@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useRecipeCart } from '@/lib/context/RecipeCartContext';
+import { useRecipeCart } from '@/context/RecipeCartContext';
 import { Recipe } from '@/lib/types/Recipe';
 
 interface SaveRecipeButtonProps {

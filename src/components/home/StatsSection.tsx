@@ -9,6 +9,7 @@ interface StatItemProps {
   index: number;
 }
 
+/** Renders an individual statistic item containing a value and a label. */
 function StatItem({ stat, index }: StatItemProps): React.ReactElement {
   return (
     <div key={index} className="group text-center">
@@ -20,6 +21,7 @@ function StatItem({ stat, index }: StatItemProps): React.ReactElement {
   );
 }
 
+/** Renders a section displaying various community and platform statistics. */
 export function StatsSection(): React.ReactElement {
   return (
     <section className="py-24 bg-linear-to-r from-[#16a34a] to-[#15803d] text-white">

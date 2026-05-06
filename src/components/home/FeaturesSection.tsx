@@ -9,6 +9,7 @@ interface FeatureCardProps {
   index: number;
 }
 
+/** Renders a card displaying a specific platform feature with an icon, title, and description. */
 function FeatureCard({ feature, index }: FeatureCardProps): React.ReactElement {
   const IconComponent = feature.icon;
 
@@ -26,6 +27,7 @@ function FeatureCard({ feature, index }: FeatureCardProps): React.ReactElement {
   );
 }
 
+/** Renders a section highlighting the core features and benefits of the platform. */
 export function FeaturesSection(): React.ReactElement {
   return (
     <section className="py-24 bg-slate-50">

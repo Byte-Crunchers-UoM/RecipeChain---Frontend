@@ -7,7 +7,7 @@ import { RecipePreview } from '@/components/recipe/RecipePreview';
 import RecipePaymentModal from '@/components/recipe/RecipePaymentModel';
 import { Recipe } from '@/lib/types/Recipe';
 import { fetchRecipes } from '@/services/recipeService';
-import { useRecipeFilterContext } from '@/lib/context/RecipeFilterContext';
+import { useRecipeFilterContext } from '@/context/RecipeFilterContext';
 import Header from '@/components/layout/Header';
 
 export default function MarketplacePage() {

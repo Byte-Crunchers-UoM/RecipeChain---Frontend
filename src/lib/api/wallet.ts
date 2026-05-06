@@ -1,5 +1,5 @@
 //src/lib/api/walletActions.ts
-import type { WalletOverview, WalletTransaction } from "@/types/wallet";
+import type { WalletOverview, WalletTransaction } from "@/lib/types/wallet";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 

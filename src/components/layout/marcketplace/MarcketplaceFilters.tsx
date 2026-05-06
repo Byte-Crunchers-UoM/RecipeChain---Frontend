@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react';
 import { Filter, RefreshCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { FilterTag } from '@/components/ui/FilterTags';
 import { FilterCheckbox } from '@/components/ui/FilterCheckBox';
-import { useRecipeFilterContext } from '@/lib/context/RecipeFilterContext';
+import { useRecipeFilterContext } from '@/context/RecipeFilterContext';
 
 const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
 const DIETARY_TAGS = ['vegan', 'Gluten-Free', 'Dairy-Free', 'Keto', 'Paleo'];

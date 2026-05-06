@@ -1,6 +1,6 @@
 "use client";
 
-import type { WalletTransaction } from "@/types/wallet";
+import type { WalletTransaction } from "@/lib/types/wallet";
 
 export default function WalletTransactionHistory({
   transactions,

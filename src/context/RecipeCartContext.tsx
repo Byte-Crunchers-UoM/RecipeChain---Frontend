@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useMemo } from 'react';
-import { Recipe } from '../types/Recipe';
+import { Recipe } from '../lib/types/Recipe';
 import { useAuth } from '@/context/AuthContext';
 import { fetchCart, addToCart as apiAddToCart, removeFromCart as apiRemoveFromCart } from '@/services/savedRecipeService';
 
@@ -18,6 +18,7 @@ interface RecipeCartContextType {
 
 const RecipeCartContext = createContext<RecipeCartContextType | undefined>(undefined);
 
+/** Provider component that manages the recipe cart state and operations. */
 export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
     const { user, isAuthenticated } = useAuth(); 
     const [cartItems, setCartItems] = useState<Recipe[]>([]);
@@ -28,7 +29,10 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
     // 🛠️ Safely extract the UUID regardless of how your Auth provider names it
     const actualUserId = user?.user_id || user?.user_id;
 
+    /** Toggles the visibility state of the recipe cart. */
     const toggleCart = useCallback(() => setIsOpen((prev) => !prev), []);
+
+    /** Closes the recipe cart by setting its open state to false. */
     const closeCart = useCallback(() => setIsOpen(false), []);
 
     // Load cart on mount
@@ -38,6 +42,7 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
 
+        /** Fetches the user's saved recipes from the server and updates the local cart state. */
         const loadCart = async () => {
             setIsLoading(true);
             setError(null);
@@ -54,6 +59,7 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
         loadCart();
     }, [isAuthenticated, actualUserId]);
 
+    /** Adds a recipe to the cart optimistically and syncs the addition with the backend. */
     const handleAddToCart = useCallback(async (recipe: Recipe) => {
         if (!actualUserId) {
             setError("User not authenticated");
@@ -80,6 +86,7 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [actualUserId, cartItems]);
 
+    /** Removes a recipe from the cart optimistically and syncs the removal with the backend. */
     const handleRemoveFromCart = useCallback(async (recipe_id: string) => {
         if (!actualUserId) return;
 
@@ -117,6 +124,7 @@ export const RecipeCartProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
+/** Custom hook to access the recipe cart context. Must be used within a RecipeCartProvider. */
 export const useRecipeCart = () => {
     const context = useContext(RecipeCartContext);
     if (!context) {

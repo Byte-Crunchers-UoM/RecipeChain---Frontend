@@ -19,6 +19,7 @@ interface FilterContextType {
 
 const RecipeFilterContext = createContext<FilterContextType | undefined>(undefined);
 
+/** Provider component that manages the state and operations for filtering recipes. */
 export function RecipeFilterProvider({ children }: { children: ReactNode }) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,10 +37,12 @@ export function RecipeFilterProvider({ children }: { children: ReactNode }) {
 
   const filtersRef = useRef<FilterState>(filters);
 
+  /** Checks whether a specific filter category currently has the given value active. */
   const hasFilter = (category: keyof FilterState, value: string) => {
     return filters[category] === value;
   };
 
+  /** Toggles a filter on or off for a specific category and updates the filter state. */
   const toggleFilter = (category: keyof FilterState, value: string) => {
     const newFilters = {
       ...filters,
@@ -49,6 +52,7 @@ export function RecipeFilterProvider({ children }: { children: ReactNode }) {
     filtersRef.current = newFilters; 
   }; 
 
+  /** Resets all filter categories to their default empty states and reapplies the empty filter. */
   const clearFilters = () => {
     const emptyFilters = {
       difficulty_level: '', meal_type: '', occasion: '', cuisine: '', dietary_tags: '', goal: '' 
@@ -58,6 +62,7 @@ export function RecipeFilterProvider({ children }: { children: ReactNode }) {
     applyFilters(false); 
   };
 
+  /** Constructs the query string from active filters and fetches the corresponding recipes from the API. */
   const applyFilters = useCallback(async (isFromButton = false) => {
     try {
       if (isFromButton) {
@@ -93,6 +98,7 @@ export function RecipeFilterProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** Custom hook to securely access the recipe filter context. */
 export function useRecipeFilterContext() {
     const context = useContext(RecipeFilterContext);
     if (!context) {

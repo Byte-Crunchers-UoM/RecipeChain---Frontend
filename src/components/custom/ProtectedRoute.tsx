@@ -5,7 +5,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import type { UserRole } from "@/types";
+import type { UserRole } from "@/lib/types";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

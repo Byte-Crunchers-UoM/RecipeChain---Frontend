@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { useRecipeCart } from '@/lib/context/RecipeCartContext';
+import { useRecipeCart } from '@/context/RecipeCartContext';
 import { ShoppingCart } from 'lucide-react';
 
 export default function CartBadge() {
