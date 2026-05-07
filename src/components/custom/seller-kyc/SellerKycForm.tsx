@@ -105,6 +105,10 @@ const initialDobParts: DateParts = {
   year: "",
 };
 
+/**
+ * Builds readable country labels in the browser when Intl.DisplayNames is available.
+ * This avoids hardcoding a long country list manually.
+ */
 const regionNames =
   typeof Intl !== "undefined" && typeof Intl.DisplayNames !== "undefined"
     ? new Intl.DisplayNames(["en"], { type: "region" })
@@ -174,6 +178,10 @@ function formatPhoneInput(value: string, countryCode: CountryCode) {
   return new AsYouType(countryCode).input(value);
 }
 
+/**
+ * Converts the visible local phone input into E.164 international format.
+ * The backend should store a normalized phone value to avoid duplicate-format issues.
+ */
 function buildInternationalPhone(
   localPhone: string,
   countryCode: CountryCode
@@ -191,6 +199,10 @@ function getCountryOption(countryCode: CountryCode) {
   );
 }
 
+/**
+ * Chooses a likely phone country code from stored nationality text.
+ * This improves rejected-form resubmission UX by restoring the correct phone format.
+ */
 function getDefaultCountryCode(nationality?: string | null): CountryCode {
   const value = nationality?.trim().toLowerCase();
   if (!value) return "LK";
@@ -244,6 +256,10 @@ function getPhonePlaceholder(countryCode: CountryCode) {
   }
 }
 
+/**
+ * Validates the seller's legal/display name before submission.
+ * Backend validation is still required, but this prevents common user mistakes early.
+ */
 function validateFullName(value: string) {
   const normalized = normalizeSpaces(value);
 
@@ -257,6 +273,9 @@ function validateFullName(value: string) {
   return "";
 }
 
+/**
+ * Validates age because sellers must be adults for KYC and payout responsibility.
+ */
 function validateDateOfBirth(value: string) {
   if (!value) return "Date of birth is required.";
 
@@ -334,6 +353,10 @@ function validateAddress(value: string) {
   return "";
 }
 
+/**
+ * Uses country-aware validation so sellers outside Sri Lanka are not blocked
+ * by Sri Lankan phone number rules.
+ */
 function validatePhone(value: string, countryCode: CountryCode) {
   const normalized = value.trim();
 
@@ -348,6 +371,10 @@ function validatePhone(value: string, countryCode: CountryCode) {
   return "";
 }
 
+/**
+ * Applies stricter Sri Lankan NIC rules only when the selected country is LK.
+ * Other countries are handled as passport/national ID formats.
+ */
 function validateNicNo(value: string, countryCode: CountryCode) {
   const normalized = value.trim().toUpperCase();
 
@@ -382,13 +409,18 @@ function validateNicNo(value: string, countryCode: CountryCode) {
   return "";
 }
 
+/**
+ * Validates both MIME type and file extension to reduce accidental/wrong uploads.
+ * Backend validation must still verify uploaded files before storage.
+ */
 function validateIdDocument(file: File | null) {
   if (!file) return "Please upload your government-issued ID.";
 
   const nameParts = file.name.split(".");
   const extension =
     nameParts.length > 1 ? `.${nameParts.pop()?.toLowerCase() ?? ""}` : "";
-  const hasValidExtension = extension.length > 1 && ALLOWED_FILE_EXTENSIONS.includes(extension);
+  const hasValidExtension =
+    extension.length > 1 && ALLOWED_FILE_EXTENSIONS.includes(extension);
   const hasValidMime = ALLOWED_FILE_TYPES.includes(file.type);
 
   if (!hasValidMime || !hasValidExtension) {
@@ -426,6 +458,10 @@ function buildIsoDateFromParts({ day, month, year }: DateParts): string {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Keeps the day dropdown valid when month/year changes.
+ * Example: February should not allow 31 as a selected date.
+ */
 function getDaysInMonth(month: string, year: string) {
   if (!month || !year) return 31;
   const monthNum = Number(month);
@@ -529,6 +565,7 @@ function DocumentUploadCard({
             <button
               type="button"
               onClick={(e) => {
+                // Prevent the parent upload card click from reopening the file picker.
                 e.stopPropagation();
                 onRemove();
               }}
@@ -664,6 +701,10 @@ export default function SellerKycForm() {
     );
   }, [dobParts.month, dobParts.year]);
 
+  /**
+   * This powers the visual "ready to submit" state.
+   * Final submission is still blocked by validateForm() in handleSubmit().
+   */
   const isFormReadyToSubmit =
     !validateFullName(formData.fullName) &&
     !validateDateOfBirth(formData.dateOfBirth) &&
@@ -765,6 +806,10 @@ export default function SellerKycForm() {
     }
   };
 
+  /**
+   * Final frontend validation before creating FormData.
+   * It also moves the user to the first invalid field to reduce form friction.
+   */
   const validateForm = () => {
     const nextErrors: ErrorState = {
       fullName: validateFullName(formData.fullName),
@@ -893,6 +938,10 @@ export default function SellerKycForm() {
       setIsMarkingSeen(true);
       setSubmitError("");
 
+      /**
+       * Approved sellers see the success page once.
+       * After this API call, future logins can go directly to the dashboard.
+       */
       await markSellerKycApprovalPageSeen();
 
       setKycStatus((prev) =>
@@ -907,7 +956,9 @@ export default function SellerKycForm() {
       router.replace(targetPath);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to continue. Please try again.";
+        error instanceof Error
+          ? error.message
+          : "Failed to continue. Please try again.";
       setSubmitError(message);
     } finally {
       setIsMarkingSeen(false);
@@ -997,6 +1048,10 @@ export default function SellerKycForm() {
             if (statusData?.verification_status === "rejected") {
               const existingDob = statusData?.date_of_birth || "";
 
+              /**
+               * Rejected sellers should not refill everything from zero.
+               * Existing values are restored so they can fix only rejected fields.
+               */
               setFormData({
                 fullName: statusData?.full_name || "",
                 dateOfBirth: existingDob,
@@ -1019,7 +1074,9 @@ export default function SellerKycForm() {
       } catch (error) {
         if (!cancelled) {
           const message =
-            error instanceof Error ? error.message : "Failed to load seller details.";
+            error instanceof Error
+              ? error.message
+              : "Failed to load seller details.";
           setSubmitError(message);
         }
       } finally {
@@ -1045,6 +1102,7 @@ export default function SellerKycForm() {
     const objectUrl = URL.createObjectURL(idDocumentFront);
     setFrontPreviewUrl(objectUrl);
 
+    // Object URLs must be revoked to avoid browser memory leaks after file changes.
     return () => URL.revokeObjectURL(objectUrl);
   }, [idDocumentFront]);
 
@@ -1057,6 +1115,7 @@ export default function SellerKycForm() {
     const objectUrl = URL.createObjectURL(idDocumentBack);
     setBackPreviewUrl(objectUrl);
 
+    // Object URLs must be revoked to avoid browser memory leaks after file changes.
     return () => URL.revokeObjectURL(objectUrl);
   }, [idDocumentBack]);
 
@@ -1065,6 +1124,10 @@ export default function SellerKycForm() {
 
     let cancelled = false;
 
+    /**
+     * Polling lets the seller see approval/rejection changes without manual refresh.
+     * The interval stops once the review reaches a final state.
+     */
     const intervalId = window.setInterval(async () => {
       try {
         const latestStatus = await fetchSellerKycStatus();
@@ -1097,7 +1160,10 @@ export default function SellerKycForm() {
           window.clearInterval(intervalId);
         }
       } catch (error) {
-        console.warn("KYC polling failed:", error instanceof Error ? error.message : error);
+        console.warn(
+          "KYC polling failed:",
+          error instanceof Error ? error.message : error
+        );
       }
     }, 5000);
 
@@ -1329,6 +1395,10 @@ export default function SellerKycForm() {
     try {
       setIsSubmitting(true);
 
+      /**
+       * FormData is required because KYC submission contains both text fields and files.
+       * Do not manually set Content-Type for FormData in the API helper.
+       */
       const payload = new FormData();
       payload.append("fullName", normalizeSpaces(formData.fullName));
       payload.append("dateOfBirth", formData.dateOfBirth);
@@ -1360,6 +1430,10 @@ export default function SellerKycForm() {
           "Verification submitted successfully."
       );
 
+      /**
+       * Optimistically move the UI to pending after successful submission.
+       * This avoids forcing the seller to refresh the page to see review status.
+       */
       setKycStatus({
         verification_status: "pending",
         verification_submitted_at: new Date().toISOString(),
@@ -1392,7 +1466,14 @@ export default function SellerKycForm() {
         kyc_approval_page_seen: false,
       });
     } catch (error) {
-      if (error instanceof ApiError && error.messageCode === "duplicate_seller_identity") {
+      if (
+        error instanceof ApiError &&
+        error.messageCode === "duplicate_seller_identity"
+      ) {
+        /**
+         * Duplicate NIC/phone rules are enforced by the backend because only the
+         * backend can reliably check existing seller identities.
+         */
         setDuplicateIdentityWarning({
           field: error.field,
           status: error.status,
