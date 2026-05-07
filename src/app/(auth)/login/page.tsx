@@ -26,7 +26,7 @@ export default function LoginPage() {
       role === "seller"
         ? "/seller/dashboard"
         : role === "buyer"
-        ? "/marketplace"
+        ? "/recipes"
         : "/select-role";
 
     if (typeof window !== "undefined") {

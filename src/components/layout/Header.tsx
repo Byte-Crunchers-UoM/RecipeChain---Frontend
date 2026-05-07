@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Bell, Sparkles } from 'lucide-react';
 import { SearchBar } from './marcketplace/SearchBar';
 import { usePathname } from 'next/navigation';
@@ -19,7 +20,7 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-  const isMarcketplace = pathname === '/recipes';
+  const isMarcketplace = pathname === '/recipes' || pathname === '/buyer/recipes';
 
   //  2. Click outside logic to close the dropdown
   useEffect(() => {
@@ -38,9 +39,13 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
         
         {/* Logo and Title */}
         <Link href="/" className="flex items-center gap-2 min-w-fit cursor-pointer">
-          <div className="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center shadow-sm">
-            <span className="text-white font-bold text-lg">RC</span>
-          </div>
+          <Image 
+            src="/logo.png" 
+            alt="RecipeChain Logo" 
+            width={40} 
+            height={40} 
+            className="w-10 h-10 object-contain"
+          />
           <h1 className="text-xl font-bold text-gray-800 tracking-tight">RecipeChain</h1>
         </Link>
 
@@ -90,7 +95,14 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
                       </p>
                     </div>
                     <Link 
-                      href="/profile" 
+                      href="/buyer/dashboard" 
+                      onClick={() => setIsProfileOpen(false)}
+                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors"
+                    >
+                      Dashboard
+                    </Link>
+                    <Link 
+                    href="/buyer/profile" 
                       onClick={() => setIsProfileOpen(false)}
                       className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors"
                     >

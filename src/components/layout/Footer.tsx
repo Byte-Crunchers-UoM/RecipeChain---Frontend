@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
-import { ChefHat, Twitter, Github, MessageSquare, HelpCircle } from 'lucide-react';
+import Image from 'next/image';
+import { Twitter, Github, MessageSquare, HelpCircle } from 'lucide-react';
 
 // 1. Define the data structure outside the component to keep JSX clean
 const footerSections = [
@@ -60,9 +61,13 @@ export const Footer = () => {
           {/* Brand Column (Spans 2 columns on large screens) */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             <Link href="/" className="flex items-center gap-3 w-fit">
-              <div className="w-10 h-10 bg-[#10b981] rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-                <ChefHat size={24} strokeWidth={2.5} />
-              </div>
+              <Image
+                src="/logo.png"
+                alt="RecipeChain Logo"
+                width={40}
+                height={40}
+                className="w-10 h-10 object-contain"
+              />
               <span className="text-2xl font-bold text-[#10b981] tracking-tight">RecipeChain</span>
             </Link>
             

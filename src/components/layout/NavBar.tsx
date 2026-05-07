@@ -36,7 +36,7 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="flex items-center justify-between px-8 py-5 bg-white/50 backdrop-blur-sm border-b border-green-100/50">
+    <nav className="relative z-50 flex items-center justify-between px-8 py-5 bg-white/50 backdrop-blur-sm border-b border-green-100/50">
       
       {/* Logo Section */}
       <Link href="/" className="flex items-center gap-2 cursor-pointer">
@@ -101,7 +101,7 @@ export const Navbar = () => {
                     <p className="text-sm font-medium text-gray-900 truncate">{user?.email || 'User'}</p>
                   </div>
                   <Link 
-                    href="/profile" 
+                    href="/buyer/profile" 
                     onClick={() => setIsProfileOpen(false)}
                     className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-[#16a34a] transition-colors"
                   >

@@ -1,3 +1,4 @@
+//src/components/recipe/RecipePreview.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';

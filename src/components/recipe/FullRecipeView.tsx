@@ -1,3 +1,4 @@
+//src/components/recipe/FullRecipeView.tsx
 'use client';
 
 import React, { useState } from 'react';

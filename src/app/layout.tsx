@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} font-inter antialiased bg-gray-50 h-screen overflow-hidden`}>
+      <body className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} font-inter antialiased bg-gray-50 min-h-screen`}>
         
         {/* All global providers are neatly tucked away here */}
         <Providers>

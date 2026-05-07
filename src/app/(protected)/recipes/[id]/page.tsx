@@ -53,7 +53,6 @@ export default function RecipeDetailPage() {
       </div>
     );
   }
-
   // 2. Error Screen
   if (error || !recipe) {
     return (

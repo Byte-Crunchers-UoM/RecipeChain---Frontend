@@ -1,3 +1,4 @@
+//src/app/recipes/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,7 +9,6 @@ import RecipePaymentModal from '@/components/recipe/RecipePaymentModel';
 import { Recipe } from '@/lib/types/Recipe';
 import { fetchRecipes } from '@/services/recipeService';
 import { useRecipeFilterContext } from '@/context/RecipeFilterContext';
-import Header from '@/components/layout/Header';
 
 export default function MarketplacePage() {
   const router = useRouter();
@@ -68,10 +68,7 @@ export default function MarketplacePage() {
   };
 
   return (
-    <>
-      <Header notificationCount={1} />
-
-      <div className="w-full p-8 bg-white min-h-screen relative">
+    <div className="w-full p-8 bg-white min-h-full relative">
         <section>
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20">
@@ -114,6 +111,5 @@ export default function MarketplacePage() {
           onSuccess={handlePaymentSuccess}
         />
       </div>
-    </>
   );
 }

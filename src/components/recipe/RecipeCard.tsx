@@ -1,3 +1,4 @@
+//src/components/recipe/RecipeCard.tsx
 "use client";
 
 import Image from 'next/image';
@@ -38,7 +39,7 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
           alt={recipe.title ? `Photo of ${recipe.title}` : 'Recipe image'}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          className="objaect-cover group-hover:scale-105 transition-transform duration-500"
           priority={false} 
         />
         
