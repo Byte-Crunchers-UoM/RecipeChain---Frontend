@@ -24,6 +24,27 @@ type IdentityTokenResult =
 
 type AppRole = "seller" | "buyer" | null | undefined;
 
+type SyncResponse =
+  | {
+      message?: string;
+    }
+  | null;
+
+/**
+ * Safely reads the backend sync response.
+ *
+ * @param resp - Response returned by the auth sync endpoint.
+ * @returns Parsed JSON response, or null when the response body is empty/invalid.
+ */
+const readSyncResponse = async (resp: Response): Promise<SyncResponse> => {
+  return resp.json().catch(() => null);
+};
+
+/**
+ * Renders the login page and runs the Web3Auth-based session sync flow.
+ *
+ * @returns Login page UI.
+ */
 export default function LoginPage() {
   const router = useRouter();
   const { refreshSession, resetAll } = useAuth();
@@ -32,17 +53,28 @@ export default function LoginPage() {
   const { connect, loading } = useWeb3AuthConnect();
 
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const routeByRole = async (role: AppRole) => {
+  const isAuthBusy = loading || submitting;
+
+  /**
+   * Sends the user to the correct first page after backend session refresh.
+   *
+   * @param role - Role returned by the refreshed RecipeChain session.
+   * @returns Promise that resolves after navigation is requested.
+   */
+  const routeByRole = async (role: AppRole): Promise<void> => {
     let target = "/select-role";
 
     if (role === "seller") {
+      // Seller access depends on KYC status, so the entry route must be resolved dynamically.
       target = await getSellerEntryRoute();
     } else if (role === "buyer") {
       target = BUYER_HOME;
     }
 
     if (typeof window !== "undefined") {
+      // Full navigation ensures new auth cookies are visible to middleware/protected layouts.
       window.location.replace(target);
       return;
     }
@@ -50,18 +82,29 @@ export default function LoginPage() {
     router.replace(target);
   };
 
-  const forceFreshWeb3AuthPopup = async () => {
+  /**
+   * Clears any existing Web3Auth connection before starting a new login attempt.
+   *
+   * @returns Promise that resolves after the old Web3Auth state/modal is cleared.
+   */
+  const forceFreshWeb3AuthPopup = async (): Promise<void> => {
     if (web3Auth?.connected) {
       try {
         await web3Auth.logout();
       } catch {
-        // ignore
+        // Logout is best-effort because a stale Web3Auth session should not block a fresh attempt.
       }
     }
 
     await closeWeb3AuthModal(web3Auth);
   };
 
+  /**
+   * Waits until Web3Auth exposes both connection state and provider.
+   *
+   * @param timeoutMs - Maximum time to wait for Web3Auth readiness.
+   * @returns Connected Web3Auth instance, or null when readiness times out.
+   */
   const waitForConnectedWeb3Auth = async (timeoutMs = 15000) => {
     const startedAt = Date.now();
 
@@ -80,15 +123,25 @@ export default function LoginPage() {
     return null;
   };
 
-  const handleLogin = async () => {
+  /**
+   * Logs in the user by syncing Web3Auth identity with the RecipeChain backend.
+   *
+   * @returns Promise that resolves after login succeeds or an error is shown.
+   */
+  const handleLogin = async (): Promise<void> => {
+    if (isAuthBusy) return;
+
     setError("");
+    setSubmitting(true);
 
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const web3AuthClientId = process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID;
 
       if (!apiBase) throw new Error("Missing NEXT_PUBLIC_API_URL");
+
       if (!web3AuthClientId) {
+        // Surfacing this early avoids confusing Web3Auth errors later in the flow.
         throw new Error("Missing NEXT_PUBLIC_WEB3AUTH_CLIENT_ID");
       }
 
@@ -98,6 +151,7 @@ export default function LoginPage() {
       await connect();
 
       const readyWeb3Auth = await waitForConnectedWeb3Auth();
+
       if (!readyWeb3Auth) {
         throw new Error(
           "Web3Auth connection was not ready in time. Please try again."
@@ -117,6 +171,9 @@ export default function LoginPage() {
       }
 
       const privKeyHexNo0x = await getWeb3AuthPrivateKey(readyWeb3Auth);
+
+      // The private key is used only in the browser to derive the public XRPL address.
+      // Never send the private key to the backend.
       const walletAddress =
         await deriveXrplAddressFromWeb3AuthPrivKey(privKeyHexNo0x);
 
@@ -130,10 +187,11 @@ export default function LoginPage() {
         body: JSON.stringify({ walletAddress }),
       });
 
-      const data: { message?: string } | null = await resp.json().catch(() => null);
+      const data = await readSyncResponse(resp);
 
       if (!resp.ok) {
         if (resp.status === 409) {
+          // Provider mismatch errors need a clear recovery path for users.
           setError(data?.message || "Please use your original sign-in method.");
           return;
         }
@@ -141,32 +199,7 @@ export default function LoginPage() {
         throw new Error(data?.message || "Login failed");
       }
 
-      await closeWeb3AuthModal(readyWeb3Auth);
-
       const me = await refreshSession();
-
-      // If role already exists, go directly to the correct page
-      if (me?.role === "buyer") {
-        if (typeof window !== "undefined") {
-          window.location.replace(BUYER_HOME);
-          return;
-        }
-        router.replace(BUYER_HOME);
-        return;
-      }
-
-      if (me?.role === "seller") {
-        const sellerTarget = await getSellerEntryRoute();
-
-        if (typeof window !== "undefined") {
-          window.location.replace(sellerTarget);
-          return;
-        }
-        router.replace(sellerTarget);
-        return;
-      }
-
-      // No role yet -> role selection page
       await routeByRole(me?.role);
     } catch (e: unknown) {
       console.error("Login error:", e);
@@ -187,6 +220,8 @@ export default function LoginPage() {
       }
 
       setError(msg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -195,8 +230,8 @@ export default function LoginPage() {
       <div className="absolute right-8 top-8">
         <button
           onClick={() => router.push("/signup")}
-          disabled={loading}
-          className="rounded-xl border border-teal-500 px-6 py-3 text-sm font-medium text-teal-600 transition hover:bg-teal-50"
+          disabled={isAuthBusy}
+          className="rounded-xl border border-teal-500 px-6 py-3 text-sm font-medium text-teal-600 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Switch to Sign Up
         </button>
@@ -228,22 +263,26 @@ export default function LoginPage() {
           </p>
 
           {error && (
-            <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div
+              role="alert"
+              aria-live="polite"
+              className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
               {error}
             </div>
           )}
 
           <button
             onClick={handleLogin}
-            disabled={loading}
+            disabled={isAuthBusy}
             className={[
-              "mt-10 w-full rounded-xl py-4 text-lg font-semibold transition shadow-md",
-              loading
-                ? "bg-gray-200 text-gray-500"
+              "mt-10 w-full rounded-xl py-4 text-lg font-semibold shadow-md transition",
+              isAuthBusy
+                ? "cursor-not-allowed bg-gray-200 text-gray-500"
                 : "bg-teal-600 text-white hover:bg-teal-700",
             ].join(" ")}
           >
-            {loading ? "Connecting..." : "Continue with Web3Auth"}
+            {isAuthBusy ? "Connecting..." : "Continue with Web3Auth"}
           </button>
 
           <div className="mt-6 text-xs text-gray-400">
@@ -273,7 +312,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-3 text-xs text-gray-400">
-            © 2026 RecipeChain. All rights reserved.
+            © {new Date().getFullYear()} RecipeChain. All rights reserved.
           </div>
         </div>
       </div>
