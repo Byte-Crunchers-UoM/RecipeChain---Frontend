@@ -6,7 +6,7 @@ import { X, FileText } from "lucide-react";
 
 type Props = {
   open: boolean;
-  onClose: () => void;
+  onCloseAction: () => void;
   submittedAt?: string | null;
   details: {
     fullName?: string;
@@ -130,7 +130,7 @@ function DocumentPreviewCard({
 
 export default function SubmittedDetailsModal({
   open,
-  onClose,
+  onCloseAction,
   submittedAt,
   details,
 }: Props) {
@@ -141,7 +141,7 @@ export default function SubmittedDetailsModal({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        onCloseAction();
       }
     };
 
@@ -152,15 +152,13 @@ export default function SubmittedDetailsModal({
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
     };
-  }, [open, onClose]);
+  }, [open, onCloseAction]);
 
   if (!open) return null;
 
-  const handleOverlayMouseDown = (
-    event: React.MouseEvent<HTMLDivElement>
-  ) => {
+  const handleOverlayMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-      onClose();
+      onCloseAction();
     }
   };
 
@@ -186,7 +184,7 @@ export default function SubmittedDetailsModal({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={onCloseAction}
             className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
             aria-label="Close modal"
           >
@@ -224,7 +222,7 @@ export default function SubmittedDetailsModal({
         <div className="mt-8 flex justify-end">
           <button
             type="button"
-            onClick={onClose}
+            onClick={onCloseAction}
             className="rounded-2xl bg-teal-600 px-6 py-3 text-base font-semibold text-white transition hover:bg-teal-700"
           >
             Close

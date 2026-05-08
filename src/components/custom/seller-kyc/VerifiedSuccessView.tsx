@@ -15,9 +15,9 @@ import Image from "next/image";
 type Props = {
   submittedAt?: string | null;
   verifiedAt?: string | null;
-  onLogout: () => void | Promise<void>;
-  onGoDashboard: () => void | Promise<void>;
-  onCreateRecipe: () => void | Promise<void>;
+  onLogoutAction: () => void | Promise<void>;
+  onGoDashboardAction: () => void | Promise<void>;
+  onCreateRecipeAction: () => void | Promise<void>;
   isLoading?: boolean;
 };
 
@@ -86,9 +86,9 @@ function SummaryItem({
 export default function VerifiedSuccessView({
   submittedAt,
   verifiedAt,
-  onLogout,
-  onGoDashboard,
-  onCreateRecipe,
+  onLogoutAction,
+  onGoDashboardAction,
+  onCreateRecipeAction,
   isLoading = false,
 }: Props) {
   const timelineSteps = [
@@ -122,7 +122,7 @@ export default function VerifiedSuccessView({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={onLogout}
+              onClick={onLogoutAction}
               disabled={isLoading}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -132,7 +132,7 @@ export default function VerifiedSuccessView({
 
             <button
               type="button"
-              onClick={onGoDashboard}
+              onClick={onGoDashboardAction}
               disabled={isLoading}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -231,7 +231,7 @@ export default function VerifiedSuccessView({
               <div className="mt-5 grid gap-3 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
                 <button
                   type="button"
-                  onClick={onGoDashboard}
+                  onClick={onGoDashboardAction}
                   disabled={isLoading}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-4 text-[15px] font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -245,7 +245,7 @@ export default function VerifiedSuccessView({
 
                 <button
                   type="button"
-                  onClick={onCreateRecipe}
+                  onClick={onCreateRecipeAction}
                   disabled={isLoading}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-[15px] font-semibold text-slate-800 transition-all duration-200 hover:bg-teal-600 hover:text-white hover:border-teal-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >

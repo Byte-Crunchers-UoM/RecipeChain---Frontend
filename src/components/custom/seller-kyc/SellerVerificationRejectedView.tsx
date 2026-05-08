@@ -12,8 +12,8 @@ import { parseSellerKycRejection } from "@/lib/kycRejection";
 type Props = {
   rejectedAt?: string | null;
   rejectionReason?: string | null;
-  onResubmit: () => void;
-  onSupport?: () => void;
+  onResubmitAction: () => void;
+  onSupportAction?: () => void;
 };
 
 function formatDecisionDate(value?: string | null) {
@@ -49,8 +49,8 @@ function getStatusBadgeClass(status?: string) {
 export default function SellerVerificationRejectedView({
   rejectedAt,
   rejectionReason,
-  onResubmit,
-  onSupport,
+  onResubmitAction,
+  onSupportAction,
 }: Props) {
   const parsed = parseSellerKycRejection(rejectionReason);
 
@@ -206,7 +206,7 @@ export default function SellerVerificationRejectedView({
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
             <button
               type="button"
-              onClick={onResubmit}
+              onClick={onResubmitAction}
               className="inline-flex items-center justify-center gap-2 rounded-[12px] bg-[#169C97] px-5 py-4 text-sm font-semibold text-white transition hover:opacity-95"
             >
               <RefreshCcw className="h-4 w-4" />
@@ -215,7 +215,7 @@ export default function SellerVerificationRejectedView({
 
             <button
               type="button"
-              onClick={onSupport}
+              onClick={onSupportAction}
               className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[#D7DCE2] bg-white px-5 py-4 text-sm font-semibold text-[#2E3742] transition hover:bg-[#F8FAFC]"
             >
               <Headphones className="h-4 w-4" />
