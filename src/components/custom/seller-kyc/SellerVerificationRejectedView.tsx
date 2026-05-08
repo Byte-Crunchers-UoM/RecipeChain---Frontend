@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   CircleX,
   Headphones,
+  LogOut,
   RefreshCcw,
 } from "lucide-react";
 import Image from "next/image";
@@ -14,19 +15,9 @@ type ButtonAction = () => void | Promise<void>;
 type Props = {
   rejectedAt?: string | null;
   rejectionReason?: string | null;
-
-  /**
-   * New prop names.
-   */
-  onResubmitAction?: ButtonAction;
+  onLogoutAction: ButtonAction;
+  onResubmitAction: ButtonAction;
   onSupportAction?: ButtonAction;
-
-  /**
-   * Backward-compatible prop names.
-   * These keep this component working if the parent still passes old names.
-   */
-  onResubmit?: ButtonAction;
-  onSupport?: ButtonAction;
 };
 
 function formatDecisionDate(value?: string | null) {
@@ -62,23 +53,16 @@ function getStatusBadgeClass(status?: string) {
 export default function SellerVerificationRejectedView({
   rejectedAt,
   rejectionReason,
+  onLogoutAction,
   onResubmitAction,
   onSupportAction,
-  onResubmit,
-  onSupport,
 }: Props) {
   const parsed = parseSellerKycRejection(rejectionReason);
-
-  /**
-   * Support both naming styles so old parent components do not break.
-   */
-  const handleResubmit = onResubmitAction ?? onResubmit;
-  const handleSupport = onSupportAction ?? onSupport;
 
   return (
     <div className="min-h-screen bg-[#F4F6F7]">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-1">
+        <div className="mx-auto flex min-h-[58px] max-w-[1280px] items-center justify-between px-4 py-1">
           <Image
             src="/Logo.png"
             alt="RecipeChain Logo"
@@ -88,8 +72,21 @@ export default function SellerVerificationRejectedView({
             priority
           />
 
-          <div className="rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-2 text-sm font-medium text-[#3B4552]">
-            Status: Rejected
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                void onLogoutAction();
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+
+            <div className="rounded-[12px] border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600">
+              Status: Rejected
+            </div>
           </div>
         </div>
       </header>
@@ -212,7 +209,9 @@ export default function SellerVerificationRejectedView({
               <li>• Only provide the specific items requested above.</li>
               <li>• Your previously submitted information remains on file.</li>
               <li>• Review will resume immediately after submission.</li>
-              <li>• Contact support if you need clarification on requirements.</li>
+              <li>
+                • Contact support if you need clarification on requirements.
+              </li>
             </ul>
           </div>
 
@@ -231,10 +230,9 @@ export default function SellerVerificationRejectedView({
             <button
               type="button"
               onClick={() => {
-                void handleResubmit?.();
+                void onResubmitAction();
               }}
-              disabled={!handleResubmit}
-              className="inline-flex items-center justify-center gap-2 rounded-[12px] bg-[#169C97] px-5 py-4 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-[12px] bg-[#169C97] px-5 py-4 text-sm font-semibold text-white transition hover:opacity-95"
             >
               <RefreshCcw className="h-4 w-4" />
               Resubmit Verification
@@ -243,9 +241,9 @@ export default function SellerVerificationRejectedView({
             <button
               type="button"
               onClick={() => {
-                void handleSupport?.();
+                void onSupportAction?.();
               }}
-              disabled={!handleSupport}
+              disabled={!onSupportAction}
               className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[#D7DCE2] bg-white px-5 py-4 text-sm font-semibold text-[#2E3742] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Headphones className="h-4 w-4" />

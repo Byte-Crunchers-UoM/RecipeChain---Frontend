@@ -916,6 +916,18 @@ export default function SellerKycForm() {
     try {
       setSubmitError("");
 
+      /**
+       * Clear the backend HTTP-only session cookie first.
+       * localStorage cleanup alone cannot remove rc_session because it is HTTP-only.
+       */
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+
+      await fetch(`${apiBase}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      }).catch(() => null);
+
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
         localStorage.removeItem("accessToken");
@@ -1561,6 +1573,7 @@ export default function SellerKycForm() {
       <SellerVerificationRejectedView
         rejectedAt={kycStatus?.verification_submitted_at}
         rejectionReason={kycStatus?.rejection_reason}
+        onLogoutAction={handleLogout}
         onResubmitAction={handleResubmitRejectedKyc}
         onSupportAction={() => router.push("/contact-us")}
       />
