@@ -12,12 +12,27 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
+type ButtonAction = () => void | Promise<void>;
+
 type Props = {
   submittedAt?: string | null;
   verifiedAt?: string | null;
-  onLogoutAction: () => void | Promise<void>;
-  onGoDashboardAction: () => void | Promise<void>;
-  onCreateRecipeAction: () => void | Promise<void>;
+
+  /**
+   * New prop names.
+   */
+  onLogoutAction?: ButtonAction;
+  onGoDashboardAction?: ButtonAction;
+  onCreateRecipeAction?: ButtonAction;
+
+  /**
+   * Backward-compatible prop names.
+   * These keep the component working if SellerKycForm still passes old names.
+   */
+  onLogout?: ButtonAction;
+  onGoDashboard?: ButtonAction;
+  onCreateRecipe?: ButtonAction;
+
   isLoading?: boolean;
 };
 
@@ -60,19 +75,15 @@ function FeatureCard({
       <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-teal-50 text-teal-600">
         {icon}
       </div>
-      <h3 className="mt-4 text-[17px] font-semibold text-slate-800">{title}</h3>
+      <h3 className="mt-4 text-[17px] font-semibold text-slate-800">
+        {title}
+      </h3>
       <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
     </div>
   );
 }
 
-function SummaryItem({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function SummaryItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
@@ -89,8 +100,22 @@ export default function VerifiedSuccessView({
   onLogoutAction,
   onGoDashboardAction,
   onCreateRecipeAction,
+  onLogout,
+  onGoDashboard,
+  onCreateRecipe,
   isLoading = false,
 }: Props) {
+  /**
+   * Support both prop naming styles to avoid breaking existing parent components.
+   */
+  const handleLogout = onLogoutAction ?? onLogout;
+  const handleGoDashboard = onGoDashboardAction ?? onGoDashboard;
+  const handleCreateRecipe = onCreateRecipeAction ?? onCreateRecipe;
+
+  const isLogoutDisabled = isLoading || !handleLogout;
+  const isDashboardDisabled = isLoading || !handleGoDashboard;
+  const isCreateRecipeDisabled = isLoading || !handleCreateRecipe;
+
   const timelineSteps = [
     {
       label: "Submitted",
@@ -122,8 +147,10 @@ export default function VerifiedSuccessView({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={onLogoutAction}
-              disabled={isLoading}
+              onClick={() => {
+                void handleLogout?.();
+              }}
+              disabled={isLogoutDisabled}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <LogOut className="h-4 w-4" />
@@ -132,8 +159,10 @@ export default function VerifiedSuccessView({
 
             <button
               type="button"
-              onClick={onGoDashboardAction}
-              disabled={isLoading}
+              onClick={() => {
+                void handleGoDashboard?.();
+              }}
+              disabled={isDashboardDisabled}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoading ? (
@@ -231,8 +260,10 @@ export default function VerifiedSuccessView({
               <div className="mt-5 grid gap-3 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
                 <button
                   type="button"
-                  onClick={onGoDashboardAction}
-                  disabled={isLoading}
+                  onClick={() => {
+                    void handleGoDashboard?.();
+                  }}
+                  disabled={isDashboardDisabled}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-4 text-[15px] font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isLoading ? (
@@ -245,9 +276,11 @@ export default function VerifiedSuccessView({
 
                 <button
                   type="button"
-                  onClick={onCreateRecipeAction}
-                  disabled={isLoading}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-[15px] font-semibold text-slate-800 transition-all duration-200 hover:bg-teal-600 hover:text-white hover:border-teal-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={() => {
+                    void handleCreateRecipe?.();
+                  }}
+                  disabled={isCreateRecipeDisabled}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-[15px] font-semibold text-slate-800 transition-all duration-200 hover:border-teal-600 hover:bg-teal-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

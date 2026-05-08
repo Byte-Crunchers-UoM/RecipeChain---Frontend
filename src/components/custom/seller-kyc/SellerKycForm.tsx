@@ -1535,7 +1535,7 @@ export default function SellerKycForm() {
 
         <SubmittedDetailsModal
           open={showSubmittedDetails}
-          onClose={() => setShowSubmittedDetails(false)}
+          onCloseAction={() => setShowSubmittedDetails(false)}
           submittedAt={kycStatus?.verification_submitted_at}
           details={submittedDetails}
         />
@@ -1548,9 +1548,9 @@ export default function SellerKycForm() {
       <VerifiedSuccessView
         submittedAt={kycStatus?.verification_submitted_at}
         verifiedAt={kycStatus?.verified_at}
-        onLogout={handleLogout}
-        onGoDashboard={() => handleApprovedPageContinue("/seller/dashboard")}
-        onCreateRecipe={() => handleApprovedPageContinue("/seller/recipes")}
+        onLogoutAction={handleLogout}
+        onGoDashboardAction={() => handleApprovedPageContinue("/seller/dashboard")}
+        onCreateRecipeAction={() => handleApprovedPageContinue("/seller/recipes")}
         isLoading={isMarkingSeen}
       />
     );
@@ -1561,8 +1561,8 @@ export default function SellerKycForm() {
       <SellerVerificationRejectedView
         rejectedAt={kycStatus?.verification_submitted_at}
         rejectionReason={kycStatus?.rejection_reason}
-        onResubmit={handleResubmitRejectedKyc}
-        onSupport={() => router.push("/contact-us")}
+        onResubmitAction={handleResubmitRejectedKyc}
+        onSupportAction={() => router.push("/contact-us")}
       />
     );
   }
@@ -2106,7 +2106,7 @@ export default function SellerKycForm() {
 
       <SubmittedDetailsModal
         open={showSubmittedDetails}
-        onClose={() => setShowSubmittedDetails(false)}
+        onCloseAction={() => setShowSubmittedDetails(false)}
         submittedAt={kycStatus?.verification_submitted_at}
         details={submittedDetails}
       />
