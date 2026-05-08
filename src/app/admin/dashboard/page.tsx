@@ -77,7 +77,7 @@ export default function AdminDashboard() {
     { title: "Platform Revenue", value: liveStats?.platformRevenue || "0 XRP", icon: DollarSign },
   ];
 
-  // Mock data for recent activity 
+  //  data for recent activity 
   const activities = [
     { title: "New Recipe Purchase", desc: "User @chef_marco purchased 'Italian Carbonara' for 50 XRP", time: "5 min ago", icon: FileText, iconBg: "bg-[#EBF7F6]", iconColor: "text-[#149984]" },
     { title: "Recipe Approved", desc: "Admin approved 'Vegan Buddha Bowl' by @healthychef", time: "12 min ago", icon: CheckCircle2, iconBg: "bg-green-50", iconColor: "text-green-500" },

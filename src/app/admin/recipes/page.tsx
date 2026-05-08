@@ -18,7 +18,7 @@ interface Recipe {
   full_name?: string; 
   category: string;
   price_xrp: number;
-  status: 'pending' | 'published' | 'rejected';
+ approval_status: 'pending' | 'published' | 'rejected'| 'draft';
   created_at: string;
   image_url?: string;
 }
@@ -53,15 +53,23 @@ export default function RecipesManagement() {
   }, [router]);
 
   // Search & Filter Logic
-  const filteredRecipes = recipes.filter(r => {
-    const matchesSearch = 
-      (r.title?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (r.full_name?.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesStatus = filterStatus === "All" || r.status === filterStatus;
-    
-    return matchesSearch && matchesStatus;
-  });
+  // Inside your RecipesManagement component
+
+// Search & Filter Logic
+const filteredRecipes = recipes.filter(r => {
+  // 1. Exclude Drafts (This is the new line)
+  if (r.approval_status === 'draft') return false;
+
+  // 2. Apply Search Query
+  const matchesSearch = 
+    (r.title?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (r.full_name?.toLowerCase().includes(searchQuery.toLowerCase()));
+  
+  // 3. Apply Top Tab Filter (Status)
+  const matchesStatus = filterStatus === "All" || r.approval_status === filterStatus;
+  
+  return matchesSearch && matchesStatus;
+});
 
   return (
     <div className={`min-h-screen bg-[#F8FAFB] flex antialiased ${customFont.className}`}>
@@ -96,10 +104,10 @@ export default function RecipesManagement() {
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {[
-            { label: "Total Recipes", val: recipes.length, icon: FileText, color: "text-blue-500", bg: "bg-blue-50", key: "All" },
-            { label: "Pending Approvals", val: recipes.filter(r => r.status === 'pending').length, icon: Clock, color: "text-orange-500", bg: "bg-orange-50", key: "pending" },
-            { label: "Approved", val: recipes.filter(r => r.status === 'published').length, icon: CheckCircle, color: "text-green-500", bg: "bg-green-50", key: "published" },
-            { label: "Rejected", val: recipes.filter(r => r.status === 'rejected').length, icon: XCircle, color: "text-red-500", bg: "bg-red-50", key: "rejected" }
+            { label: "Total Recipes", val: recipes.length, icon: FileText, color: "text-blue-500", bg: "bg-blue-50", key: "all" },
+            { label: "Pending Approvals", val: recipes.filter(r => r.approval_status === 'pending').length, icon: Clock, color: "text-orange-500", bg: "bg-orange-50", key: "pending" },
+            { label: "Approved", val: recipes.filter(r => r.approval_status === 'published').length, icon: CheckCircle, color: "text-green-500", bg: "bg-green-50", key: "published" },
+            { label: "Rejected", val: recipes.filter(r => r.approval_status === 'rejected').length, icon: XCircle, color: "text-red-500", bg: "bg-red-50", key: "rejected" }
           ].map((stat, i) => (
             <button 
               key={i} 
@@ -163,19 +171,26 @@ export default function RecipesManagement() {
                     <td className="py-4 font-bold text-[#23262f] text-sm">{recipe.price_xrp} XRP</td>
                     <td className="py-4">
                       <span className={`px-3 py-1 rounded-lg text-[10px] font-bold ${
-                        recipe.status === 'published' ? 'bg-green-50 text-green-600' :
-                        recipe.status === 'pending' ? 'bg-yellow-50 text-yellow-600' : 'bg-red-50 text-red-600'
+                        recipe.approval_status === 'published' ? 'bg-green-50 text-green-600' :
+                        recipe.approval_status === 'pending' ? 'bg-yellow-50 text-yellow-600' : 'bg-red-50 text-red-600'
                       }`}>
-                        {recipe.status}
+                        {recipe.approval_status}
                       </span>
                     </td>
                     <td className="py-4 text-gray-400 text-xs font-bold">
                       {recipe.created_at ? new Date(recipe.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
                     </td>
                     <td className="py-4 text-center">
-                      <button 
-                        onClick={() => router.push(`/admin/recipes/${recipe.recipe_id}`)}
-                        className="px-4 py-1.5 bg-[#EBF7F6] text-[#149984] text-[10px] font-bold rounded-lg hover:bg-[#149984] hover:text-white transition-all shadow-sm"
+                      <button
+                       onClick={() => {
+                            if (recipe.approval_status === 'published') {
+                              router.push(`/admin/recipes/view/${recipe.recipe_id}`);
+                            } else {
+                              // Both 'pending' and 'rejected' recipes go to the verify page
+                              router.push(`/admin/recipes/verify/${recipe.recipe_id}`);
+                            }
+                          }}
+                        className="px-4 py-1.5 bg-[#EBF7F6] text-[#149984] text-[10px] font-bold rounded-lg hover:bg-[#149984] hover:text-white transition-all"
                       >
                         VIEW
                       </button>

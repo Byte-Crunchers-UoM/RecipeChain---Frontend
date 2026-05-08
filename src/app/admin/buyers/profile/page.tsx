@@ -17,6 +17,7 @@ export default function BuyerProfile() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+
   const fetchBuyerData = async () => {
     if (!id) return;
     const token = localStorage.getItem('adminToken');

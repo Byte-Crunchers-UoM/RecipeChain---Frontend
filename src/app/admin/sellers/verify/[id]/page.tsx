@@ -78,10 +78,10 @@ export default function SellerVerificationDetail() {
       }
 
       // 3. Construct the final JSON object
-      finalRejectionReason = JSON.stringify({
-        summary: "Your verification could not be approved. Please correct the highlighted items and resubmit.",
+        finalRejectionReason = JSON.stringify({
+        summary: "Your verification could not be approved...",
         items: items
-      });
+        });
     }
 
     try {
@@ -92,9 +92,9 @@ export default function SellerVerificationDetail() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ 
-          status, 
-          rejection_reason: finalRejectionReason,
-          kyc_approval_page_seen: false 
+        status, 
+        rejection_reason: finalRejectionReason, // Make sure this key matches the controller
+        kyc_approval_page_seen: false 
         })
       });
 
