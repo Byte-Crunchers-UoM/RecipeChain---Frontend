@@ -516,7 +516,7 @@ export default function BuyerCookbookPage() {
                           className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                         />
                       ) : (
-                        <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-teal-50 via-slate-100 to-amber-50 px-6 text-center">
+                        <div className="flex h-full w-full flex-col items-center justify-center bg-linear-to-br from-teal-50 via-slate-100 to-amber-50 px-6 text-center">
                           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/90 shadow-sm">
                             <UtensilsCrossed className="h-7 w-7 text-teal-600" />
                           </div>
@@ -529,7 +529,7 @@ export default function BuyerCookbookPage() {
                         </div>
                       )}
 
-                      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-950/35 to-transparent" />
+                      <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-slate-950/35 to-transparent" />
 
                       <button
                         type="button"
