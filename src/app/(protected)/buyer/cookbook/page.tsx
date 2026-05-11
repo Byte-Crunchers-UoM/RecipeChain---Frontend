@@ -20,6 +20,7 @@ import type { CookbookItem, CookbookRecipeDetails } from "@/types/cookbook";
 import RecipeQuickViewModal from "@/components/buyer/RecipeQuickViewModal";
 
 type ReviewFilter = "all" | "reviewed" | "pending";
+
 type SortOption =
   | "newest"
   | "oldest"
@@ -29,27 +30,50 @@ type SortOption =
   | "favorites_first"
   | "pending_first";
 
+/**
+ * Shows total recipe time using prep time + cook time.
+ * This keeps the card UI readable even when one or both time values are missing.
+ */
 function formatMinutes(prep?: number | null, cook?: number | null) {
   const total = Number(prep || 0) + Number(cook || 0);
+
   if (!total) return "Time not available";
+
   return `${total} min`;
 }
 
+/**
+ * Returns a valid image URL only when the recipe image is available.
+ * This prevents broken image icons in the cookbook card.
+ */
 function getSafeImageSrc(value?: string | null) {
   const cleaned = String(value || "").trim();
+
   return cleaned.length > 0 ? cleaned : null;
 }
 
+/**
+ * Uses the recipe title as a fallback label inside the placeholder image area.
+ */
 function getPlaceholderLabel(title?: string | null) {
   return title?.trim() || "Recipe";
 }
 
+/**
+ * Keeps difficulty display safe when the backend value is empty.
+ */
 function getDifficultyLabel(value?: string | null) {
   const safe = String(value || "").trim();
+
   if (!safe) return "Not specified";
+
   return safe;
 }
 
+/**
+ * Sorts cookbook recipes based on the selected UI sort option.
+ * This is done on the frontend because the loaded cookbook list is already available in state.
+ */
 function compareCookbookItems(
   a: CookbookItem,
   b: CookbookItem,
@@ -81,6 +105,7 @@ function compareCookbookItems(
     if (a.is_favorite !== b.is_favorite) {
       return a.is_favorite ? -1 : 1;
     }
+
     return a.title.localeCompare(b.title);
   }
 
@@ -88,12 +113,17 @@ function compareCookbookItems(
     if (a.has_reviewed !== b.has_reviewed) {
       return a.has_reviewed ? 1 : -1;
     }
+
     return a.title.localeCompare(b.title);
   }
 
   return Number(b.rating_avg || 0) - Number(a.rating_avg || 0);
 }
 
+/**
+ * Shows the main state of a cookbook item.
+ * Reviewed is prioritized because it is the most important buyer action state.
+ */
 function StatusChip({
   reviewed,
   favorite,
@@ -124,15 +154,20 @@ function StatusChip({
   );
 }
 
+/**
+ * Loading skeleton keeps the page layout stable while cookbook data is loading.
+ */
 function CookbookCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
       <div className="h-48 w-full animate-pulse bg-slate-100" />
+
       <div className="space-y-4 p-5">
         <div className="h-6 w-24 animate-pulse rounded-full bg-slate-100" />
         <div className="h-7 w-2/3 animate-pulse rounded-xl bg-slate-100" />
         <div className="h-4 w-3/4 animate-pulse rounded-lg bg-slate-100" />
         <div className="h-4 w-1/2 animate-pulse rounded-lg bg-slate-100" />
+
         <div className="flex gap-3 pt-2">
           <div className="h-12 w-32 animate-pulse rounded-2xl bg-slate-100" />
           <div className="h-12 w-36 animate-pulse rounded-2xl bg-slate-100" />
@@ -142,10 +177,18 @@ function CookbookCardSkeleton() {
   );
 }
 
+/**
+ * Buyer cookbook page.
+ * Shows purchased recipes, review status, favorites, sorting, and quick recipe details.
+ */
 export default function BuyerCookbookPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  /**
+   * Filters are stored in the URL so the page can preserve state after refresh
+   * and also support navigation from search/filter links.
+   */
   const qParam = searchParams.get("q") || "";
   const reviewStatusParam = (
     searchParams.get("reviewStatus") || "all"
@@ -155,10 +198,21 @@ export default function BuyerCookbookPage() {
   const [items, setItems] = useState<CookbookItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  /**
+   * Stores the recipe currently being favorite/unfavorite updated.
+   * This allows only one card button to show disabled/loading behavior.
+   */
   const [favoriteLoadingId, setFavoriteLoadingId] = useState<string | null>(
     null
   );
+
   const [sortBy, setSortBy] = useState<SortOption>("newest");
+
+  /**
+   * These states power the quick view popup.
+   * selectedRecipe opens the modal immediately, then details are loaded separately.
+   */
   const [selectedRecipe, setSelectedRecipe] = useState<CookbookItem | null>(
     null
   );
@@ -166,6 +220,9 @@ export default function BuyerCookbookPage() {
     useState<CookbookRecipeDetails | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
+  /**
+   * Loads cookbook items from the backend using the current URL filters.
+   */
   const loadCookbook = async () => {
     try {
       setLoading(true);
@@ -179,18 +236,22 @@ export default function BuyerCookbookPage() {
 
       setItems(data);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load cookbook"
-      );
+      setError(err instanceof Error ? err.message : "Failed to load cookbook");
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Reload cookbook whenever URL filters change.
+   */
   useEffect(() => {
     void loadCookbook();
   }, [qParam, reviewStatusParam, favoritesOnlyParam]);
 
+  /**
+   * Sorts a copied array so the original items state is not mutated.
+   */
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => compareCookbookItems(a, b, sortBy));
   }, [items, sortBy]);
@@ -212,6 +273,10 @@ export default function BuyerCookbookPage() {
     [items]
   );
 
+  /**
+   * Updates the review filter in the URL instead of only local state.
+   * This keeps filters shareable and refresh-safe.
+   */
   const setReviewFilter = (filter: ReviewFilter) => {
     const params = new URLSearchParams(searchParams.toString());
 
@@ -221,6 +286,10 @@ export default function BuyerCookbookPage() {
       params.set("reviewStatus", filter);
     }
 
+    /**
+     * Returning to all recipes should also clear favorites-only mode,
+     * otherwise the UI could still show a narrowed result set.
+     */
     if (filter === "all") {
       params.delete("favoritesOnly");
     }
@@ -228,16 +297,27 @@ export default function BuyerCookbookPage() {
     router.push(`/buyer/cookbook?${params.toString()}`);
   };
 
+  /**
+   * Turns on favorites-only mode using URL query params.
+   */
   const showFavoritesOnly = () => {
     const params = new URLSearchParams(searchParams.toString());
+
     params.set("favoritesOnly", "true");
+
     router.push(`/buyer/cookbook?${params.toString()}`);
   };
 
+  /**
+   * Removes all cookbook filters.
+   */
   const clearAllFilters = () => {
     router.push("/buyer/cookbook");
   };
 
+  /**
+   * Toggles favorite state through backend and updates the UI immediately.
+   */
   const handleToggleFavorite = async (recipeId: string) => {
     try {
       setFavoriteLoadingId(recipeId);
@@ -255,6 +335,10 @@ export default function BuyerCookbookPage() {
             : item
         );
 
+        /**
+         * When user is viewing favorites-only, removing favorite should also
+         * remove the card from the current visible list.
+         */
         if (favoritesOnlyParam && !result.is_favorite) {
           return updated.filter((item) => item.recipe_id !== recipeId);
         }
@@ -262,6 +346,9 @@ export default function BuyerCookbookPage() {
         return updated;
       });
 
+      /**
+       * Keep the quick view modal favorite state synced with the card list.
+       */
       setSelectedRecipe((prev) =>
         prev && prev.recipe_id === recipeId
           ? {
@@ -272,14 +359,16 @@ export default function BuyerCookbookPage() {
           : prev
       );
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update favorite"
-      );
+      setError(err instanceof Error ? err.message : "Failed to update favorite");
     } finally {
       setFavoriteLoadingId(null);
     }
   };
 
+  /**
+   * Opens the quick view popup and loads full recipe details.
+   * Basic card data opens immediately; detailed data loads after API response.
+   */
   const openRecipePopup = async (item: CookbookItem) => {
     setError("");
     setSelectedRecipe(item);
@@ -288,6 +377,7 @@ export default function BuyerCookbookPage() {
 
     try {
       const details = await getCookbookRecipeDetails(item.recipe_id);
+
       setSelectedRecipeDetails(details);
     } catch (err) {
       setError(
@@ -298,16 +388,25 @@ export default function BuyerCookbookPage() {
     }
   };
 
+  /**
+   * Closes the quick view popup and clears its loaded details.
+   */
   const closeRecipePopup = () => {
     setSelectedRecipe(null);
     setSelectedRecipeDetails(null);
     setDetailsLoading(false);
   };
 
+  /**
+   * Sends buyer to the review page for the selected purchased recipe.
+   */
   const goToReview = (recipeId: string) => {
     router.push(`/buyer/review/${recipeId}`);
   };
 
+  /**
+   * Human-readable label for the active filter/search view.
+   */
   const activeViewLabel = qParam
     ? `Search results for "${qParam}"`
     : favoritesOnlyParam
@@ -327,6 +426,7 @@ export default function BuyerCookbookPage() {
               <h1 className="text-4xl font-bold tracking-tight text-slate-900">
                 My Cookbook
               </h1>
+
               <p className="mt-3 max-w-2xl text-lg text-slate-500">
                 Your purchased recipes, favorites, and reviews in one beautiful
                 place.
@@ -337,6 +437,7 @@ export default function BuyerCookbookPage() {
               <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
                 Collection
               </div>
+
               <div className="mt-1 text-sm text-slate-700">
                 {totalCount} saved to your cookbook
               </div>
@@ -363,6 +464,7 @@ export default function BuyerCookbookPage() {
           <div className="mt-8 flex flex-col gap-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex flex-wrap items-center gap-3">
               <button
+                type="button"
                 onClick={() => setReviewFilter("all")}
                 className={[
                   "rounded-2xl px-5 py-3 text-sm font-semibold transition",
@@ -375,6 +477,7 @@ export default function BuyerCookbookPage() {
               </button>
 
               <button
+                type="button"
                 onClick={() => setReviewFilter("reviewed")}
                 className={[
                   "rounded-2xl px-5 py-3 text-sm font-semibold transition",
@@ -387,6 +490,7 @@ export default function BuyerCookbookPage() {
               </button>
 
               <button
+                type="button"
                 onClick={() => setReviewFilter("pending")}
                 className={[
                   "rounded-2xl px-5 py-3 text-sm font-semibold transition",
@@ -399,6 +503,7 @@ export default function BuyerCookbookPage() {
               </button>
 
               <button
+                type="button"
                 onClick={showFavoritesOnly}
                 className={[
                   "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold transition",
@@ -409,7 +514,9 @@ export default function BuyerCookbookPage() {
               >
                 <Heart
                   size={16}
-                  className={favoritesOnlyParam ? "fill-current text-yellow-500" : ""}
+                  className={
+                    favoritesOnlyParam ? "fill-current text-yellow-500" : ""
+                  }
                 />
                 Favorites ({favoriteCount})
               </button>
@@ -417,6 +524,7 @@ export default function BuyerCookbookPage() {
               <div className="ml-auto flex items-center gap-3">
                 <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3">
                   <SlidersHorizontal size={16} className="text-slate-400" />
+
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -436,7 +544,10 @@ export default function BuyerCookbookPage() {
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
               <div className="text-sm text-slate-500">
-                Showing <span className="font-semibold text-slate-700">{sortedItems.length}</span>{" "}
+                Showing{" "}
+                <span className="font-semibold text-slate-700">
+                  {sortedItems.length}
+                </span>{" "}
                 recipe{sortedItems.length === 1 ? "" : "s"}
               </div>
 
@@ -471,12 +582,15 @@ export default function BuyerCookbookPage() {
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
                 <UtensilsCrossed className="h-7 w-7 text-slate-500" />
               </div>
+
               <div className="mt-5 text-2xl font-semibold text-slate-800">
                 No recipes found
               </div>
+
               <p className="mt-2 text-sm text-slate-500">
                 Try another search keyword or return to your full cookbook.
               </p>
+
               <button
                 type="button"
                 onClick={clearAllFilters}
@@ -520,9 +634,11 @@ export default function BuyerCookbookPage() {
                           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/90 shadow-sm">
                             <UtensilsCrossed className="h-7 w-7 text-teal-600" />
                           </div>
+
                           <div className="mt-3 text-base font-semibold text-slate-700">
                             {getPlaceholderLabel(item.title)}
                           </div>
+
                           <div className="mt-1 text-xs text-slate-500">
                             Preview image not available
                           </div>
@@ -534,12 +650,15 @@ export default function BuyerCookbookPage() {
                       <button
                         type="button"
                         onClick={(e) => {
+                          /**
+                           * Stop card click because this button has its own favorite action.
+                           */
                           e.stopPropagation();
                           void handleToggleFavorite(item.recipe_id);
                         }}
                         disabled={favoriteLoadingId === item.recipe_id}
                         className={[
-                          "absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/95 shadow-sm transition duration-200",
+                          "absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/95 shadow-sm transition duration-200 disabled:cursor-not-allowed disabled:opacity-60",
                           item.is_favorite
                             ? "scale-110 text-yellow-500 hover:text-yellow-600"
                             : "text-slate-500 hover:scale-105 hover:text-yellow-500",
@@ -585,7 +704,9 @@ export default function BuyerCookbookPage() {
 
                         <div className="flex items-center gap-1.5">
                           <Star size={16} />
-                          <span>{Number(item.rating_avg || 0).toFixed(1)}</span>
+                          <span>
+                            {Number(item.rating_avg || 0).toFixed(1)}
+                          </span>
                         </div>
 
                         <div className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
@@ -597,6 +718,9 @@ export default function BuyerCookbookPage() {
                         <button
                           type="button"
                           onClick={(e) => {
+                            /**
+                             * Prevent duplicate modal open caused by parent card click.
+                             */
                             e.stopPropagation();
                             void openRecipePopup(item);
                           }}
@@ -609,6 +733,9 @@ export default function BuyerCookbookPage() {
                         <button
                           type="button"
                           onClick={(e) => {
+                            /**
+                             * Review navigation should not also trigger quick view modal.
+                             */
                             e.stopPropagation();
                             goToReview(item.recipe_id);
                           }}
@@ -619,7 +746,9 @@ export default function BuyerCookbookPage() {
                               : "bg-teal-600 text-white hover:bg-teal-700",
                           ].join(" ")}
                         >
-                          {item.has_reviewed ? "Update Review" : "Review Recipe"}
+                          {item.has_reviewed
+                            ? "Update Review"
+                            : "Review Recipe"}
                         </button>
                       </div>
                     </div>
