@@ -1,10 +1,13 @@
 'use client';
 
+import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect, useRef } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import { Recipe, Ingredient, Instruction } from '@/lib/types/recipe';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { supabase } from '@/lib/supabase';
+import { useRouter, useSearchParams } from 'next/navigation';
+
 
 const formStyles = {
   fontFamily: "'Roboto', 'Arial', sans-serif",
@@ -14,9 +17,6 @@ interface ValidationErrors {
   [key: string]: string;
 }
 
-const FALLBACK_CHEF_ID = '65f1c2ab89d1e2f3a4b5c6d7';
-const SUBMIT_STATUS: 'pending' | 'published' = 'pending';
-
 const CUISINE_OPTIONS = ['Sri Lankan', 'Italian', 'Chinese', 'Mexican', 'Indian', 'Thai', 'Mediterranean', 'American', 'Japanese'];
 const DIETARY_TAGS_OPTIONS = ['Vegan', 'Vegetarian', 'Keto', 'Paleo', 'Gluten-Free', 'Dairy-Free', 'Low-Carb', 'High-Protein'];
 const MEAL_TYPE_OPTIONS = ['Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Desserts', 'Beverages', 'Appetizers'];
@@ -25,8 +25,16 @@ const OCCASION_OPTIONS = ['Family Gathering', 'Party', 'Date Night', 'Meal Prep'
 
 export default function AddRecipeForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const recipeId = searchParams.get('id');
+
+  const { user } = useAuth();
+  
+  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  
   const [formData, setFormData] = useState<Recipe>({
-    chef_id: '', // Will be populated from localStorage
+    chef_id: '',
     title: '',
     description: '',
     category: '',
@@ -46,6 +54,123 @@ export default function AddRecipeForm() {
     chef_note: '',
   });
 
+ useEffect(() => {
+  if (recipeId) {
+    async function fetchDraftRecipe() {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('recipes')
+          .select(`
+            *,
+            tags (
+              cuisine,
+              dietary_tags,
+              goal,
+              meal_type,
+              occasion
+            )
+          `)
+          .eq('recipe_id', recipeId)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+          let parsedIngredients = data.ingredients;
+          
+          if (Array.isArray(parsedIngredients) && parsedIngredients.length > 0) {
+            parsedIngredients = parsedIngredients.map((ing: any, index: number) => ({
+              id: ing.id || Date.now().toString() + index + Math.random(),
+              name: String(ing.name || (typeof ing === 'string' ? ing : '')).replace(/[\[\]"]/g, ''),
+              quantity: String(ing.quantity || '').replace(/[\[\]"]/g, ''),
+              unit: String(ing.unit || '').replace(/[\[\]"]/g, '')
+            }));
+          } else {
+            
+            parsedIngredients = [{ id: Date.now().toString(), name: '', quantity: '', unit: '' }];
+          }
+
+          // --- INSTRUCTIONS PARSING ---
+          let parsedInstructions = data.instructions;
+          
+          if (Array.isArray(parsedInstructions) && parsedInstructions.length > 0) {
+            parsedInstructions = parsedInstructions.map((desc: any, index: number) => ({
+              id: Date.now().toString() + index + Math.random(),
+              step: index + 1,
+              description: String(desc.description || (typeof desc === 'string' ? desc : '')).replace(/[\[\]"]/g, '')
+            }));
+          } else {
+           
+            parsedInstructions = [{ id: Date.now().toString(), step: 1, description: '' }];
+          }
+
+          const tagRecord = Array.isArray(data.tags) ? data.tags[0] : data.tags;
+          const cleanVal = (val: any) => {
+            if (!val) return '';
+            if (Array.isArray(val)) return val.join(', ').replace(/[\[\]"]/g, '');
+            return String(val).replace(/[\[\]"]/g, '');
+          };
+
+          setFormData({
+            chef_id: data.chef_id || '',
+            title: data.title || '',
+            description: data.description || '',
+            category: data.category || '',
+            cuisine: tagRecord?.cuisine || data.cuisine || '',
+            dietary_tags: cleanVal(tagRecord?.dietary_tags),
+            goal: cleanVal(tagRecord?.goal || data.goal),
+            meal_type: cleanVal(tagRecord?.meal_type || data.meal_type),
+            occasion: cleanVal(tagRecord?.occasion || data.occasion),
+            image_url: data.image_url || '',
+            difficulty_level: data.difficulty_level || '',
+            prep_time: data.prep_time !== null ? String(data.prep_time) : '',
+            cook_time: data.cook_time !== null ? String(data.cook_time) : '',
+            servings: data.servings !== null ? String(data.servings) : '',
+            price: data.price !== null ? String(data.price) : '',
+            ingredients: parsedIngredients,
+            instructions: parsedInstructions,
+            chef_note: data.chef_note || '',
+          });
+
+          if (data.image_url) {
+            setImagePreview(data.image_url);
+          }
+        }
+      } catch (err: any) {
+        console.error('Error fetching draft recipe:', err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDraftRecipe();
+  }
+}, [recipeId]);
+
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'number') {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      document.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (user?.user_id) {
+      setFormData(prev => ({ 
+        ...prev, 
+        chef_id: user.user_id 
+      }));
+    }
+  }, [user]); 
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -56,80 +181,47 @@ export default function AddRecipeForm() {
   const [cuisineSearch, setCuisineSearch] = useState('');
   const [showCuisineDropdown, setShowCuisineDropdown] = useState(false);
   const cuisineRef = useRef<HTMLDivElement>(null);
+  
   const [dietaryTagsSearch, setDietaryTagsSearch] = useState('');
   const [showDietaryTagsDropdown, setShowDietaryTagsDropdown] = useState(false);
   const dietaryTagsRef = useRef<HTMLDivElement>(null);
+
   const [mealTypeSearch, setMealTypeSearch] = useState('');
   const [showMealTypeDropdown, setShowMealTypeDropdown] = useState(false);
   const mealTypeRef = useRef<HTMLDivElement>(null);
+
   const [goalSearch, setGoalSearch] = useState('');
   const [showGoalDropdown, setShowGoalDropdown] = useState(false);
   const goalRef = useRef<HTMLDivElement>(null);
+
   const [occasionSearch, setOccasionSearch] = useState('');
   const [showOccasionDropdown, setShowOccasionDropdown] = useState(false);
   const occasionRef = useRef<HTMLDivElement>(null);
 
-  const isValidObjectId = (value: string): boolean => /^[a-fA-F0-9]{24}$/.test(value);
-
   const getStoredChefId = (): string => {
-    const directKeys = ['chef_id', 'chefId', 'user_id', 'userId', 'id'];
-
-    for (const key of directKeys) {
-      const value = localStorage.getItem(key);
-      if (value && value.trim() && isValidObjectId(value.trim())) return value.trim();
+    if (user?.user_id) {
+      return user.user_id;
     }
 
-    const jsonKeys = ['user', 'currentUser', 'authUser'];
-    for (const key of jsonKeys) {
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
+    const rawUser = localStorage.getItem("user");
+    if (rawUser) {
       try {
-        const parsed = JSON.parse(raw);
-        const parsedChefId = parsed?.chef_id || parsed?.chefId || parsed?.user_id || parsed?.userId || parsed?.id || parsed?._id;
-        if (typeof parsedChefId === 'string' && parsedChefId.trim() && isValidObjectId(parsedChefId.trim())) {
-          return parsedChefId.trim();
-        }
-      } catch {
-        // Ignore malformed JSON in storage
+        const parsed = JSON.parse(rawUser);
+        const chefId = parsed?.user_id || parsed?.id || parsed?.chef_id;
+        if (chefId) return chefId;
+      } catch (e) {
+        console.error("Error parsing local storage user", e);
       }
     }
 
-    return FALLBACK_CHEF_ID;
+    return '';
   };
 
-  //Load chef_id from Local Storage on mount
   useEffect(() => {
     const savedId = getStoredChefId();
-    if (savedId) {
-      setFormData(prev => ({ ...prev, chef_id: savedId }));
-    }
-  }, []);
+    setFormData(prev => ({ ...prev, chef_id: savedId }));
+  }, [user]); 
 
-  // globally intercept wheel events on number inputs so we can block value changes
-  useEffect(() => {
-    const wheelHandler = (e: WheelEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        target.tagName === 'INPUT' &&
-        (target as HTMLInputElement).type === 'number'
-      ) {
-        // prevent default increments/decrements
-        e.preventDefault();
-        // manually scroll the document the same distance
-        // this makes the wheel feel normal even though the input swallows the event
-        if (window && typeof window.scrollBy === 'function') {
-          window.scrollBy({ top: e.deltaY, left: 0 });
-        }
-      }
-    };
-    document.addEventListener('wheel', wheelHandler, { passive: false });
-    return () => {
-      document.removeEventListener('wheel', wheelHandler);
-    };
-  }, []);
-
-  // Close cuisine dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (cuisineRef.current && !cuisineRef.current.contains(event.target as Node)) {
@@ -155,18 +247,36 @@ export default function AddRecipeForm() {
     };
   }, []);
 
-  // Validate form
- const validateForm = (): boolean => {
+  // Auto-save form data to localStorage
+        useEffect(() => {
+          const formDataToSave = {
+            ...formData,
+            ingredients: formData.ingredients,
+            instructions: formData.instructions,
+          };
+          localStorage.setItem('recipeDraftForm', JSON.stringify(formDataToSave));
+        }, [formData]);
+
+        // Load form data from localStorage on mount
+        useEffect(() => {
+          const savedFormData = localStorage.getItem('recipeDraftForm');
+          if (savedFormData) {
+            try {
+              const parsedData = JSON.parse(savedFormData);
+              setFormData(parsedData);
+            } catch (e) {
+              console.error('Error parsing saved form data:', e);
+            }
+          }
+        }, []); // Only run on mount
+
+  const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
 
-    // Title
     if (!formData.title || (typeof formData.title === 'string' && formData.title.trim().length === 0)) {
       errors.title = 'Recipe title is required';
     }
 
-    // Description is optional, no validation needed
-
-    // Numeric fields: allow editing as string, but validate before submit
     const getNum = (val: any) => {
       if (val === '' || val === null || typeof val === 'undefined') return NaN;
       const n = Number(val);
@@ -183,7 +293,6 @@ export default function AddRecipeForm() {
     if (isNaN(cookNum) || cookNum < 0) errors.cook_time = 'Cook time must be filled';
     if (isNaN(servingsNum) || servingsNum < 1) errors.servings = 'Servings must be filled';
 
-    // Check ingredients (required)
     if (!Array.isArray(formData.ingredients) || formData.ingredients.length === 0) {
       errors.ingredients = 'At least one ingredient is required';
     } else {
@@ -200,7 +309,6 @@ export default function AddRecipeForm() {
       });
     }
 
-    // Check instructions (required)
     if (!Array.isArray(formData.instructions) || formData.instructions.length === 0) {
       errors.instructions = 'At least one instruction step is required';
     } else {
@@ -213,25 +321,12 @@ export default function AddRecipeForm() {
 
     setValidationErrors(errors);
 
-
-
-    // DEBUGGING: This will tell you exactly what is wrong in the F12 Console
-    if (Object.keys(errors).length > 0) {
-      console.warn("Frontend Validation Failed! Errors:", errors);
-    }
-
-
-
-
-
     return Object.keys(errors).length === 0;
   };
 
-  // Handle cuisine search
   const handleCuisineSearch = (value: string) => {
     setCuisineSearch(value);
     setShowCuisineDropdown(true);
-    // Update formData with current search value for submission
     setFormData((prev: Recipe) => ({ ...prev, cuisine: value }));
   };
 
@@ -245,11 +340,9 @@ export default function AddRecipeForm() {
     cui.toLowerCase().includes(cuisineSearch.toLowerCase())
   );
 
-  // Handle dietary tags search
   const handleDietaryTagsSearch = (value: string) => {
     setDietaryTagsSearch(value);
     setShowDietaryTagsDropdown(true);
-    // Update formData with current search value for submission
     setFormData((prev: Recipe) => ({ ...prev, dietary_tags: value }));
   };
 
@@ -263,29 +356,33 @@ export default function AddRecipeForm() {
     tag.toLowerCase().includes(dietaryTagsSearch.toLowerCase())
   );
 
-  // Handle meal type search
-  const handleMealTypeSearch = (value: string) => {
-    setMealTypeSearch(value);
-    setShowMealTypeDropdown(true);
-    // Update formData with current search value for submission
-    setFormData((prev: Recipe) => ({ ...prev, meal_type: value }));
+  const handleMealTypeSelect = (mealType: string) => {
+    const currentMealTypes = formData.meal_type ? formData.meal_type.split(',').map((m) => m.trim()) : [];
+    let updatedMealTypes: string[];
+
+    if (currentMealTypes.includes(mealType)) {
+      updatedMealTypes = currentMealTypes.filter((m) => m !== mealType);
+    } else {
+      updatedMealTypes = [...currentMealTypes, mealType];
+    }
+
+    setFormData((prev: Recipe) => ({ ...prev, meal_type: updatedMealTypes.join(', ') }));
+    setMealTypeSearch('');
   };
 
-  const handleMealTypeSelect = (mealType: string) => {
-    setFormData((prev: Recipe) => ({ ...prev, meal_type: mealType }));
-    setMealTypeSearch(mealType);
-    setShowMealTypeDropdown(false);
+  const removeMealType = (typeToRemove: string) => {
+    const currentMealTypes = formData.meal_type ? formData.meal_type.split(',').map((m) => m.trim()) : [];
+    const updatedMealTypes = currentMealTypes.filter((m) => m !== typeToRemove);
+    setFormData((prev: Recipe) => ({ ...prev, meal_type: updatedMealTypes.join(', ') }));
   };
 
   const filteredMealTypes = MEAL_TYPE_OPTIONS.filter((mealType) =>
     mealType.toLowerCase().includes(mealTypeSearch.toLowerCase())
   );
 
-  // Handle goal search
   const handleGoalSearch = (value: string) => {
     setGoalSearch(value);
     setShowGoalDropdown(true);
-    // Update formData with current search value for submission
     setFormData((prev: Recipe) => ({ ...prev, goal: value }));
   };
 
@@ -299,54 +396,53 @@ export default function AddRecipeForm() {
     goal.toLowerCase().includes(goalSearch.toLowerCase())
   );
 
-  // Handle occasion search
-  const handleOccasionSearch = (value: string) => {
-    setOccasionSearch(value);
-    setShowOccasionDropdown(true);
-    // Update formData with current search value for submission
-    setFormData((prev: Recipe) => ({ ...prev, occasion: value }));
+  const handleOccasionSelect = (occasion: string) => {
+    const currentOccasions = formData.occasion ? formData.occasion.split(',').map((o) => o.trim()) : [];
+    let updatedOccasions: string[];
+
+    if (currentOccasions.includes(occasion)) {
+      updatedOccasions = currentOccasions.filter((o) => o !== occasion);
+    } else {
+      updatedOccasions = [...currentOccasions, occasion];
+    }
+
+    setFormData((prev: Recipe) => ({ ...prev, occasion: updatedOccasions.join(', ') }));
+    setOccasionSearch('');
   };
 
-  const handleOccasionSelect = (occasion: string) => {
-    setFormData((prev: Recipe) => ({ ...prev, occasion }));
-    setOccasionSearch(occasion);
-    setShowOccasionDropdown(false);
+  const removeOccasion = (occasionToRemove: string) => {
+    const currentOccasions = formData.occasion ? formData.occasion.split(',').map((o) => o.trim()) : [];
+    const updatedOccasions = currentOccasions.filter((o) => o !== occasionToRemove);
+    setFormData((prev: Recipe) => ({ ...prev, occasion: updatedOccasions.join(', ') }));
   };
 
   const filteredOccasions = OCCASION_OPTIONS.filter((occasion) =>
     occasion.toLowerCase().includes(occasionSearch.toLowerCase())
   );
 
-  // Handle image file selection
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validate file type and size
     if (!file.type.startsWith('image/')) {
       setError('Please select a valid image file');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+    if (file.size > 5 * 1024 * 1024) {
       setError('Image size must be less than 5MB');
       return;
     }
-
-    console.log('File selected:', file.name, 'Size:', file.size);
-
-    // Show preview immediately
     if (imagePreview && imagePreview.startsWith('blob:')) {
       URL.revokeObjectURL(imagePreview);
     }
+
     setImageFile(file);
     setImageFileName(file.name);
     setImagePreview(URL.createObjectURL(file));
     setError('');
-
-    // Don't upload to Cloudinary yet - wait for form submission
   };
 
-  // Handle basic input changes
+
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -356,7 +452,6 @@ export default function AddRecipeForm() {
       ...prev,
       [name]: numericFields.includes(name) ? value : value,
     }));
-    // Clear error for this field
     setValidationErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors[name];
@@ -364,7 +459,6 @@ export default function AddRecipeForm() {
     });
   };
 
-  // Handle ingredient changes
   const handleIngredientChange = (
     id: string,
     field: keyof Ingredient,
@@ -376,7 +470,6 @@ export default function AddRecipeForm() {
         ing.id === id ? { ...ing, [field]: value } : ing
       ),
     }));
-    // Clear per-field validation error for this ingredient field
     setValidationErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors[`ingredient_${id}_${field}`];
@@ -384,7 +477,6 @@ export default function AddRecipeForm() {
     });
   };
 
-  // Add new ingredient
   const addIngredient = () => {
     const newId = Date.now().toString();
     setFormData((prev: Recipe) => ({
@@ -396,7 +488,6 @@ export default function AddRecipeForm() {
     }));
   };
 
-  // Remove ingredient
   const removeIngredient = (id: string) => {
     setFormData((prev: Recipe) => ({
       ...prev,
@@ -404,7 +495,6 @@ export default function AddRecipeForm() {
     }));
   };
 
-  // Handle instruction changes
   const handleInstructionChange = (id: string, value: string) => {
     setFormData((prev: Recipe) => ({
       ...prev,
@@ -412,7 +502,6 @@ export default function AddRecipeForm() {
         inst.id === id ? { ...inst, description: value } : inst
       ),
     }));
-    // Clear per-step validation error for this instruction
     setValidationErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors[`instruction_${id}`];
@@ -420,7 +509,6 @@ export default function AddRecipeForm() {
     });
   };
 
-  // Add new instruction
   const addInstruction = () => {
     const newId = Date.now().toString();
     const step = formData.instructions.length + 1;
@@ -433,7 +521,6 @@ export default function AddRecipeForm() {
     }));
   };
 
-  // Remove instruction
   const removeInstruction = (id: string) => {
     setFormData((prev: Recipe) => {
       const filtered = prev.instructions.filter((inst: Instruction) => inst.id !== id);
@@ -447,11 +534,10 @@ export default function AddRecipeForm() {
     });
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
+  const executeSubmit = async () => {
+    const currentChefId = user?.user_id || getStoredChefId();
+    if (!currentChefId) {
+      alert("User session not found. Please log in again.");
       return;
     }
 
@@ -459,133 +545,105 @@ export default function AddRecipeForm() {
     setError('');
 
     try {
-      let imageUrl = '';
-
-      // Upload image to Cloudinary if one was selected
+      let cloudinaryUrl = formData.image_url;
       if (imageFile) {
         setIsUploadingImage(true);
-        console.log('Starting Cloudinary upload...');
-        const cloudinaryUrl = await uploadToCloudinary(imageFile);
-        setIsUploadingImage(false);
-
-        if (cloudinaryUrl) {
-          console.log('Cloudinary URL received:', cloudinaryUrl);
-          imageUrl = cloudinaryUrl;
+        const uploadedUrl = await uploadToCloudinary(imageFile);
+        if (uploadedUrl) {
+          cloudinaryUrl = uploadedUrl;
         } else {
-          console.log('Cloudinary upload failed');
-          setError('Failed to upload image. Please try again.');
-          setLoading(false);
-          return;
+          throw new Error('Failed to upload image. Please try again.');
         }
+        setIsUploadingImage(false);
       }
-
-      const rawChefId = formData.chef_id || getStoredChefId() || FALLBACK_CHEF_ID;
-      const chefId = isValidObjectId(rawChefId) ? rawChefId : FALLBACK_CHEF_ID;
-
-      const normalizedIngredients = formData.ingredients
-        .map((ingredient) => ({
-          id: ingredient.id,
-          name: ingredient.name.trim(),
-          quantity: ingredient.quantity.trim(),
-          unit: ingredient.unit.trim(),
-        }));
-
-      const normalizedInstructions = formData.instructions
-        .map((instruction, index) => ({
-          id: instruction.id,
-          step: index + 1,
-          description: instruction.description.trim(),
-        }));
-
-      const dietaryTagsValue = (formData as any).dietary_tags?.trim() || 'vegetarian';
-      const dietaryTagsArray = dietaryTagsValue
-        .split(',')
-        .map((item: string) => item.trim())
-        .filter((item: string) => item.length > 0);
-
-      const ingredientLines = normalizedIngredients.map((ingredient) =>
-        `${ingredient.quantity} ${ingredient.unit} ${ingredient.name}`.trim()
-      );
-
-      const instructionLines = normalizedInstructions.map((instruction) => instruction.description);
 
       const recipePayload = {
         title: formData.title.trim(),
         description: formData.description?.trim() || '',
-        cuisine: formData.cuisine?.trim() || '',
-        meal_type: (formData as any).meal_type?.trim() || '',
-        goal: (formData as any).goal?.trim() || '',
-        occasion: (formData as any).occasion?.trim() || '',
-        difficulty_level: formData.difficulty_level || '',
-        prep_time: Number((formData as any).prep_time) || 0,
-        cook_time: Number((formData as any).cook_time) || 0,
-        servings: Number((formData as any).servings) || 1,
-        price: Number((formData as any).price) || 0,
-        ingredients: ingredientLines,
-        instructions: instructionLines,
-        chef_note: formData.chef_note,
-        image_url: imageUrl, // Use the uploaded image URL
+        price: Number(formData.price) || 0,
+        prep_time: Number(formData.prep_time) || 0,
+        cook_time: Number(formData.cook_time) || 0,
+        servings: Number(formData.servings) || 0,
+        difficulty_level: formData.difficulty_level || null,
+        chef_note: formData.chef_note || '',
+        image_url: cloudinaryUrl,
+        
+        status: 'draft',
+        approval_status: 'pending',
+        chef_id: currentChefId,
+    
+        
+        ingredients: formData.ingredients.map(ing => ({
+          name: String(ing.name || '').trim(),
+          quantity: String(ing.quantity || '').trim(),
+          unit: String(ing.unit || '').trim()
+        })),
+
+        instructions: formData.instructions.map(ins => String(ins.description || '').trim()),
+        
         tags: {
-          dietary_tags: dietaryTagsArray,
-          goal: (formData as any).goal?.trim() || '',
-          meal_type: (formData as any).meal_type?.trim() || '',
-          occasion: (formData as any).occasion?.trim() || '',
-          cuisine: formData.cuisine?.trim() || '',
-        },
-        dietary_tags: dietaryTagsArray,
-        chef_id: chefId,
-        status: SUBMIT_STATUS,
+          dietary_tags: formData.dietary_tags 
+        ? formData.dietary_tags.split(',').map(t => t.trim()).filter(t => t !== '') 
+        : [],
+          cuisine: formData.cuisine || '',
+          goal: formData.goal || '',
+          meal_type: formData.meal_type || '',
+          occasion: formData.occasion || ''
+        }
       };
 
-      console.log('Submitting recipe with payload:', recipePayload);
+      let response;
+      if (recipeId) {
+        response = await fetch(`http://localhost:4000/api/recipes/${recipeId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(recipePayload),
+        });
+      } else {
+        response = await fetch('http://localhost:4000/api/recipes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(recipePayload),
+        });
+      }
 
-      // Always send as JSON. The backend has no multipart parser (multer),
-      // so sending FormData leaves req.body undefined and breaks validators.
-      // Wire up image upload once multer is added on the backend.
-      const response = await fetch('http://localhost:4000/api/recipes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(recipePayload),
-      });
+      const result = await response.json();
 
       if (!response.ok) {
-        let errorMessage = 'Failed to create recipe';
-        try {
-          const errorData = await response.json();
-          const detailItems: string[] = [];
-
-          if (Array.isArray(errorData?.missingFields)) {
-            detailItems.push(...errorData.missingFields);
-          }
-
-          if (Array.isArray(errorData?.errors)) {
-            detailItems.push(...errorData.errors);
-          }
-
-          if (Array.isArray(errorData?.error)) {
-            detailItems.push(...errorData.error);
-          } else if (typeof errorData?.error === 'string') {
-            detailItems.push(errorData.error);
-          }
-
-          errorMessage = errorData?.message || errorMessage;
-          if (detailItems.length > 0) {
-            errorMessage = `${errorMessage}: ${detailItems.join(', ')}`;
-          }
-        } catch {
-          // Keep default error message when body is not JSON
+        let errorMessage = result.message || 'Failed to add recipe';
+        if (Array.isArray(result.errors)) {
+          errorMessage += `: ${result.errors.join(', ')}`;
         }
-
         throw new Error(errorMessage);
       }
 
       router.push('/recipes/submitted');
-      return;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      localStorage.removeItem('recipeDraftForm'); 
+
+    } catch (err: any) {
+      console.error("Submission Error:", err);
+      setError(err.message || 'An error occurred during submission');
     } finally {
       setLoading(false);
     }
+  };
+
+  const constClickStyle = (e: any) => {
+    e.currentTarget.style.borderColor = '#0d9488';
+    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)';
+  };
+
+  const constBlurStyle = (e: any, fieldName?: string) => {
+    e.currentTarget.style.borderColor = fieldName && validationErrors[fieldName] ? '#ef4444' : '#cbd5e1';
+    e.currentTarget.style.boxShadow = 'none';
+  };
+
+  const handleSubmitClick = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
+    setIsWarningModalOpen(true);
   };
 
   const getFieldBorderColor = (fieldName: string): string => {
@@ -593,8 +651,10 @@ export default function AddRecipeForm() {
   };
 
   return (
-    <form noValidate onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6" style={{ backgroundColor: '#f8fafb', ...formStyles }}>
-      <h1 className="mb-8 text-center" style={{ color: '#1a2632', fontSize: '24px', fontWeight: 'bold' }}>Add New Recipe</h1>
+    <form noValidate onSubmit={handleSubmitClick} className="max-w-4xl mx-auto p-6" style={{ backgroundColor: '#f8fafb', ...formStyles }}>
+      <h1 className="mb-8 text-center" style={{ color: '#1a2632', fontSize: '24px', fontWeight: 'bold' }}>
+        {recipeId ? 'Edit Draft Recipe' : 'Add New Recipe'}
+      </h1>
 
       {error && (
         <div className="mb-6 p-4 rounded-lg border" style={{ backgroundColor: '#fee2e2', borderColor: '#fca5a5', color: '#991b1b' }}>
@@ -602,32 +662,34 @@ export default function AddRecipeForm() {
         </div>
       )}
 
-      {/* Basic Info Section */}
-      <div className="mb-8 p-6 rounded-lg shadow-sm border" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
+      <div className="mb-8 p-6 rounded-lg shadow-sm border bg-white" style={{ borderColor: '#e2e8f0' }}>
         <h2 className="mb-4" style={{ color: '#1a2632', fontSize: '16px', fontWeight: '600' }}>Recipe Information</h2>
 
-        {/* Title - Required */}
         <div className="mb-4">
           <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
             Recipe Title <span style={{ color: '#ef4444' }}>*</span>
           </label>
-            <input
+          <input
             type="text"
             name="title"
+            id="recipe-title" 
             value={formData.title}
             onChange={handleInputChange}
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent"
-            style={{ borderColor: getFieldBorderColor('title'), color: '#1a2632' }}
-            onFocus={(e) => { e.currentTarget.style.outlineColor = '#0d9488'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)'; }}
+            className="w-full px-4 py-2 border rounded-lg transition outline-none"
+            style={{ 
+              borderColor: getFieldBorderColor('title'), 
+              color: '#1a2632' 
+            }}
+            onFocus={constClickStyle}
+            onBlur={(e) => constBlurStyle(e, 'title')}
             placeholder="Enter recipe title"
-            
+            required 
           />
           {validationErrors.title && (
             <p style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{validationErrors.title}</p>
           )}
         </div>
 
-        {/* Tags (saved separately) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div style={{ position: 'relative' }} ref={cuisineRef}>
             <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
@@ -635,22 +697,16 @@ export default function AddRecipeForm() {
             </label>
             <input
               type="text"
-              value={cuisineSearch}
+              name="cuisine" 
+              id="cuisine-input"   
+              value={cuisineSearch || formData.cuisine}
               onChange={(e) => handleCuisineSearch(e.target.value)}
-              onFocus={(e) => { 
-                e.currentTarget.style.borderColor = '#0d9488';
-                e.currentTarget.style.outlineColor = '#0d9488';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)';
-                setShowCuisineDropdown(true);
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#cbd5e1';
-                e.currentTarget.style.boxShadow = 'none';
-                setShowCuisineDropdown(false);
-              }}
-              className="no-autofill w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent transition"
-              style={{ borderColor: '#cbd5e1', color: '#1a2632', backgroundColor: '#ffffff' }}
+              onFocus={(e) => { constClickStyle(e); setShowCuisineDropdown(true); }}
+              onBlur={(e) => { constBlurStyle(e); setTimeout(() => setShowCuisineDropdown(false), 200); }}
+              className="no-autofill w-full px-4 py-2 border rounded-lg transition outline-none"
+              style={{ borderColor: getFieldBorderColor('cuisine'), color: '#1a2632', backgroundColor: '#ffffff' }}
               placeholder="Type cuisine name..."
+              autoComplete="off" 
             />
             {showCuisineDropdown && filteredCuisines.length > 0 && (
               <div
@@ -677,14 +733,14 @@ export default function AddRecipeForm() {
                     style={{
                       padding: '10px 12px',
                       cursor: 'pointer',
-                      backgroundColor: cuisineSearch === cuisine ? '#e0f2fe' : '#ffffff',
+                      backgroundColor: formData.cuisine === cuisine ? '#e0f2fe' : '#ffffff',
                       borderBottom: '1px solid #f1f5f9',
                       fontSize: '14px',
                       color: '#1a2632',
                       transition: 'background-color 0.2s',
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#e0f2fe'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = cuisineSearch === cuisine ? '#e0f2fe' : '#ffffff'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = formData.cuisine === cuisine ? '#e0f2fe' : '#ffffff'; }}
                   >
                     {cuisine}
                   </div>
@@ -699,21 +755,12 @@ export default function AddRecipeForm() {
             </label>
             <input
               type="text"
-              value={dietaryTagsSearch}
+              value={dietaryTagsSearch || (Array.isArray(formData.dietary_tags) ? formData.dietary_tags.join(', ') : formData.dietary_tags) || ''}
               onChange={(e) => handleDietaryTagsSearch(e.target.value)}
-              onFocus={(e) => { 
-                e.currentTarget.style.borderColor = '#0d9488';
-                e.currentTarget.style.outlineColor = '#0d9488';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)';
-                setShowDietaryTagsDropdown(true);
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#cbd5e1';
-                e.currentTarget.style.boxShadow = 'none';
-                setShowDietaryTagsDropdown(false);
-              }}
-              className="no-autofill w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent transition"
-              style={{ borderColor: '#cbd5e1', color: '#1a2632', backgroundColor: '#ffffff' }}
+              onFocus={(e) => { constClickStyle(e); setShowDietaryTagsDropdown(true); }}
+              onBlur={(e) => { constBlurStyle(e); setTimeout(() => setShowDietaryTagsDropdown(false), 200); }}
+              className="no-autofill w-full px-4 py-2 border rounded-lg transition outline-none"
+              style={{ borderColor: getFieldBorderColor('dietary_tags'), color: '#1a2632', backgroundColor: '#ffffff' }}
               placeholder="Type dietary tag..."
             />
             {showDietaryTagsDropdown && filteredDietaryTags.length > 0 && (
@@ -741,14 +788,14 @@ export default function AddRecipeForm() {
                     style={{
                       padding: '10px 12px',
                       cursor: 'pointer',
-                      backgroundColor: dietaryTagsSearch === tag ? '#e0f2fe' : '#ffffff',
+                      backgroundColor: formData.dietary_tags === tag ? '#e0f2fe' : '#ffffff',
                       borderBottom: '1px solid #f1f5f9',
                       fontSize: '14px',
                       color: '#1a2632',
                       transition: 'background-color 0.2s',
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#e0f2fe'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = dietaryTagsSearch === tag ? '#e0f2fe' : '#ffffff'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = formData.dietary_tags === tag ? '#e0f2fe' : '#ffffff'; }}
                   >
                     {tag}
                   </div>
@@ -761,25 +808,36 @@ export default function AddRecipeForm() {
             <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
               Meal Type
             </label>
-            <input
-              type="text"
-              value={mealTypeSearch}
-              onChange={(e) => handleMealTypeSearch(e.target.value)}
-              onFocus={(e) => { 
-                e.currentTarget.style.borderColor = '#0d9488';
-                e.currentTarget.style.outlineColor = '#0d9488';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)';
-                setShowMealTypeDropdown(true);
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#cbd5e1';
-                e.currentTarget.style.boxShadow = 'none';
-                setShowMealTypeDropdown(false);
-              }}
-              className="no-autofill w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent transition"
-              style={{ borderColor: '#cbd5e1', color: '#1a2632', backgroundColor: '#ffffff' }}
-              placeholder="Type meal type..."
-            />
+            <div 
+              className="w-full px-4 py-2 border rounded-lg bg-white flex flex-wrap gap-2 items-center min-h-[42px] transition outline-none"
+              style={{ borderColor: getFieldBorderColor('meal_type'), color: '#1a2632' }}
+              onFocus={constClickStyle}
+              onBlur={(e) => constBlurStyle(e)}
+            >
+              {formData.meal_type && formData.meal_type.split(',').map((item) => (
+                item.trim() && (
+                  <span key={item.trim()} className="flex items-center gap-1 bg-[#e0f2f1] text-[#0d9488] px-2 py-0.5 rounded text-[11px] font-semibold shadow-sm">
+                    {item.trim()}
+                    <button type="button" onClick={() => removeMealType(item.trim())} className="text-[#0d9488] hover:text-red-500 font-bold ml-1">
+                      ×
+                    </button>
+                  </span>
+                )
+              ))}
+              <input
+                type="text"
+                value={mealTypeSearch}
+                onChange={(e) => {
+                  setMealTypeSearch(e.target.value);
+                  setShowMealTypeDropdown(true);
+                }}
+                onFocus={() => setShowMealTypeDropdown(true)}
+                onBlur={() => setTimeout(() => setShowMealTypeDropdown(false), 200)}
+                placeholder={formData.meal_type ? "" : "Type meal type..."}
+                className="outline-none flex-1 min-w-[60px] text-[13px] bg-transparent"
+              />
+            </div>
+            
             {showMealTypeDropdown && filteredMealTypes.length > 0 && (
               <div
                 style={{
@@ -789,12 +847,10 @@ export default function AddRecipeForm() {
                   right: 0,
                   backgroundColor: '#ffffff',
                   border: '1px solid #cbd5e1',
-                  borderTop: 'none',
                   borderRadius: '0 0 8px 8px',
                   maxHeight: '200px',
                   overflowY: 'auto',
-                  zIndex: 10,
-                  marginTop: '-1px',
+                  zIndex: 15,
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
                 }}
               >
@@ -805,14 +861,12 @@ export default function AddRecipeForm() {
                     style={{
                       padding: '10px 12px',
                       cursor: 'pointer',
-                      backgroundColor: mealTypeSearch === mealType ? '#e0f2fe' : '#ffffff',
-                      borderBottom: '1px solid #f1f5f9',
                       fontSize: '14px',
                       color: '#1a2632',
-                      transition: 'background-color 0.2s',
+                      borderBottom: '1px solid #f1f5f9',
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#e0f2fe'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = mealTypeSearch === mealType ? '#e0f2fe' : '#ffffff'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#ffffff'; }}
                   >
                     {mealType}
                   </div>
@@ -829,21 +883,12 @@ export default function AddRecipeForm() {
             </label>
             <input
               type="text"
-              value={goalSearch}
+              value={goalSearch || formData.goal}
               onChange={(e) => handleGoalSearch(e.target.value)}
-              onFocus={(e) => { 
-                e.currentTarget.style.borderColor = '#0d9488';
-                e.currentTarget.style.outlineColor = '#0d9488';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)';
-                setShowGoalDropdown(true);
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#cbd5e1';
-                e.currentTarget.style.boxShadow = 'none';
-                setShowGoalDropdown(false);
-              }}
-              className="no-autofill w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent transition"
-              style={{ borderColor: '#cbd5e1', color: '#1a2632', backgroundColor: '#ffffff' }}
+              onFocus={(e) => { constClickStyle(e); setShowGoalDropdown(true); }}
+              onBlur={(e) => { constBlurStyle(e); setTimeout(() => setShowGoalDropdown(false), 200); }}
+              className="no-autofill w-full px-4 py-2 border rounded-lg transition outline-none"
+              style={{ borderColor: getFieldBorderColor('goal'), color: '#1a2632', backgroundColor: '#ffffff' }}
               placeholder="Type goal..."
             />
             {showGoalDropdown && filteredGoals.length > 0 && (
@@ -866,19 +911,22 @@ export default function AddRecipeForm() {
               >
                 {filteredGoals.map((goal) => (
                   <div
-                    key={goal}
-                    onMouseDown={(e) => { e.preventDefault(); handleGoalSelect(goal); }}
-                    style={{
-                      padding: '10px 12px',
-                      cursor: 'pointer',
-                      backgroundColor: goalSearch === goal ? '#e0f2fe' : '#ffffff',
-                      borderBottom: '1px solid #f1f5f9',
-                      fontSize: '14px',
-                      color: '#1a2632',
-                      transition: 'background-color 0.2s',
+                    key={goal}                               
+                    onMouseDown={(e) => {                         
+                      e.preventDefault();                      
+                      handleGoalSelect(goal);        
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#e0f2fe'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = goalSearch === goal ? '#e0f2fe' : '#ffffff'; }}
+                    style={{
+                      padding: '10px 12px',                     
+                      cursor: 'pointer',                       
+                      backgroundColor: formData.goal === goal ? '#e0f2fe' : '#ffffff',  
+                      borderBottom: '1px solid #f1f5f9',      
+                      fontSize: '14px',                       
+                      color: '#1a2632',                     
+                      transition: 'background-color 0.2s',        
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#e0f2fe'; }}  
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = formData.goal === goal ? '#e0f2fe' : '#ffffff'; }}  
                   >
                     {goal}
                   </div>
@@ -891,25 +939,36 @@ export default function AddRecipeForm() {
             <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
               Occasion
             </label>
-            <input
-              type="text"
-              value={occasionSearch}
-              onChange={(e) => handleOccasionSearch(e.target.value)}
-              onFocus={(e) => { 
-                e.currentTarget.style.borderColor = '#0d9488';
-                e.currentTarget.style.outlineColor = '#0d9488';
-                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)';
-                setShowOccasionDropdown(true);
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#cbd5e1';
-                e.currentTarget.style.boxShadow = 'none';
-                setShowOccasionDropdown(false);
-              }}
-              className="no-autofill w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent transition"
-              style={{ borderColor: '#cbd5e1', color: '#1a2632', backgroundColor: '#ffffff' }}
-              placeholder="Type occasion..."
-            />
+            <div 
+              className="w-full px-4 py-2 border rounded-lg bg-white flex flex-wrap gap-2 items-center min-h-[42px] transition outline-none"
+              style={{ borderColor: getFieldBorderColor('occasion'), color: '#1a2632' }}
+              onFocus={constClickStyle}
+              onBlur={(e) => constBlurStyle(e)}
+            >
+              {formData.occasion && formData.occasion.split(',').map((item) => (
+                item.trim() && (
+                  <span key={item.trim()} className="flex items-center gap-1 bg-[#e0f2f1] text-[#0d9488] px-2 py-0.5 rounded text-[11px] font-semibold shadow-sm">
+                    {item.trim()}
+                    <button type="button" onClick={() => removeOccasion(item.trim())} className="text-[#0d9488] hover:text-red-500 font-bold ml-1">
+                      ×
+                    </button>
+                  </span>
+                )
+              ))}
+              <input
+                type="text"
+                value={occasionSearch}
+                onChange={(e) => {
+                  setOccasionSearch(e.target.value);
+                  setShowOccasionDropdown(true);
+                }}
+                onFocus={() => setShowOccasionDropdown(true)}
+                onBlur={() => setTimeout(() => setShowOccasionDropdown(false), 200)}
+                placeholder={formData.occasion ? "" : "Type occasion..."}
+                className="outline-none flex-1 min-w-[60px] text-[13px] bg-transparent"
+              />
+            </div>
+            
             {showOccasionDropdown && filteredOccasions.length > 0 && (
               <div
                 style={{
@@ -919,12 +978,10 @@ export default function AddRecipeForm() {
                   right: 0,
                   backgroundColor: '#ffffff',
                   border: '1px solid #cbd5e1',
-                  borderTop: 'none',
                   borderRadius: '0 0 8px 8px',
                   maxHeight: '200px',
                   overflowY: 'auto',
-                  zIndex: 10,
-                  marginTop: '-1px',
+                  zIndex: 15,
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
                 }}
               >
@@ -935,14 +992,12 @@ export default function AddRecipeForm() {
                     style={{
                       padding: '10px 12px',
                       cursor: 'pointer',
-                      backgroundColor: occasionSearch === occasion ? '#e0f2fe' : '#ffffff',
-                      borderBottom: '1px solid #f1f5f9',
                       fontSize: '14px',
                       color: '#1a2632',
-                      transition: 'background-color 0.2s',
+                      borderBottom: '1px solid #f1f5f9',
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#e0f2fe'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = occasionSearch === occasion ? '#e0f2fe' : '#ffffff'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#ffffff'; }}
                   >
                     {occasion}
                   </div>
@@ -952,7 +1007,6 @@ export default function AddRecipeForm() {
           </div>
         </div>
 
-        {/* Description */}
         <div className="mb-4">
           <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
             Description
@@ -962,9 +1016,13 @@ export default function AddRecipeForm() {
             value={formData.description}
             onChange={handleInputChange}
             rows={4}
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent"
-            style={{ borderColor: getFieldBorderColor('description'), color: '#1a2632' }}
-            onFocus={(e) => { e.currentTarget.style.outlineColor = '#0d9488'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)'; }}
+            className="w-full px-4 py-2 border rounded-lg transition outline-none"
+            style={{ 
+              borderColor: getFieldBorderColor('description'), 
+              color: '#1a2632' 
+            }}
+            onFocus={constClickStyle}
+            onBlur={(e) => constBlurStyle(e, 'description')}
             placeholder="Describe your recipe"
           />
           {validationErrors.description && (
@@ -972,13 +1030,10 @@ export default function AddRecipeForm() {
           )}
         </div>
 
-        {/* Recipe Image Upload */}
         <div className="mb-4">
           <label className="block mb-2" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
             Recipe Image
           </label>
-
-          {/* Drop zone */}
           <div
             className="w-full rounded-lg flex flex-col items-center justify-center py-10 px-6 transition"
             style={{
@@ -999,16 +1054,11 @@ export default function AddRecipeForm() {
                 return;
               }
 
-              console.log('File dropped:', file.name, 'Size:', file.size);
-
-              // Show preview immediately
               if (imagePreview && imagePreview.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
               setImageFile(file);
               setImageFileName(file.name);
               setImagePreview(URL.createObjectURL(file));
               setError('');
-
-              // Don't upload to Cloudinary yet - wait for form submission
             }}
           >
             {imagePreview ? (
@@ -1050,7 +1100,6 @@ export default function AddRecipeForm() {
               </div>
             ) : (
               <>
-                {/* Image placeholder icon */}
                 <svg xmlns="http://www.w3.org/2000/svg" className="mb-3" width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" strokeWidth={1.4}>
                   <rect x="3" y="3" width="18" height="18" rx="2" />
                   <circle cx="8.5" cy="8.5" r="1.5" />
@@ -1062,8 +1111,6 @@ export default function AddRecipeForm() {
                 <p style={{ color: '#94a3b8', fontSize: '12px', marginBottom: '16px' }}>
                   Supports: JPG, PNG (max 5MB)
                 </p>
-
-                {/* Choose File button */}
                 <label
                   className="flex items-center gap-2 px-5 py-2 rounded-lg cursor-pointer transition hover:opacity-90"
                   style={{ backgroundColor: '#e0f2f1', color: '#0d9488', fontSize: '13px', fontWeight: '500' }}
@@ -1085,7 +1132,6 @@ export default function AddRecipeForm() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          {/* Difficulty Level */}
           <div>
             <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
               Difficulty Level
@@ -1094,9 +1140,10 @@ export default function AddRecipeForm() {
               name="difficulty_level"
               value={formData.difficulty_level}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent"
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
               style={{ borderColor: '#cbd5e1', color: '#1a2632' }}
-              onFocus={(e) => { e.currentTarget.style.outlineColor = '#0d9488'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)'; }}
+              onFocus={constClickStyle}
+              onBlur={(e) => constBlurStyle(e)}
             >
               <option value="">Select difficulty</option>
               <option value="easy">Easy</option>
@@ -1105,10 +1152,9 @@ export default function AddRecipeForm() {
             </select>
           </div>
 
-          {/* Price - Required */}
           <div>
             <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
-              Price ($) <span style={{ color: '#ef4444' }}>*</span>
+              Price (XRP) <span style={{ color: '#ef4444' }}>*</span>
             </label>
             <input
               type="number"
@@ -1117,10 +1163,10 @@ export default function AddRecipeForm() {
               onChange={handleInputChange}
               step="0.01"
               min="0"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent"
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
               style={{ borderColor: getFieldBorderColor('price'), color: '#1a2632' }}
-              onFocus={(e) => { e.currentTarget.style.outlineColor = '#0d9488'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)'; }}
-              onWheel={(e) => e.preventDefault()}
+              onFocus={constClickStyle}
+              onBlur={(e) => constBlurStyle(e, 'price')}
               placeholder="0.00"
             />
             {validationErrors.price && (
@@ -1130,12 +1176,9 @@ export default function AddRecipeForm() {
         </div>
       </div>
 
-      {/* Time & Servings Section */}
       <div className="mb-8 p-6 rounded-lg shadow-sm border" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
         <h2 className="mb-4" style={{ color: '#1a2632', fontSize: '16px', fontWeight: '600' }}>Cooking Details</h2>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Prep Time - Required */}
           <div>
             <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
               Prep Time (min) <span style={{ color: '#ef4444' }}>*</span>
@@ -1146,17 +1189,16 @@ export default function AddRecipeForm() {
               value={(formData as any).prep_time || ''}
               onChange={handleInputChange}
               min="0"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent"
-              style={{ borderColor: getFieldBorderColor('prep_time'), color: '#1a2632' }}
-              onFocus={(e) => { e.currentTarget.style.outlineColor = '#0d9488'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)'; }}
-              onWheel={(e) => e.preventDefault()}
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
+              style={{ borderColor: '#cbd5e1', color: '#1a2632' }}
+              onFocus={constClickStyle}
+              onBlur={(e) => constBlurStyle(e, 'prep_time')}
             />
             {validationErrors.prep_time && (
               <p style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{validationErrors.prep_time}</p>
             )}
           </div>
 
-          {/* Cook Time - Required */}
           <div>
             <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
               Cook Time (min) <span style={{ color: '#ef4444' }}>*</span>
@@ -1167,17 +1209,16 @@ export default function AddRecipeForm() {
               value={(formData as any).cook_time || ''}
               onChange={handleInputChange}
               min="0"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent"
-              style={{ borderColor: getFieldBorderColor('cook_time'), color: '#1a2632' }}
-              onFocus={(e) => { e.currentTarget.style.outlineColor = '#0d9488'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)'; }}
-              onWheel={(e) => e.preventDefault()}
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
+              style={{ borderColor: '#cbd5e1', color: '#1a2632' }}
+              onFocus={constClickStyle}
+              onBlur={(e) => constBlurStyle(e, 'cook_time')}
             />
             {validationErrors.cook_time && (
               <p style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{validationErrors.cook_time}</p>
             )}
           </div>
 
-          {/* Servings - Required */}
           <div>
             <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
               Servings <span style={{ color: '#ef4444' }}>*</span>
@@ -1188,10 +1229,10 @@ export default function AddRecipeForm() {
               value={(formData as any).servings || ''}
               onChange={handleInputChange}
               min="1"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent"
-              style={{ borderColor: getFieldBorderColor('servings'), color: '#1a2632' }}
-              onFocus={(e) => { e.currentTarget.style.outlineColor = '#0d9488'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)'; }}
-              onWheel={(e) => e.preventDefault()}
+              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
+              style={{ borderColor: '#cbd5e1', color: '#1a2632' }}
+              onFocus={constClickStyle}
+              onBlur={(e) => constBlurStyle(e, 'servings')}
             />
             {validationErrors.servings && (
               <p style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{validationErrors.servings}</p>
@@ -1200,7 +1241,6 @@ export default function AddRecipeForm() {
         </div>
       </div>
 
-      {/* Ingredients Section - Required */}
       <div className="mb-8 p-6 rounded-lg shadow-sm border" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
         <h2 className="mb-4" style={{ color: '#1a2632', fontSize: '16px', fontWeight: '600' }}>Ingredients <span style={{ color: '#ef4444' }}>*</span></h2>
         {validationErrors.ingredients && (
@@ -1208,7 +1248,11 @@ export default function AddRecipeForm() {
         )}
 
         {formData.ingredients.map((ingredient, index) => (
-          <div key={ingredient.id} className="mb-4 pb-4 border-b last:border-b-0" style={{ borderColor: '#e2e8f0' }}>
+          <div 
+            key={ingredient.id || `ingredient-${index}`} 
+            className="mb-4 pb-4 border-b last:border-b-0" 
+            style={{ borderColor: '#e2e8f0' }}
+          >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
               <div>
                 <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
@@ -1220,9 +1264,10 @@ export default function AddRecipeForm() {
                   onChange={(e) =>
                     handleIngredientChange(ingredient.id, 'name', e.target.value)
                   }
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent"
-                  style={{ borderColor: getFieldBorderColor(`ingredient_${ingredient.id}_name`), color: '#1a2632' }}
-                  onFocus={(e) => { e.currentTarget.style.outlineColor = '#0d9488'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)'; }}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
+                  style={{ borderColor: '#cbd5e1', color: '#1a2632' }}
+                  onFocus={constClickStyle}
+                  onBlur={(e) => constBlurStyle(e, `ingredient_${ingredient.id}_name`)}
                   placeholder="e.g., Flour"
                 />
                 {validationErrors[`ingredient_${ingredient.id}_name`] && (
@@ -1240,9 +1285,10 @@ export default function AddRecipeForm() {
                   onChange={(e) =>
                     handleIngredientChange(ingredient.id, 'quantity', e.target.value)
                   }
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent"
-                  style={{ borderColor: getFieldBorderColor(`ingredient_${ingredient.id}_quantity`), color: '#1a2632' }}
-                  onFocus={(e) => { e.currentTarget.style.outlineColor = '#0d9488'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)'; }}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
+                  style={{ borderColor: '#cbd5e1', color: '#1a2632' }}
+                  onFocus={constClickStyle}
+                  onBlur={(e) => constBlurStyle(e, `ingredient_${ingredient.id}_quantity`)}
                   placeholder="e.g., 2"
                 />
                 {validationErrors[`ingredient_${ingredient.id}_quantity`] && (
@@ -1250,39 +1296,39 @@ export default function AddRecipeForm() {
                 )}
               </div>
 
-              <div className="flex gap-2 items-start"> {/* items-start prevents vertical jumping */}
-  <div className="flex-1">
-    <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
-      Unit
-    </label>
-    <input
-      type="text"
-      value={ingredient.unit}
-      onChange={(e) => handleIngredientChange(ingredient.id, 'unit', e.target.value)}
-      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent"
-      style={{ borderColor: getFieldBorderColor(`ingredient_${ingredient.id}_unit`), color: '#1a2632' }}
-      placeholder="e.g., cups"
-    />
-    {/* Wrap the error message so it stays in the column flow */}
-    {validationErrors[`ingredient_${ingredient.id}_unit`] && (
-      <p style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-        {validationErrors[`ingredient_${ingredient.id}_unit`]}
-      </p>
-    )}
-  </div>
+              <div className="flex gap-2 items-start">
+                <div className="flex-1">
+                  <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
+                    Unit
+                  </label>
+                  <input
+                    type="text"
+                    value={ingredient.unit}
+                    onChange={(e) => handleIngredientChange(ingredient.id, 'unit', e.target.value)}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
+                    style={{ borderColor: '#cbd5e1', color: '#1a2632' }}
+                    onFocus={constClickStyle}
+                    onBlur={(e) => constBlurStyle(e, `ingredient_${ingredient.id}_unit`)}
+                    placeholder="e.g., cups"
+                  />
+                  {validationErrors[`ingredient_${ingredient.id}_unit`] && (
+                    <p style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                      {validationErrors[`ingredient_${ingredient.id}_unit`]}
+                    </p>
+                  )}
+                </div>
 
-  {/* Move the button outside the input div and add margin-top to align with the input box */}
-  {formData.ingredients.length > 1 && (
-    <button
-      type="button"
-      onClick={() => removeIngredient(ingredient.id)}
-      className="mt-6 px-3 py-2 rounded-lg hover:bg-red-50" 
-      style={{ color: '#ef4444' }}
-    >
-      ✕
-    </button>
-  )}
-</div>
+                {formData.ingredients.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeIngredient(ingredient.id)}
+                    className="mt-6 px-3 py-2 rounded-lg hover:bg-red-50" 
+                    style={{ color: '#ef4444' }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -1297,7 +1343,6 @@ export default function AddRecipeForm() {
         </button>
       </div>
 
-      {/* Instructions Section - Required */}
       <div className="mb-8 p-6 rounded-lg shadow-sm border" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
         <h2 className="mb-4" style={{ color: '#1a2632', fontSize: '16px', fontWeight: '600' }}>Instructions <span style={{ color: '#ef4444' }}>*</span></h2>
         {validationErrors.instructions && (
@@ -1320,9 +1365,13 @@ export default function AddRecipeForm() {
                     handleInstructionChange(instruction.id, e.target.value)
                   }
                   rows={3}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent"
-                  style={{ borderColor: getFieldBorderColor(`instruction_${instruction.id}`), color: '#1a2632' }}
-                  onFocus={(e) => { e.currentTarget.style.outlineColor = '#0d9488'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)'; }}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
+                  style={{ 
+                    borderColor: '#cbd5e1', 
+                    color: '#1a2632' 
+                  }}
+                  onFocus={constClickStyle}
+                  onBlur={(e) => constBlurStyle(e, `instruction_${instruction.id}`)}
                   placeholder="Enter instruction step"
                 />
                 {validationErrors[`instruction_${instruction.id}`] && (
@@ -1354,7 +1403,6 @@ export default function AddRecipeForm() {
         </button>
       </div>
 
-      {/* Chef Note Section */}
       <div className="mb-8 p-6 rounded-lg shadow-sm border" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
         <h2 className="mb-4" style={{ color: '#1a2632', fontSize: '16px', fontWeight: '600' }}>Chef's Note</h2>
 
@@ -1367,37 +1415,277 @@ export default function AddRecipeForm() {
             value={formData.chef_note}
             onChange={handleInputChange}
             rows={3}
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent"
-            style={{ borderColor: '#cbd5e1', color: '#1a2632' }}
-            onFocus={(e) => { e.currentTarget.style.outlineColor = '#0d9488'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(13, 148, 136, 0.1)'; }}
+            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
+            style={{ 
+              borderColor: '#cbd5e1', 
+              color: '#1a2632' 
+            }}
+            onFocus={constClickStyle}
+            onBlur={(e) => constBlurStyle(e)}
             placeholder="Share any special tips or notes about this recipe..."
           />
         </div>
       </div>
 
-      {/* Form Actions */}
       <div className="flex gap-4 justify-end">
-        <button
-          type="button"
-          onClick={() => {
-            localStorage.setItem('recipeDraft', JSON.stringify(formData));
-            alert('Recipe draft saved!');
-          }}
-          className="px-6 py-2 border rounded-lg hover:bg-gray-50"
-          style={{ borderColor: '#cbd5e1', color: '#1a2632' }}
-        >
-          Save Draft
-        </button>
+        {!recipeId && (
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                if (!formData.title || formData.title.trim() === '') {
+                  alert('Please fill the title to save as a draft.');
+                  return;
+                }
+
+                const currentChefId = user?.user_id || getStoredChefId();
+                if (!currentChefId) {
+                  alert('User not authenticated. Please log in again.');
+                  return;
+                }
+
+                const cleanIngredients = formData.ingredients
+                  ? formData.ingredients
+                      .filter(i => i.name && i.name.trim() !== '')
+                      .map(i => ({
+                        name: i.name.trim(),
+                        quantity: i.quantity ? i.quantity.trim() : '',
+                        unit: i.unit ? i.unit.trim() : ''
+                      }))
+                  : [];
+
+                const cleanInstructions = formData.instructions
+                  ? formData.instructions
+                      .filter(i => i.description && i.description.trim() !== '')
+                      .map(i => i.description.trim())
+                  : [];
+
+                const draftData = {
+                  chef_id: currentChefId,
+                  title: formData.title.trim(),
+                  description: formData.description ? formData.description.trim() : null,
+                  image_url: formData.image_url || null,
+                  difficulty_level: formData.difficulty_level || null,
+                  prep_time: formData.prep_time !== '' ? Number(formData.prep_time) : null,
+                  cook_time: formData.cook_time !== '' ? Number(formData.cook_time) : null,
+                  servings: formData.servings !== '' ? Number(formData.servings) : null,
+                  price: formData.price !== '' ? Number(formData.price) : null,
+                  ingredients: cleanIngredients.length > 0 ? cleanIngredients : [],
+                  instructions: cleanInstructions.length > 0 ? cleanInstructions : [],
+                  chef_note: formData.chef_note ? formData.chef_note.trim() : null,
+                  status: 'draft',
+                  approval_status: 'draft',
+                  tags: {
+                    dietary_tags: formData.dietary_tags 
+                    ? formData.dietary_tags.split(',').map(t => t.trim()).filter(t => t !== '') 
+                    : [],
+                    cuisine: formData.cuisine || '',
+                    goal: formData.goal || '',
+                    meal_type: formData.meal_type || '',
+                    occasion: formData.occasion || ''
+                  }
+                };
+
+                let response;
+                if (recipeId) {
+                  response = await fetch(`http://localhost:4000/api/recipes/${recipeId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(draftData),
+                  });
+                } else {
+                  response = await fetch('http://localhost:4000/api/recipes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(draftData),
+                  });
+                }
+
+                const responseData = await response.json();
+
+                if (!response.ok) {
+                  console.error('API Error:', responseData);
+                  throw new Error(responseData.message || `HTTP error! status: ${response.status}`);
+                }
+
+                localStorage.removeItem('recipeDraftForm');
+                setIsSuccessModalOpen(true);
+              } catch (error) {
+                console.error('Error saving draft:', error);
+                const message = error instanceof Error ? error.message : String(error);
+                alert(`Failed to save draft: ${message}`);
+              }
+            }}
+            className="px-6 py-2 border rounded-lg hover:bg-gray-50 transition"
+            style={{ borderColor: '#cbd5e1', color: '#1a2632' }}
+          >
+            Save Draft
+          </button>
+        )}
 
         <button
           type="submit"
           disabled={loading || isUploadingImage}
-          className="px-6 py-2 text-white rounded-lg disabled:bg-gray-400"
+          className="px-6 py-2 text-white rounded-lg disabled:bg-gray-400 transition"
           style={{ backgroundColor: loading || isUploadingImage ? '#64748b' : '#0d9488' }}
         >
           {loading ? 'Submitting...' : isUploadingImage ? 'Uploading Image...' : 'Submit Recipe'}
         </button>
       </div>
+
+      {isWarningModalOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            padding: '24px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            textAlign: 'center',
+            maxWidth: '450px',
+            width: '90%'
+          }}>
+            <h3 style={{ margin: '0 0 12px', color: '#1a2632', fontSize: '18px', fontWeight: 'bold' }}>
+              Are you sure you want to submit?
+            </h3>
+            <p style={{ color: '#64748b', fontSize: '13px', lineHeight: '1.5', margin: '0 0 24px' }}>
+              Once submitted, this recipe cannot be edited. Please double check the details before proceeding.
+            </p>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button 
+                type="button"
+                onClick={() => {
+                  setIsWarningModalOpen(false);
+                }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#475569',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '500'
+                }}
+              >
+                Cancel, I'll recheck
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => {
+                  setIsWarningModalOpen(false);
+                  executeSubmit();
+                }}
+                style={{
+                  backgroundColor: '#0d9488',
+                  color: '#ffffff',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '500'
+                }}
+              >
+                Yes, Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSuccessModalOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            padding: '24px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            textAlign: 'center',
+            maxWidth: '400px',
+            width: '90%'
+          }}>
+            <h3 style={{ margin: '0 0 16px', color: '#1a2632', fontSize: '18px' }}>
+              Recipe draft successfully saved to database!
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '20px' }}>
+              <button 
+                type="button"
+                onClick={() => {
+                  setIsSuccessModalOpen(false);
+                  router.push('/dashboard');
+                }}
+                style={{
+                  backgroundColor: '#0d9488',
+                  color: '#ffffff',
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                Go to the dashboard
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => {
+                  setIsSuccessModalOpen(false);
+                  router.push('/recipes/add');
+                }}
+                style={{
+                  backgroundColor: '#e0f2f1',
+                  color: '#0d9488',
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                Add new recipe
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
+}
+
+function mealTypeSearch(val: any) {
+  if (!val) return '';
+  return typeof val === 'string' ? val : '';
+}
+
+function getBorderColor(fieldName: string): string {
+  return '#cbd5e1';
+}
+
+function getBorderColorInput(fieldName: string): string {
+  return '#cbd5e1';
+}
+
+function TypeSearch(val: any) {
+  if (!val) return '';
+  return typeof val === 'string' ? val : '';
 }

@@ -30,7 +30,8 @@ export interface Recipe {
   ingredients: Ingredient[];
   instructions: Instruction[];
   chef_note: string;
-  status?: "pending" | "published" | "rejected";
+  status?: "active" | "deactive" | "draft";
+  approval_status?: "pending" | "published" | "rejected" |"draft";
 }
 
 export interface RecipeFormData extends Recipe {}

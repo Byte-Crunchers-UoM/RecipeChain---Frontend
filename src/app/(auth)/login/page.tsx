@@ -11,6 +11,7 @@ import { getWeb3AuthPrivateKey } from "@/lib/web3/getWeb3AuthPrivKey";
 import { deriveXrplAddressFromWeb3AuthPrivKey } from "@/lib/xrpl/deriveXrpl";
 import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
 import { getSellerEntryRoute } from "@/lib/getSellerEntryRoute";
+import { supabase } from "@/lib/supabase";
 
 type IdentityTokenResult =
   | string
@@ -141,7 +142,16 @@ export default function LoginPage() {
 
       await closeWeb3AuthModal(readyWeb3Auth);
 
+      if (data && (data as any).session) {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: (data as any).session.access_token,
+          refresh_token: (data as any).session.refresh_token,
+        });
+        if (sessionError) console.error("Supabase session sync error:", sessionError);
+      }
+     
       const me = await refreshSession();
+       router.refresh();
       await routeByRole(me?.role);
     } catch (e: unknown) {
       console.error("Login error:", e);

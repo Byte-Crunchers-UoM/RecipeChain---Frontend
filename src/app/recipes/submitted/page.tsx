@@ -9,10 +9,10 @@ export default function RecipeSubmittedPage() {
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
-            href="/profile"
+            href="/dashboard"
             className="px-5 py-2 rounded-lg bg-teal-600 text-white hover:bg-teal-700"
           >
-            Go to Profile
+            Go to Dashboard
           </Link>
           <Link
             href="/recipes/add"

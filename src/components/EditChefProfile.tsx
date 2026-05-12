@@ -420,19 +420,6 @@ export default function EditChefProfile() {
                       </p>
                     </div>
                   </section>
-
-                  <section className="rounded-3xl bg-white p-6 shadow-[0_16px_60px_-40px_rgba(15,23,42,0.35)] ring-1 ring-slate-100">
-                    <h2 className="text-base font-semibold text-slate-900">Verification Status</h2>
-                    <div className="mt-5 rounded-2xl bg-emerald-50 px-4 py-4 text-emerald-700 ring-1 ring-emerald-100">
-                      <div className="flex items-start gap-3">
-                        <ShieldCheckIcon />
-                        <div>
-                          <p className="text-sm font-semibold">Verified Chef</p>
-                          <p className="mt-1 text-xs text-emerald-600">Your profile is verified and trusted by the community.</p>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
                 </div>
 
                 <div className="space-y-6">

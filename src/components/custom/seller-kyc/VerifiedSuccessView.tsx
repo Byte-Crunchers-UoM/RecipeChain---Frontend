@@ -268,7 +268,7 @@ export default function VerifiedSuccessView({
                   ) : (
                     <PlusCircle className="h-4 w-4" />
                   )}
-                  Create Recipe
+                  Create New Recipe
                 </button>
               </div>
             </div>

@@ -4,6 +4,7 @@ interface DashboardCardProps {
   title: string;
   value: string | number;
   icon: React.ReactNode;
+  subtitle?: string;
   trend?: {
     direction: 'up' | 'down';
     percentage: number;
@@ -17,18 +18,12 @@ export default function DashboardCard({
   trend,
 }: DashboardCardProps) {
   return (
-    <div className="bg-gradient-to-br from-[#e0f2f1] to-[#b2dfdb] rounded-lg p-6 border border-[#0d9488] border-opacity-20">
+    <div className="bg-gradient-to-br from-[#e0f2f] to-[#b2dfdb] rounded-lg p-6 border border-[#0d9488] border-opacity-20">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-[12px] text-[#64748b] mb-2 font-roboto">{title}</p>
           <h3 className="text-2xl font-bold text-[#1a2632] mb-2 font-roboto">{value}</h3>
-          {trend && (
-            <p className={`text-[12px] font-medium font-roboto ${
-              trend.direction === 'up' ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {trend.direction === 'up' ? '↑' : '↓'} {trend.percentage}% from last month
-            </p>
-          )}
+          
         </div>
         <div className="text-[#0d9488] opacity-80">
           {icon}

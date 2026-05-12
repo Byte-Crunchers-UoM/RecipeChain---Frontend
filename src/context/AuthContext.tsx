@@ -17,6 +17,9 @@ export type MeUser = {
   wallet_address?: string | null;
   name?: string | null;
   bio?: string | null;
+  full_name?: string | null;
+  display_name?: string | null;
+  profile_photo?: string | null;
 };
 
 export type AuthContextType = {
@@ -91,7 +94,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void (async () => {
       setIsLoading(true);
-      await refreshSession();
+      const me = await refreshSession();
+     
+      if (me) {
+        setUser((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            full_name: me.full_name || me.name || "Chef",
+            display_name: me.display_name || "",
+            profile_photo: me.profile_photo || null,
+          };
+        });
+      }
       setIsLoading(false);
     })();
   }, [refreshSession]);
