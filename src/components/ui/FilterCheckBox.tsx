@@ -1,3 +1,5 @@
+//src/components/ui/FilterCheckBox.tsx
+
 'use client';
 
 interface FilterCheckboxProps {

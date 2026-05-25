@@ -1,26 +1,19 @@
-//src/components/recipe/FullRecipeView.tsx
 'use client';
 
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { Recipe } from '@/lib/types/Recipe';
 import { 
-  Clock, 
-  Users, 
-  Flame, 
-  Star, 
-  ChefHat, 
-  CheckCircle2, 
-  Circle 
+  Clock, Users, Flame, Star, ChefHat, CheckCircle2, Circle 
 } from 'lucide-react';
-import SaveRecipeButton from './SaveRecipeButton';
 
 interface FullRecipeViewProps {
   recipe: Recipe;
 }
 
 export function FullRecipeView({ recipe }: FullRecipeViewProps) {
-  // State to handle crossing off ingredients as the user cooks
+  // An array storing the indices of ingredients the user has clicked on, 
+  // enabling a checklist feature while they cook.
   const [checkedIngredients, setCheckedIngredients] = useState<number[]>([]);
 
   if (!recipe) return null;
@@ -29,8 +22,10 @@ export function FullRecipeView({ recipe }: FullRecipeViewProps) {
     ? recipe.sellers[0]?.full_name 
     : recipe.sellers?.full_name || 'Unknown Chef';
 
+  // Toggle function for the ingredient checklist
   const toggleIngredient = (index: number) => {
     setCheckedIngredients(prev => 
+      // If the index exists in the array, filter it out. Otherwise, add it.
       prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
     );
   };
@@ -43,13 +38,12 @@ export function FullRecipeView({ recipe }: FullRecipeViewProps) {
           src={recipe.image_url && recipe.image_url !== "" ? recipe.image_url : "/images/placeholder-recipe.jpg"}
           alt={recipe.title || 'Recipe Image'}
           fill
-          priority
+          priority // Prioritizes this image to prevent layout shift above the fold
           className="object-cover"
         />
-        {/* Gradient Overlay for text readability */}
+        {/* CSS Gradient Overlay so white text is readable regardless of the image behind it */}
         <div className="absolute inset-0 bg-linear-to-t from-gray-900/90 via-gray-900/40 to-transparent" />
         
-        {/* Title & Meta over image */}
         <div className="absolute bottom-0 left-0 w-full p-6 md:p-12 text-white">
           <div className="max-w-6xl mx-auto">
             <span className="inline-block bg-teal-500/20 text-teal-300 border border-teal-500/30 px-4 py-1.5 rounded-full text-sm font-semibold tracking-wide uppercase mb-4 backdrop-blur-md">
@@ -72,10 +66,10 @@ export function FullRecipeView({ recipe }: FullRecipeViewProps) {
         </div>
       </div>
 
-      {/* 2. Main Content Container (Pulled up over the image slightly) */}
+      {/* 2. Main Content Container */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 -mt-8">
         
-        {/* Stats Bar */}
+        {/* Quick Stats Bar (Prep/Cook time) */}
         <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 flex flex-wrap items-center justify-between gap-6 mb-10">
           <div className="flex flex-wrap gap-8 md:gap-16">
             <div className="flex items-center gap-4">
@@ -108,14 +102,8 @@ export function FullRecipeView({ recipe }: FullRecipeViewProps) {
               </div>
             </div>
           </div>
-          
-          {/* Action Button */}
-          <div className="w-full md:w-auto flex justify-end">
-             <SaveRecipeButton recipe={recipe} />
-          </div>
         </div>
 
-        {/* Description */}
         {recipe.description && (
           <div className="bg-white rounded-2xl shadow-sm p-8 mb-10 border border-gray-100">
             <h3 className="text-xl font-bold text-gray-900 mb-4">About this recipe</h3>
@@ -128,7 +116,7 @@ export function FullRecipeView({ recipe }: FullRecipeViewProps) {
         {/* 3. Two Column Layout: Ingredients & Instructions */}
         <div className="flex flex-col lg:flex-row gap-10">
           
-          {/* Left Column: Ingredients */}
+          {/* Left Column: Ingredients (Uses sticky positioning to scroll smoothly with the user) */}
           <div className="lg:w-1/3">
             <div className="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 sticky top-24">
               <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
@@ -142,11 +130,13 @@ export function FullRecipeView({ recipe }: FullRecipeViewProps) {
                 {recipe.ingredients && Array.isArray(recipe.ingredients) ? (
                   recipe.ingredients.map((ing: any, idx: number) => {
                     const isChecked = checkedIngredients.includes(idx);
+                    // Defensive extraction based on DB structure (string vs JSON object)
                     const ingredientText = typeof ing === 'string' ? ing : ing.name || JSON.stringify(ing);
                     
                     return (
                       <li 
                         key={idx} 
+                        // Dynamically changes styling when user clicks an ingredient
                         className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all ${
                           isChecked ? 'bg-gray-50 opacity-60' : 'hover:bg-gray-50'
                         }`}
@@ -180,7 +170,7 @@ export function FullRecipeView({ recipe }: FullRecipeViewProps) {
                     
                     return (
                       <div key={idx} className="relative pl-10 md:pl-14">
-                        {/* Connecting Line */}
+                        {/* Vertical Connecting Line between steps */}
                         {idx !== recipe.instructions.length - 1 && (
                           <div className="absolute left-4 md:left-6 top-10 -bottom-10 w-0.5 bg-gray-100"></div>
                         )}
@@ -190,7 +180,6 @@ export function FullRecipeView({ recipe }: FullRecipeViewProps) {
                           {idx + 1}
                         </div>
                         
-                        {/* Step Content */}
                         <div className="pt-1 md:pt-2">
                           <h4 className="text-lg font-bold text-gray-900 mb-2">Step {idx + 1}</h4>
                           <p className="text-gray-600 text-lg leading-relaxed">

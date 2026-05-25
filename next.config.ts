@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -8,10 +9,15 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**', 
       },
+      // 🛠️ Add the Unsplash hostname here
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**', 
+      },
     ],
   },
-  
 };
-
 
 export default nextConfig;

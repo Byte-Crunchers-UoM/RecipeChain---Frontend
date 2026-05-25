@@ -1,3 +1,5 @@
+//src/components/ui/FilterTags.tsx
+
 'use client';
 
 interface FilterTagProps {

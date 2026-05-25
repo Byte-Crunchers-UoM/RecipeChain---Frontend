@@ -9,16 +9,16 @@ import { HERO_TAGLINE, HERO_TITLE, HERO_DESCRIPTION, CHEFS_TRUST_COUNT } from '@
 /** Renders the hero section of the landing page, displaying the main tagline, call-to-actions, and visually engaging elements. */
 export function HeroSection(): React.ReactElement {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-[#eaf7f0] via-white to-[#f0f9ff] pt-20 pb-32">
+    <section className="relative overflow-hidden bg-linear-to-br from-[#eaf7f0] via-white to-[#f0f9ff] pt-20 pb-32">
       
       {/* 1. Tech/Grid Background Pattern */}
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px]"></div>
 
       {/* Decorative Glowing Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-20 w-[500px] h-[500px] bg-green-300/20 rounded-full blur-[100px]"></div>
-        <div className="absolute top-40 -left-40 w-[400px] h-[400px] bg-blue-300/20 rounded-full blur-[100px]"></div>
+        <div className="absolute -top-40 -right-20 w-125 h-125 bg-green-300/20 rounded-full blur-[100px]"></div>
+        <div className="absolute top-40 -left-40 w-100 h-100 bg-blue-300/20 rounded-full blur-[100px]"></div>
       </div>
 
       <div className="relative max-w-7xl mx-auto px-8 pt-12 lg:pt-20">
@@ -40,8 +40,8 @@ export function HeroSection(): React.ReactElement {
                   {part}
                   {idx === 0 && (
                     <span className="relative whitespace-nowrap">
-                      <span className="absolute -inset-1 bg-gradient-to-r from-green-100 to-emerald-50 rounded-lg -z-10 transform scale-y-90 origin-bottom"></span>
-                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-500">
+                      <span className="absolute -inset-1 bg-linear-to-r from-green-100 to-emerald-50 rounded-lg -z-10 transform scale-y-90 origin-bottom"></span>
+                      <span className="text-transparent bg-clip-text bg-linear-to-r from-green-600 to-emerald-500">
                         {' Chef'}
                       </span>
                     </span>
@@ -99,13 +99,13 @@ export function HeroSection(): React.ReactElement {
           </div>
 
           {/* ================= RIGHT CONTENT: GLASSMORPHISM VISUAL ================= */}
-          <div className="hidden md:flex relative justify-center items-center lg:h-[500px]">
+          <div className="hidden md:flex relative justify-center items-center lg:h-125">
             
             {/* Center Main Card */}
-            <div className="relative z-10 bg-white/70 backdrop-blur-xl border border-white/80 shadow-2xl rounded-[2rem] p-5 w-[320px] lg:w-[360px] transform transition-transform duration-700 hover:scale-[1.02]">
+            <div className="relative z-10 bg-white/70 backdrop-blur-xl border border-white/80 shadow-2xl rounded-4xl p-5 w-[320px] lg:w-90 transform transition-transform duration-700 hover:scale-[1.02]">
               
               {/* Image Placeholder area */}
-              <div className="w-full h-48 bg-gradient-to-br from-slate-100 to-green-50 rounded-2xl mb-5 relative overflow-hidden flex items-center justify-center group">
+              <div className="w-full h-48 bg-linear-to-br from-slate-100 to-green-50 rounded-2xl mb-5 relative overflow-hidden flex items-center justify-center group">
                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1544025162-83173d1f1437?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-80 mix-blend-multiply transition-transform duration-700 group-hover:scale-110"></div>
                 <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1.5 text-xs font-bold text-slate-800 shadow-sm">
                   <Cpu size={14} className="text-blue-500" />
@@ -136,7 +136,7 @@ export function HeroSection(): React.ReactElement {
 
             {/* Floating Badge 1: AI (Top Right) */}
             <div className="absolute -right-6 top-8 z-20 bg-white/90 backdrop-blur-md border border-slate-100 shadow-xl rounded-2xl p-4 flex items-center gap-3 animate-[bounce_4s_ease-in-out_infinite]">
-              <div className="bg-gradient-to-br from-orange-100 to-amber-50 p-2.5 rounded-xl shadow-inner">
+              <div className="bg-linear-to-br from-orange-100 to-amber-50 p-2.5 rounded-xl shadow-inner">
                 <Bot className="w-5 h-5 text-orange-600" />
               </div>
               <div>

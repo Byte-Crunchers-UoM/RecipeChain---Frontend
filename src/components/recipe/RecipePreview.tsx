@@ -1,4 +1,3 @@
-//src/components/recipe/RecipePreview.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -13,36 +12,48 @@ interface RecipeModalProps {
   isOpen: boolean;
   onClose: () => void;
   recipe: Recipe;
-  onInitiatePurchase: () => void; // 🛠️ Added this prop
+  onInitiatePurchase: () => void;
 }
 
 export function RecipePreview({ isOpen, onClose, recipe, onInitiatePurchase }: RecipeModalProps) {
+  // We use a 'mounted' state to ensure this component only renders on the client side.
+  // This prevents hydration mismatch errors with Next.js when using createPortal.
   const [mounted, setMounted] = useState(false);
   const router = useRouter(); 
 
   useEffect(() => {
     setMounted(true);
+    
+    // Allows the user to close the modal by pressing the 'Escape' key for better UX.
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
 
     if (isOpen) {
       document.addEventListener('keydown', handleEsc);
+      // Locks the background scrolling so the user only scrolls inside the modal
       document.body.style.overflow = 'hidden';
     }
 
+    // Cleanup function: runs when the component unmounts or modal closes
+    // It restores the background scrolling and removes the event listener.
     return () => {
       document.removeEventListener('keydown', handleEsc);
       document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
 
+  // If the component hasn't mounted on the client yet, or isn't open, render nothing.
   if (!mounted || !isOpen || !recipe) return null;
 
+  // Safely extracts the chef's name whether the API returns an array or an object
   const chefName = Array.isArray(recipe.sellers) 
     ? recipe.sellers[0]?.full_name 
     : recipe.sellers?.full_name || 'Unknown Chef';
 
+  // --- PREVIEW LOGIC ---
+  // We only show the first 2 ingredients and instructions to tease the content.
+  // The rest are calculated so we can show "Unlock to see X more"
   const hasIngredients = recipe.ingredients && Array.isArray(recipe.ingredients);
   const displayIngredients = hasIngredients ? recipe.ingredients.slice(0, 2) : [];
   const hiddenIngredientsCount = hasIngredients ? recipe.ingredients.length - 2 : 0;
@@ -51,16 +62,18 @@ export function RecipePreview({ isOpen, onClose, recipe, onInitiatePurchase }: R
   const displayInstructions = hasInstructions ? recipe.instructions.slice(0, 2) : [];
   const hiddenInstructionsCount = hasInstructions ? recipe.instructions.length - 2 : 0;
 
+  // createPortal renders this modal DOM node directly into the <body> tag, 
+  // ensuring it always sits on top of all other UI elements regardless of z-index contexts.
   return createPortal(
     <div
       className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
+      onClick={onClose} // Clicking the dark background closes the modal
       role="dialog"
       aria-modal="true"
     >
       <div
         className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()} // Prevents clicks *inside* the modal from triggering the close event
       >
         <button
           onClick={onClose}
@@ -177,7 +190,7 @@ export function RecipePreview({ isOpen, onClose, recipe, onInitiatePurchase }: R
                           <span className="shrink-0 w-6 h-6 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center font-semibold text-xs">3</span>
                           <span className="mt-0.5 bg-gray-300 text-transparent rounded w-full">This is a secret instruction that is hidden behind the paywall.</span>
                         </div>
-                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-white via-white/70 to-transparent">
+                        <div className="absolute inset-0 flex items-center justify-center bg-linear-to-t from-white via-white/70 to-transparent">
                            <span className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md text-teal-600 font-bold border border-teal-100 mt-4">
                              <Lock size={16} /> Unlock to see {hiddenInstructionsCount} more steps
                            </span>
@@ -191,10 +204,11 @@ export function RecipePreview({ isOpen, onClose, recipe, onInitiatePurchase }: R
               </div>
             </div>
 
-            {/* 🛠️ Updated Buttons */}
+            {/* Action Buttons */}
             <div className="flex gap-3 sticky bottom-0 pt-4 bg-linear-to-t from-white via-white to-transparent backdrop-blur-sm border-t border-gray-100">
               <div className="flex-1 flex flex-col relative">
               <button 
+                // Triggers the payment workflow passed down from the parent
                 onClick={onInitiatePurchase} 
                 className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl transition shadow-sm active:scale-[0.98]"
               >

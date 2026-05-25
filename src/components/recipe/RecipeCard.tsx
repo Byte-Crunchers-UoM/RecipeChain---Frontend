@@ -1,4 +1,3 @@
-//src/components/recipe/RecipeCard.tsx
 "use client";
 
 import Image from 'next/image';
@@ -11,6 +10,7 @@ interface RecipeCardProps {
   onClick: () => void;
 }
 
+// Maps specific string statuses to Tailwind color classes
 const DIFFICULTY_COLORS: Record<string, string> = {
   easy: 'bg-emerald-500',
   medium: 'bg-amber-500',
@@ -19,10 +19,12 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 };
 
 export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
+  // Defensive check: Lowercase the string to match the dictionary, or fallback
   const difficulty = recipe.difficulty_level?.toLowerCase() || 'default';
   const badgeColor = DIFFICULTY_COLORS[difficulty] || DIFFICULTY_COLORS.default;
   const fallbackImage = "/images/placeholder-recipe.jpg";
 
+  // Logical checks to determine if the user has access to this recipe
   const price = recipe.price || 0; 
   const isPremium = price > 0; 
   const isUnlocked = !isPremium || recipe.is_purchased; 
@@ -38,19 +40,19 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
           src={recipe.image_url && recipe.image_url !== "" ? recipe.image_url : fallbackImage} 
           alt={recipe.title ? `Photo of ${recipe.title}` : 'Recipe image'}
           fill
+          // Sizes help Next.js optimize the image based on viewport width
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className="objaect-cover group-hover:scale-105 transition-transform duration-500"
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
           priority={false} 
         />
         
-        {/* Badges Area */}
         <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
           {/* Difficulty Badge */}
           <span className={`${badgeColor} text-white text-[10px] font-bold uppercase tracking-wide px-3 py-1 rounded-full shadow-sm w-fit`}>
             {recipe.difficulty_level}
           </span>
           
-          {/* 🛠️ Purchased / Unlocked Badge */}
+          {/* Purchased Status Badge (Only shows if premium AND purchased) */}
           {recipe.is_purchased && isPremium && (
             <span className="bg-teal-500 text-white text-[10px] font-bold uppercase tracking-wide px-3 py-1 rounded-full shadow-md flex items-center gap-1.5 w-fit">
               <Unlock className="w-3 h-3" /> Purchased
@@ -66,13 +68,12 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
       </div>
 
       {/* Content Section */}
+      {/* pointer-events-none prevents elements inside this div from interfering with the parent article's onClick */}
       <div className="p-5 flex flex-col grow relative z-20 pointer-events-none">
-        {/* Title */}
         <h3 className="font-bold text-lg text-gray-900 mb-3 line-clamp-1 group-hover:text-emerald-600 transition-colors">
           {recipe.title}
         </h3>
         
-        {/* Chef Info */}
         <div className="flex items-center gap-2 mb-6 text-sm text-gray-500">
           <ChefHat className="w-4 h-4 text-gray-400" />
           <span className="font-medium text-gray-700">{
@@ -85,7 +86,7 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
           <span className="text-gray-400 text-xs">{recipe.reviews_count || 0} reviews</span>
         </div>
         
-        {/* Footer Info */}
+        {/* Footer Data (Time, Servings, Price) */}
         <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-100">
           <div className="flex gap-4 text-xs text-gray-500 font-medium">
             <div className="flex items-center gap-1.5">
@@ -98,7 +99,7 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
             </div>
           </div>
           
-          {/* 🛠️ Dynamic Action Button */}
+          {/* Dynamic Button UI based on access level */}
           <div className={`text-xs font-bold flex items-center gap-1 transition-colors ${
             isUnlocked 
               ? 'text-emerald-600 group-hover:text-emerald-700' 

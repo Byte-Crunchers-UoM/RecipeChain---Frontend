@@ -25,7 +25,7 @@ export function RecipeFilterProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+// Active Filters State
   const [filters, setFilters] = useState<FilterState>({
     difficulty_level: '', 
     dietary_tags: '',      

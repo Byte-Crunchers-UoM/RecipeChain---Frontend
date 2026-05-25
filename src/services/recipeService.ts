@@ -1,5 +1,6 @@
-import { Recipe, RecipeApiResponsed } from "@/lib/types/Recipe";
+//src/services/recipeService
 
+import { Recipe, RecipeApiResponsed } from "@/lib/types/Recipe";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 const FETCH_TIMEOUT = 10000;
@@ -60,7 +61,8 @@ export async function fetchFilteredRecipe(queryString: string): Promise<Recipe[]
         const url = queryString 
             ? `${BASE_URL}/recipes/filter?${queryString}` 
             : `${BASE_URL}/recipes`;
-
+       //AbortController prevents the app from hanging
+       // infinitely if the backend server crashes or is too slow.
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 

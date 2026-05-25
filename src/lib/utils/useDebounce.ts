@@ -27,7 +27,11 @@ import { useState, useEffect, useRef } from 'react';
  * ```
  */
 export function useDebounce<T>(value: T, delay: number = 500): T {
+
+  // This state holds the "finalized" value that we will actually use to search
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {

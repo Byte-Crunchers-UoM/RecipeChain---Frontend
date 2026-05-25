@@ -149,7 +149,7 @@ export default function RecipePaymentModal({ recipe, isOpen, onClose, onSuccess 
       <div className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 z-10">
         
         {/* Top decorative bar: Turns green upon success */}
-        <div className={`h-2 transition-colors duration-500 ${isSuccess ? 'bg-emerald-500' : 'bg-gradient-to-r from-teal-500 to-blue-500'}`} />
+        <div className={`h-2 transition-colors duration-500 ${isSuccess ? 'bg-emerald-500' : 'bg-linear-to-r from-teal-500 to-blue-500'}`} />
         
         {/* Close Button: Hidden during success state to guide user to the primary action button */}
         {!isSuccess && (

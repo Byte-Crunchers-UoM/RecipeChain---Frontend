@@ -64,15 +64,6 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
           ) : isAuthenticated ? (
             // 🛠️ 3. Logged In View (Notifications, Cart, Profile)
             <>
-              {/* Notifications */}
-              <button className="relative text-gray-600 hover:text-teal-500 transition-colors">
-                <Bell className="w-6 h-6" />
-                {notificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-white">
-                    {notificationCount}
-                  </span>
-                )}
-              </button>
 
               {/* Shopping Cart */}
               <CartBadge />

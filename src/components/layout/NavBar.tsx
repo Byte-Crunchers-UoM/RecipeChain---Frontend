@@ -74,13 +74,7 @@ export const Navbar = () => {
         ) : isAuthenticated ? (
           <div className="flex items-center gap-4">
             
-            {/* Notifications */}
-            <button className="relative text-gray-600 hover:text-[#16a34a] transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold border-2 border-white">
-                1
-              </span>
-            </button>
+        
 
             {/* Shopping Cart */}
             <CartBadge />

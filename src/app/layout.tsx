@@ -4,7 +4,7 @@ import { Inter, Geist_Mono, Geist } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/context/Providers";
 import RecipeCartOverlay from "@/components/recipe/RecipeCartOverlay";
-
+import { Footer } from "@/components/layout/Footer";
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -25,6 +25,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           
           {/* The cart overlay lives at the root so it can pop open over any page */}
           <RecipeCartOverlay />
+
+          {/* Global Footer */}
+          <Footer />
         </Providers>
 
       </body>
