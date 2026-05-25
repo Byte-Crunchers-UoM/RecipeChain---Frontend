@@ -1,3 +1,4 @@
+//src/app/(auth)/login/page.jsx
 "use client";
 
 import Image from "next/image";
@@ -25,7 +26,7 @@ export default function LoginPage() {
       role === "seller"
         ? "/seller/dashboard"
         : role === "buyer"
-        ? "/marketplace"
+        ? "/recipes"
         : "/select-role";
 
     if (typeof window !== "undefined") {
@@ -88,8 +89,7 @@ export default function LoginPage() {
         );
       }
 
-      await closeWeb3AuthModal(readyWeb3Auth);
-
+      // IMPORTANT: get token BEFORE closing modal
       const tokenInfo: any = await readyWeb3Auth.getIdentityToken();
       const idToken =
         typeof tokenInfo === "string" ? tokenInfo : tokenInfo?.idToken;
@@ -101,6 +101,8 @@ export default function LoginPage() {
       const privKeyHexNo0x = await getWeb3AuthPrivateKey(readyWeb3Auth);
       const walletAddress =
         await deriveXrplAddressFromWeb3AuthPrivKey(privKeyHexNo0x);
+
+      await closeWeb3AuthModal(readyWeb3Auth);
 
       const resp = await fetch(`${apiBase}/auth/web3auth/sync`, {
         method: "POST",
@@ -122,8 +124,6 @@ export default function LoginPage() {
 
         throw new Error(data?.message || "Login failed");
       }
-
-      await closeWeb3AuthModal(readyWeb3Auth);
 
       const me = await refreshSession();
       routeByRole(me?.role);
@@ -157,7 +157,7 @@ export default function LoginPage() {
               width={120}
               height={120}
               priority
-              className="h-auto w-[120px]"
+              className="h-auto w-30"
             />
           </div>
 

@@ -1,3 +1,4 @@
+//src/app/(auth)/signup/page.jsx
 "use client";
 
 import Image from "next/image";
@@ -94,8 +95,7 @@ export default function SignupPage() {
         );
       }
 
-      await closeWeb3AuthModal(readyWeb3Auth);
-
+      // IMPORTANT: get token BEFORE closing modal
       const tokenInfo: any = await readyWeb3Auth.getIdentityToken();
       const idToken =
         typeof tokenInfo === "string" ? tokenInfo : tokenInfo?.idToken;
@@ -109,6 +109,8 @@ export default function SignupPage() {
         await getXrplWalletFromWeb3AuthPrivKey(privKeyHexNo0x);
 
       const walletAddress = xrplWallet.classicAddress;
+
+      await closeWeb3AuthModal(readyWeb3Auth);
 
       const resp = await fetch(`${apiBase}/auth/web3auth/sync`, {
         method: "POST",
@@ -130,8 +132,6 @@ export default function SignupPage() {
 
         throw new Error(data?.message || "Signup failed");
       }
-
-      await closeWeb3AuthModal(readyWeb3Auth);
 
       const me = await refreshSession();
       routeByRole(me?.role);
@@ -167,7 +167,7 @@ export default function SignupPage() {
               width={120}
               height={120}
               priority
-              className="h-auto w-[120px]"
+              className="h-auto w-30"
             />
           </div>
 
