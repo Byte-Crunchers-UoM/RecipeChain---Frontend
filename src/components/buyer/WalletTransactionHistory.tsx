@@ -11,21 +11,7 @@ import {
   RotateCcw,
   WalletCards,
 } from "lucide-react";
-
-type WalletTransaction = {
-  transaction_id?: string;
-  id?: string;
-  type?: string;
-  direction?: "credit" | "debit" | string;
-  status?: string;
-  description?: string;
-  amount_xrp?: number;
-  amount?: number;
-  created_at?: string;
-  time_stamp?: string;
-  date?: string;
-  tx_hash?: string;
-};
+import type { WalletTransaction } from "@/types/wallet";
 
 type Props = {
   transactions: WalletTransaction[];

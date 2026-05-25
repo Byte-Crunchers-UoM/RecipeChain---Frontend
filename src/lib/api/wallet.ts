@@ -21,9 +21,17 @@ type StripeTopupCheckoutResponse = {
   url: string;
 };
 
-type BuyRecipeResponse = ApiMessageResponse & {
+export type BuyRecipeResponse = ApiMessageResponse & {
   paymentId?: string;
   recipeId?: string;
+  payment?: {
+    recipe_title?: string;
+    amount?: number | string;
+  };
+  recipe?: {
+    title?: string;
+    price?: number | string;
+  };
 };
 
 type WithdrawalRequestResponse = ApiMessageResponse & {

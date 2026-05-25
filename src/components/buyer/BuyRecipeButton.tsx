@@ -1,44 +1,49 @@
-"use client";
-
 import { useState } from "react";
-import { buyRecipeWithWalletBalance } from "@/lib/api/wallet";
+import { BuyRecipeResponse, buyRecipeWithWalletBalance } from "@/lib/api/wallet";
 
-type Props = {
+interface BuyRecipeButtonProps {
   recipeId: string;
-  onSuccessAction?: () => void;
-};
+  onSuccess?: (paymentId: string, recipeId: string) => void;
+}
 
 export default function BuyRecipeButton({
   recipeId,
-  onSuccessAction,
-}: Props) {
+  onSuccess,
+}: BuyRecipeButtonProps) {
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   const handleBuy = async () => {
+    setLoading(true);
+    setError("");
+
     try {
-      setLoading(true);
-      setMessage("");
-      setError("");
+      const response: BuyRecipeResponse = await buyRecipeWithWalletBalance(recipeId);
 
-      const data = await buyRecipeWithWalletBalance(recipeId);
-      setMessage(data?.message || "Recipe purchased successfully");
+      if (!response.ok) {
+        setError(response.message || "Failed to purchase recipe");
+        return;
+      }
 
-      window.dispatchEvent(
-        new CustomEvent("recipe-purchased-successfully", {
-          detail: {
-            title: data?.payment?.recipe_title || data?.recipe?.title || "",
-            amount:
-              Number(data?.payment?.amount || 0) ||
-              Number(data?.recipe?.price || 0),
-          },
-        })
-      );
+      // Correctly access paymentId and recipeId
+      const paymentId = response.paymentId;
+      const purchasedRecipeId = response.recipeId;
 
-      onSuccessAction?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Purchase failed");
+      if (!paymentId || !purchasedRecipeId) {
+        setError("Invalid response: missing payment or recipe ID");
+        return;
+      }
+
+      if (onSuccess) {
+        onSuccess(paymentId, purchasedRecipeId);
+      }
+
+      console.log("Recipe purchased successfully:", {
+        paymentId,
+        purchasedRecipeId,
+      });
+    } catch (err: any) {
+      setError(err.message || "Unexpected error occurred");
     } finally {
       setLoading(false);
     }
@@ -47,24 +52,17 @@ export default function BuyRecipeButton({
   return (
     <div>
       <button
-        type="button"
         onClick={handleBuy}
         disabled={loading}
-        className="rounded-xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:bg-slate-300"
+        className={`rounded-xl px-6 py-3 font-medium transition ${
+          loading ? "bg-gray-200 text-gray-500" : "bg-teal-600 text-white hover:bg-teal-700"
+        }`}
       >
-        {loading ? "Processing..." : "Buy with Wallet Balance"}
+        {loading ? "Processing..." : "Buy Recipe"}
       </button>
 
-      {message && (
-        <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {message}
-        </div>
-      )}
-
       {error && (
-        <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+        <p className="mt-2 text-sm text-red-600">{error}</p>
       )}
     </div>
   );
