@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+
 import { createStripeTopupCheckoutSession } from "@/lib/api/wallet";
 
 type Props = {
@@ -25,6 +26,8 @@ export default function WalletTopUpModal({
   if (!open) return null;
 
   const handleStripeCheckout = async () => {
+    if (submitting) return;
+
     try {
       setSubmitting(true);
       setError("");
@@ -42,8 +45,11 @@ export default function WalletTopUpModal({
       }
 
       onSuccessAction();
-      window.location.href = data.url;
-    } catch (err) {
+
+      if (typeof window !== "undefined") {
+        window.location.href = data.url;
+      }
+    } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : "Failed to start Stripe Checkout"
       );
@@ -55,15 +61,16 @@ export default function WalletTopUpModal({
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
         <h3 className="text-xl font-bold text-slate-900">Top Up Wallet</h3>
+
         <p className="mt-2 text-sm text-slate-500">
           Pay with Stripe test card and top up your RecipeChain wallet balance.
         </p>
 
-        {error && (
+        {error ? (
           <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
-        )}
+        ) : null}
 
         <div className="mt-5">
           <label className="text-sm font-medium text-slate-700">
@@ -76,8 +83,10 @@ export default function WalletTopUpModal({
                 key={value}
                 type="button"
                 onClick={() => setAmount(String(value))}
+                disabled={submitting}
                 className={[
                   "rounded-xl border px-3 py-2 text-sm font-medium transition",
+                  submitting ? "cursor-not-allowed opacity-60" : "",
                   Number(amount) === value
                     ? "border-teal-600 bg-teal-50 text-teal-700"
                     : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
@@ -93,8 +102,9 @@ export default function WalletTopUpModal({
             min="1"
             step="1"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="mt-3 w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-teal-200"
+            onChange={(event) => setAmount(event.target.value)}
+            disabled={submitting}
+            className="mt-3 w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 outline-none focus:ring-2 focus:ring-teal-200 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
             placeholder="Enter amount"
           />
         </div>
@@ -105,16 +115,19 @@ export default function WalletTopUpModal({
 
         <div className="mt-6 flex justify-end gap-3">
           <button
+            type="button"
             onClick={onCloseAction}
             disabled={submitting}
-            className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
+
           <button
+            type="button"
             onClick={handleStripeCheckout}
             disabled={submitting}
-            className="rounded-xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-700 disabled:bg-slate-300"
+            className="rounded-xl bg-teal-600 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {submitting ? "Redirecting..." : "Pay with Card"}
           </button>

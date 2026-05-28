@@ -158,8 +158,8 @@ export default function LoginPage() {
         );
       }
 
-      await closeWeb3AuthModal(readyWeb3Auth);
-
+      // IMPORTANT: get token and wallet data before closing the Web3Auth modal.
+      // Closing the modal too early can make Web3Auth/provider state unavailable.
       const tokenInfo: IdentityTokenResult =
         await readyWeb3Auth.getIdentityToken();
 
@@ -176,6 +176,8 @@ export default function LoginPage() {
       // Never send the private key to the backend.
       const walletAddress =
         await deriveXrplAddressFromWeb3AuthPrivKey(privKeyHexNo0x);
+
+      await closeWeb3AuthModal(readyWeb3Auth);
 
       const resp = await fetch(`${apiBase}/auth/web3auth/sync`, {
         method: "POST",

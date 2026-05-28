@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ReactNode,
+  Suspense,
   useMemo,
   useRef,
   useState,
@@ -106,7 +107,7 @@ function writeRecentSearches(values: string[]) {
   } catch {}
 }
 
-export default function BuyerLayout({ children }: { children: ReactNode }) {
+function BuyerLayoutContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -778,5 +779,21 @@ export default function BuyerLayout({ children }: { children: ReactNode }) {
         </div>
       )}
     </div>
+  );
+}
+
+export default function BuyerLayout({ children }: { children: ReactNode }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50">
+          <div className="flex min-h-screen items-center justify-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-teal-600" />
+          </div>
+        </div>
+      }
+    >
+      <BuyerLayoutContent>{children}</BuyerLayoutContent>
+    </Suspense>
   );
 }

@@ -1,6 +1,19 @@
 import type { BuyerProfile } from "@/types/buyer";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+
+async function safeJson<T = any>(response: Response): Promise<T | null> {
+  const text = await response.text();
+
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
 
 export async function getMyBuyerProfile(): Promise<BuyerProfile> {
   const response = await fetch(`${API_URL}/buyer/me/profile`, {
@@ -12,10 +25,20 @@ export async function getMyBuyerProfile(): Promise<BuyerProfile> {
     cache: "no-store",
   });
 
-  const data = await response.json();
+  const data = await safeJson<{
+    profile?: BuyerProfile;
+    message?: string;
+    error?: string;
+  }>(response);
 
   if (!response.ok) {
-    throw new Error(data?.message || "Failed to load buyer profile");
+    throw new Error(
+      data?.message || data?.error || "Failed to load buyer profile"
+    );
+  }
+
+  if (!data?.profile) {
+    throw new Error("Buyer profile was not returned by the server");
   }
 
   return data.profile;
@@ -27,6 +50,7 @@ export async function updateMyBuyerProfile(payload: {
   profilePhoto?: File | null;
 }): Promise<BuyerProfile> {
   const formData = new FormData();
+
   formData.append("displayName", payload.displayName);
   formData.append("bio", payload.bio);
 
@@ -40,10 +64,18 @@ export async function updateMyBuyerProfile(payload: {
     body: formData,
   });
 
-  const data = await response.json();
+  const data = await safeJson<{
+    profile?: BuyerProfile;
+    message?: string;
+    error?: string;
+  }>(response);
 
   if (!response.ok) {
-    throw new Error(data?.message || "Failed to update profile");
+    throw new Error(data?.message || data?.error || "Failed to update profile");
+  }
+
+  if (!data?.profile) {
+    throw new Error("Updated buyer profile was not returned by the server");
   }
 
   return data.profile;
@@ -58,9 +90,12 @@ export async function deleteMyAccountPermanently(): Promise<void> {
     },
   });
 
-  const data = await response.json().catch(() => null);
+  const data = await safeJson<{
+    message?: string;
+    error?: string;
+  }>(response);
 
   if (!response.ok) {
-    throw new Error(data?.message || "Failed to delete account");
+    throw new Error(data?.message || data?.error || "Failed to delete account");
   }
 }

@@ -6,7 +6,11 @@ const SELLER_DASHBOARD_ROUTE = "/seller/dashboard";
 /**
  * Returns the correct landing route for a seller after login/signup.
  *
- * @returns Seller dashboard route only when the seller is fully approved and has already seen the approval page. Otherwise, returns the KYC route.
+ * Seller can reach dashboard only when:
+ * 1. KYC verification is approved
+ * 2. Seller has already seen the approval page
+ *
+ * All other states should go to the KYC page.
  */
 export async function getSellerEntryRoute(): Promise<string> {
   try {
@@ -19,10 +23,8 @@ export async function getSellerEntryRoute(): Promise<string> {
       return SELLER_DASHBOARD_ROUTE;
     }
 
-    // All incomplete, pending, rejected, first-time-approved, or unknown states should be handled by the KYC page.
     return SELLER_KYC_ROUTE;
   } catch {
-    // KYC is the safest fallback because it prevents unverified sellers from reaching the dashboard.
     return SELLER_KYC_ROUTE;
   }
 }

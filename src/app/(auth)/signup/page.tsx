@@ -165,8 +165,8 @@ export default function SignupPage() {
         );
       }
 
-      await closeWeb3AuthModal(readyWeb3Auth);
-
+      // IMPORTANT: get token and wallet data before closing the Web3Auth modal.
+      // Closing the modal too early can make Web3Auth/provider state unavailable.
       const tokenInfo: IdentityTokenResult =
         await readyWeb3Auth.getIdentityToken();
 
@@ -184,6 +184,8 @@ export default function SignupPage() {
       const walletAddress =
         await deriveXrplAddressFromWeb3AuthPrivKey(privKeyHexNo0x);
 
+      await closeWeb3AuthModal(readyWeb3Auth);
+
       const resp = await fetch(`${apiBase}/auth/web3auth/sync`, {
         method: "POST",
         credentials: "include",
@@ -199,7 +201,9 @@ export default function SignupPage() {
       if (!resp.ok) {
         if (resp.status === 409) {
           // Provider/account conflicts need a clear recovery message instead of a generic failure.
-          setError(data?.message || "Account already exists. Please log in instead.");
+          setError(
+            data?.message || "Account already exists. Please log in instead."
+          );
           return;
         }
 

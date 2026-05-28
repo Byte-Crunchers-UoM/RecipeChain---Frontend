@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Clock3,
@@ -181,7 +181,7 @@ function CookbookCardSkeleton() {
  * Buyer cookbook page.
  * Shows purchased recipes, review status, favorites, sorting, and quick recipe details.
  */
-export default function BuyerCookbookPage() {
+function BuyerCookbookContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -773,5 +773,19 @@ export default function BuyerCookbookPage() {
         }}
       />
     </>
+  );
+}
+
+export default function BuyerCookbookPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-teal-600" />
+        </div>
+      }
+    >
+      <BuyerCookbookContent />
+    </Suspense>
   );
 }

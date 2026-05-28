@@ -8,6 +8,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
+
 import type { UserRole } from "@/types";
 
 export type MeUser = {
@@ -26,12 +27,80 @@ export type AuthContextType = {
   isLoading: boolean;
   setRole: (role: UserRole | null) => void;
   refreshSession: () => Promise<MeUser | null>;
+  syncWeb3AuthSession: (payload: {
+    idToken: string;
+    walletAddress?: string | null;
+  }) => Promise<MeUser | null>;
   logout: () => Promise<void>;
   clearRole: () => void;
   resetAll: () => Promise<void>;
 };
 
+type ApiMeResponse = {
+  success?: boolean;
+  ok?: boolean;
+  data?: MeUser | { user?: MeUser };
+  user?: MeUser;
+  profile?: Partial<MeUser>;
+  message?: string;
+  error?: string;
+};
+
 const AuthContext = createContext<AuthContextType | null>(null);
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+
+async function safeJson<T = unknown>(response: Response): Promise<T | null> {
+  const text = await response.text();
+
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(
+      `Server returned non-JSON response. Status: ${response.status}`
+    );
+  }
+}
+
+function normalizeUser(rawUser: unknown): MeUser | null {
+  if (!rawUser || typeof rawUser !== "object") return null;
+
+  const user = rawUser as Partial<MeUser> & {
+    id?: string;
+    display_name?: string;
+  };
+
+  const userId = user.user_id || user.id;
+  const email = user.email;
+
+  if (!userId || !email) return null;
+
+  return {
+    user_id: userId,
+    email,
+    role: (user.role as UserRole | null) ?? null,
+    wallet_address: user.wallet_address ?? null,
+    name: user.name ?? user.display_name ?? null,
+    bio: user.bio ?? null,
+  };
+}
+
+function extractUserFromSessionResponse(json: ApiMeResponse | null): MeUser | null {
+  if (!json) return null;
+
+  if (json.data && typeof json.data === "object" && "user" in json.data) {
+    return normalizeUser(json.data.user);
+  }
+
+  return (
+    normalizeUser(json.data) ||
+    normalizeUser(json.user) ||
+    normalizeUser(json.profile)
+  );
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<MeUser | null>(null);
@@ -39,61 +108,140 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authed, setAuthedState] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL;
-
-  const refreshSession = useCallback(async (): Promise<MeUser | null> => {
-    if (!apiBase) {
+  const applyUser = useCallback((me: MeUser | null) => {
+    if (!me) {
       setAuthedState(false);
       setRoleState(null);
       setUser(null);
-      return null;
+      return;
     }
 
+    setAuthedState(true);
+    setUser(me);
+    setRoleState(me.role ?? null);
+  }, []);
+
+  const refreshSession = useCallback(async (): Promise<MeUser | null> => {
     try {
-      const resp = await fetch(`${apiBase}/me`, {
+      const resp = await fetch(`${API_BASE}/me`, {
         method: "GET",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Accept: "application/json",
+        },
+        cache: "no-store",
       });
 
-      const json: unknown = await resp.json().catch(() => null);
+      const json = await safeJson<ApiMeResponse>(resp).catch(() => null);
+      const me = extractUserFromSessionResponse(json);
 
-      const parsed = json as
-        | {
-            success?: boolean;
-            data?: MeUser;
-          }
-        | null;
+      if (resp.ok && me) {
+        applyUser(me);
+        return me;
+      }
 
-      if (!resp.ok || !parsed?.success || !parsed?.data) {
-        setAuthedState(false);
-        setRoleState(null);
-        setUser(null);
+      const fallbackResp = await fetch(`${API_BASE}/buyer/me/profile`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      }).catch(() => null);
+
+      if (!fallbackResp) {
+        applyUser(null);
         return null;
       }
 
-      const me = parsed.data;
+      const fallbackJson = await safeJson<ApiMeResponse>(fallbackResp).catch(
+        () => null
+      );
 
-      setAuthedState(true);
-      setUser(me);
-      setRoleState(me.role ?? null);
+      const fallbackMe = extractUserFromSessionResponse(fallbackJson);
 
-      return me;
+      if (!fallbackResp.ok || !fallbackMe) {
+        applyUser(null);
+        return null;
+      }
+
+      applyUser(fallbackMe);
+      return fallbackMe;
     } catch (error) {
       console.error("refreshSession error:", error);
-      setAuthedState(false);
-      setRoleState(null);
-      setUser(null);
+      applyUser(null);
       return null;
     }
-  }, [apiBase]);
+  }, [applyUser]);
+
+  const syncWeb3AuthSession = useCallback(
+    async (payload: {
+      idToken: string;
+      walletAddress?: string | null;
+    }): Promise<MeUser | null> => {
+      try {
+        if (!payload.idToken) {
+          throw new Error("Missing Web3Auth ID token");
+        }
+
+        const resp = await fetch(`${API_BASE}/auth/web3auth/sync`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${payload.idToken}`,
+          },
+          body: JSON.stringify({
+            walletAddress: payload.walletAddress || "",
+          }),
+        });
+
+        const json = await safeJson<ApiMeResponse>(resp).catch(() => null);
+
+        if (!resp.ok) {
+          throw new Error(
+            json?.message || json?.error || "Failed to sync Web3Auth session"
+          );
+        }
+
+        const syncedUser = extractUserFromSessionResponse(json);
+
+        if (syncedUser) {
+          applyUser(syncedUser);
+          return syncedUser;
+        }
+
+        return await refreshSession();
+      } catch (error) {
+        console.error("syncWeb3AuthSession error:", error);
+        applyUser(null);
+
+        throw error instanceof Error
+          ? error
+          : new Error("Failed to sync Web3Auth session");
+      }
+    },
+    [applyUser, refreshSession]
+  );
 
   useEffect(() => {
-    void (async () => {
+    let active = true;
+
+    const init = async () => {
       setIsLoading(true);
+
       await refreshSession();
-      setIsLoading(false);
-    })();
+
+      if (active) {
+        setIsLoading(false);
+      }
+    };
+
+    void init();
+
+    return () => {
+      active = false;
+    };
   }, [refreshSession]);
 
   const setRole = useCallback((newRole: UserRole | null) => {
@@ -108,19 +256,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      if (apiBase) {
-        await fetch(`${apiBase}/auth/logout`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        }).catch(() => null);
-      }
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).catch(() => null);
     } finally {
-      setAuthedState(false);
-      setRoleState(null);
-      setUser(null);
+      applyUser(null);
     }
-  }, [apiBase]);
+  }, [applyUser]);
 
   const resetAll = useCallback(async () => {
     await logout();
@@ -134,11 +280,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       setRole,
       refreshSession,
+      syncWeb3AuthSession,
       logout,
       clearRole,
       resetAll,
     }),
-    [user, role, authed, isLoading, setRole, refreshSession, logout, clearRole, resetAll]
+    [
+      user,
+      role,
+      authed,
+      isLoading,
+      setRole,
+      refreshSession,
+      syncWeb3AuthSession,
+      logout,
+      clearRole,
+      resetAll,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -146,6 +304,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth(): AuthContextType {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+
+  if (!ctx) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+
   return ctx;
 }
