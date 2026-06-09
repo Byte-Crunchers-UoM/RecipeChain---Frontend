@@ -55,7 +55,7 @@ export default function ActiveRecipeView() {
           <div>
             <h3 className="text-red-800 font-black text-xs uppercase tracking-widest mb-1">Rejection Reason</h3>
             <p className="text-red-700 font-bold text-lg leading-tight">
-              {recipe.chef_note || "No specific feedback provided by the admin."}
+              {recipe.rejection_reason || "No specific feedback provided by the admin."}
             </p>
           </div>
         </div>

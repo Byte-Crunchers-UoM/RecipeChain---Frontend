@@ -52,7 +52,7 @@ export default function RecipeVerificationDetail() {
                 },
                 body: JSON.stringify({
                     approval_status,
-                    admin_note: adminNote // This maps to chef_note in your DB
+                    rejection_reason: adminNote 
                 })
             });
 
@@ -87,6 +87,21 @@ export default function RecipeVerificationDetail() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-8">
+
+                        {/* Show this if the recipe already has a rejection reason */}
+                        {recipe.approval_status === 'rejected' && (
+                        <div className="mb-8 p-6 bg-red-50 border-2 border-red-100 rounded-3xl flex items-start gap-4 shadow-sm">
+                            <div className="bg-red-500 p-2 rounded-xl text-white shadow-md">
+                            <XCircle size={24} />
+                            </div>
+                            <div>
+                            <h3 className="text-red-800 font-black text-[10px] uppercase tracking-widest mb-1">Current Rejection Reason</h3>
+                            <p className="text-red-700 font-bold text-lg leading-tight">
+                                {recipe.rejection_reason || "No feedback found in database."}
+                            </p>
+                            </div>
+                        </div>
+                        )}
                         {/* Recipe Image Preview */}
                         <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
                             <div className="relative h-[400px] w-full rounded-2xl overflow-hidden border border-gray-100">

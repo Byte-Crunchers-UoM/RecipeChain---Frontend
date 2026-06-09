@@ -53,11 +53,11 @@ export default function RecipesManagement() {
   }, [router]);
 
   // Search & Filter Logic
-  // Inside your RecipesManagement component
+  // Inside RecipesManagement component
 
 // Search & Filter Logic
 const filteredRecipes = recipes.filter(r => {
-  // 1. Exclude Drafts (This is the new line)
+  // 1. Exclude Drafts 
   if (r.approval_status === 'draft') return false;
 
   // 2. Apply Search Query

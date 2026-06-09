@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react'; 
 import { useSearchParams, useRouter } from 'next/navigation';
 import AdminSidebar from '@/app/components/layout/AdminSidebar';
 import { 
@@ -9,14 +9,14 @@ import {
   Hash, Coins, Info
 } from 'lucide-react';
 
-export default function BuyerProfile() {
+// 2. Moved core profile functionality into an isolated content component
+function BuyerProfileContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
   const router = useRouter();
   const [buyer, setBuyer] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
 
   const fetchBuyerData = async () => {
     if (!id) return;
@@ -46,7 +46,6 @@ export default function BuyerProfile() {
     }
   }, [id]);
 
-  // Logic to handle the NULL status values seen in your screenshot
   const isUserBlocked = buyer?.status === 'blocked';
   const displayStatus = isUserBlocked ? 'Blocked' : 'Active';
 
@@ -191,7 +190,7 @@ export default function BuyerProfile() {
               <div className="space-y-6">
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
                   <span className="text-[11px] font-black text-gray-400 uppercase">Total Spent</span>
-                  <span className="text-lg font-black text-[#149984]">{buyer.total_spent_xrp || 0} XRP</span>
+                  <span className="text-lg font-black text-[#149984]">{buyer.total_spent_xrep || 0} XRP</span>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                   <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Joined RecipeChain</p>
@@ -218,5 +217,21 @@ function InfoItem({ icon, label, value }: any) {
         {value || 'N/A'}
       </p>
     </div>
+  );
+}
+
+// 3. Export the primary page wrapper wrapped in a Suspense boundary
+export default function BuyerProfile() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-[#F8FAFB]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="animate-spin text-[#149984]" size={40} />
+          <div className="text-[#149984] font-black uppercase tracking-widest">Loading Client Context...</div>
+        </div>
+      </div>
+    }>
+      <BuyerProfileContent />
+    </Suspense>
   );
 }

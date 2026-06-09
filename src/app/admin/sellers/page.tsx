@@ -28,14 +28,14 @@ type Seller = {
   };
 };
 
-/// 1. Correct Normalization based on YOUR Controller and DB
+///  Normalization 
 function normalizeSeller(record: any): Seller {
   return {
     user_id: record.user_id || record.id,
     // Database uses verification_status
     verification_status: record.verification_status || 'pending', 
     profile_photo: record.profile_photo || record.profile_picture || '/default-avatar.png',
-    // Database uses display_name (NOT full_name as Copilot suggested)
+    // Database uses display_name 
     full_name: record.display_name || record.users?.display_name || 'Anonymous Chef',
     users: record.users || {}
   };
@@ -48,7 +48,7 @@ export default function SellerManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'All' | 'approved' | 'pending' | 'rejected'>('All');
 
- // Inside src/app/admin/sellers/page.tsx
+ 
 
 useEffect(() => {
   const fetchSellers = async () => {
@@ -62,7 +62,7 @@ useEffect(() => {
       const payload = await response.json();
 
       if (response.ok && payload.success) {
-        // We use 'display_name' and 'verification_status' from your DB
+        // We use 'display_name' and 'verification_status'
         const normalized = payload.data.map((record: any) => ({
           user_id: record.user_id || record.id,
           verification_status: record.verification_status || 'pending',
@@ -145,13 +145,13 @@ useEffect(() => {
         </div>
 
         <div className="relative mb-8 max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-black-1000" />
           <input
             type="text"
             placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-sm font-bold outline-none focus:border-[#149984] focus:ring-2 focus:ring-[#149984]/10 transition-all shadow-sm"
+            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold outline-none focus:border-[#149984] transition-all text-[#23262f] shadow-sm"
           />
         </div>
 

@@ -120,7 +120,8 @@ export default function BuyerProfile() {
               </p>
               <div className="flex gap-2 mt-4">
                 <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 ${
-                  isUserBlocked ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'
+                  isUserBlocked ?  "bg-red-50 text-red-600"
+                    : "bg-green-50 text-green-600"
                 }`}>
                   {isUserBlocked ? <Ban size={12}/> : <ShieldCheck size={12}/>}
                   {displayStatus}
@@ -140,7 +141,7 @@ export default function BuyerProfile() {
               }`}
             >
               {isUpdating ? <Loader2 className="animate-spin" size={18} /> : (
-                isUserBlocked ? 'UNBLOCK BUYER' : <><ShieldAlert size={18} /> BLOCK BUYER</>
+                isUserBlocked ? 'UNBLOCK BUYER' : <><ShieldAlert size={18} /> BLOCK sudheera BUYER</>
               )}
             </button>
           </div>
