@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const BUYER_HOME = "/buyer/profile";
+const BUYER_HOME = "/recipes";
 const SELLER_HOME = "/seller/kyc";
 
 export function middleware(request: NextRequest) {

@@ -74,9 +74,13 @@ export default function BuyRecipeButton({
         toStringValue(data.recipe?.id) ||
         recipeId;
 
+      if (!purchasedRecipeId) {
+        throw new Error("Invalid response: missing recipe ID");
+      }
+
       if (onSuccess) {
-        if (!paymentId || !purchasedRecipeId) {
-          throw new Error("Invalid response: missing payment or recipe ID");
+        if (!paymentId) {
+          throw new Error("Invalid response: missing payment ID");
         }
 
         onSuccess(paymentId, purchasedRecipeId);
@@ -85,15 +89,23 @@ export default function BuyRecipeButton({
       const successMessage = data?.message || "Recipe purchased successfully";
       setMessage(successMessage);
 
+      const purchaseDetail = {
+        title: data?.payment?.recipe_title || data?.recipe?.title || "",
+        amount:
+          toNumberValue(data?.payment?.amount) ||
+          toNumberValue(data?.recipe?.price),
+        paymentId,
+        recipeId: purchasedRecipeId,
+      };
+
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Recipe purchased successfully:", purchaseDetail);
+      }
+
       if (typeof window !== "undefined") {
         window.dispatchEvent(
           new CustomEvent("recipe-purchased-successfully", {
-            detail: {
-              title: data?.payment?.recipe_title || data?.recipe?.title || "",
-              amount:
-                toNumberValue(data?.payment?.amount) ||
-                toNumberValue(data?.recipe?.price),
-            },
+            detail: purchaseDetail,
           })
         );
       }

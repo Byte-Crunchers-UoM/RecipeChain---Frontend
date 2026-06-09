@@ -16,7 +16,8 @@ export default defineConfig({
         "src/**/loading.tsx",
         "src/**/not-found.tsx",
         "src/__tests__/**",
-        "src/tests/**"
+        "src/tests/**",
+        "__test__/**"
       ]
     }
   },

@@ -63,10 +63,8 @@ export default function TopNavProfileMenu({
   const isBuyer = authUser?.role === "buyer";
 
   const loadProfile = useCallback(async () => {
-    if (!isAuthenticated || !isBuyer) {
-      setProfile(null);
-      return;
-    }
+    if (!isAuthenticated) return;
+    if (!isBuyer) return;
 
     try {
       setProfileLoading(true);
@@ -98,8 +96,6 @@ export default function TopNavProfileMenu({
     };
   }, [isAuthenticated, isBuyer, loadProfile]);
 
-  const activeProfile = isBuyer ? profile : null;
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -120,7 +116,7 @@ export default function TopNavProfileMenu({
   const menuLinks = useMemo<DropdownLink[]>(() => {
     if (mode === "home") {
       return [
-        { label: "Market Place", href: "/recipes", icon: Store },
+        { label: "Marketplace", href: "/recipes", icon: Store },
         { label: "My Cookbook", href: "/buyer/cookbook", icon: BookOpen },
         { label: "My Profile", href: "/buyer/profile", icon: User },
       ];
@@ -128,14 +124,14 @@ export default function TopNavProfileMenu({
 
     if (pathname === "/buyer/cookbook") {
       return [
-        { label: "Market Place", href: "/recipes", icon: Store },
+        { label: "Marketplace", href: "/recipes", icon: Store },
         { label: "My Profile", href: "/buyer/profile", icon: User },
       ];
     }
 
     if (pathname === "/buyer/profile") {
       return [
-        { label: "Market Place", href: "/recipes", icon: Store },
+        { label: "Marketplace", href: "/recipes", icon: Store },
         { label: "My Cookbook", href: "/buyer/cookbook", icon: BookOpen },
       ];
     }
@@ -145,6 +141,8 @@ export default function TopNavProfileMenu({
       { label: "My Cookbook", href: "/buyer/cookbook", icon: BookOpen },
     ];
   }, [mode, pathname]);
+
+  const activeProfile = isBuyer ? profile : null;
 
   const displayName = String(
     activeProfile?.display_name || authUser?.name || authUser?.email || "Buyer"

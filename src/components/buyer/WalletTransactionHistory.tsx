@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -12,7 +12,8 @@ import {
   WalletCards,
 } from "lucide-react";
 
-import type { WalletTransaction } from "@/lib/types/wallet";
+import { getMyWalletOverview } from "@/lib/api/wallet";
+import type { WalletOverview, WalletTransaction } from "@/lib/types/wallet";
 
 type Props = {
   transactions: WalletTransaction[];
@@ -35,6 +36,14 @@ type TransactionLike = WalletTransaction & {
 
 const COMPACT_LIMIT = 3;
 const EXPANDED_PAGE_SIZE = 5;
+const TOPUP_REFRESH_ATTEMPTS = 15;
+const TOPUP_REFRESH_DELAY_MS = 1000;
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
 function getTransactionId(tx: TransactionLike, index: number) {
   return String(
@@ -47,9 +56,15 @@ function getTransactionId(tx: TransactionLike, index: number) {
   );
 }
 
+function getTransactionSignature(transactions: TransactionLike[]) {
+  return transactions
+    .map((tx, index) => getTransactionId(tx, index))
+    .join("|");
+}
+
 function getAmount(tx: TransactionLike) {
-  const parsed = Number(tx.amount_xrp ?? tx.amount ?? 0);
-  return Number.isFinite(parsed) ? parsed : 0;
+  const value = Number(tx.amount_xrp ?? tx.amount);
+  return Number.isFinite(value) ? value : 0;
 }
 
 function getDateValue(tx: TransactionLike) {
@@ -118,6 +133,22 @@ function isCredit(tx: TransactionLike) {
   return ["topup", "top-up", "refund", "sale"].includes(type);
 }
 
+function isCompletedTopup(tx: TransactionLike) {
+  const type = normalizeType(tx.type);
+  const direction = String(tx.direction || "").toLowerCase();
+  const status = String(tx.status || "").toLowerCase();
+
+  return (
+    (type === "topup" || type === "top-up") &&
+    direction === "credit" &&
+    (status === "completed" || status === "success")
+  );
+}
+
+function getCompletedTopupCount(transactions: TransactionLike[]) {
+  return transactions.filter(isCompletedTopup).length;
+}
+
 function getStatusClass(status?: string | null) {
   const normalized = String(status || "").toLowerCase();
 
@@ -167,13 +198,7 @@ function getIcon(tx: TransactionLike) {
   return <WalletCards className="h-4 w-4" />;
 }
 
-function TransactionRow({
-  tx,
-  index,
-}: {
-  tx: TransactionLike;
-  index: number;
-}) {
+function TransactionRow({ tx }: { tx: TransactionLike }) {
   const amount = getAmount(tx);
   const credit = isCredit(tx);
   const status = tx.status || "completed";
@@ -237,9 +262,114 @@ function TransactionRow({
 export default function WalletTransactionHistory({ transactions }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [page, setPage] = useState(1);
+  const [refreshingAfterTopup, setRefreshingAfterTopup] = useState(false);
+  const [localTransactions, setLocalTransactions] =
+    useState<WalletTransaction[]>(transactions || []);
+
+  const lastPropSignatureRef = useRef("");
+  const handledTopupSearchRef = useRef("");
+
+  const propSignature = useMemo(() => {
+    return getTransactionSignature((transactions || []) as TransactionLike[]);
+  }, [transactions]);
+
+  useEffect(() => {
+    if (lastPropSignatureRef.current === propSignature) return;
+
+    lastPropSignatureRef.current = propSignature;
+    setLocalTransactions(transactions || []);
+  }, [propSignature, transactions]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const topupStatus = urlParams.get("topup");
+    const amountParam = Number(urlParams.get("amount") || 0);
+    const topupSearchKey = window.location.search;
+
+    if (topupStatus !== "success") return;
+    if (handledTopupSearchRef.current === topupSearchKey) return;
+
+    handledTopupSearchRef.current = topupSearchKey;
+
+    let cancelled = false;
+
+    const refreshTransactionsAfterTopup = async () => {
+      const startingTransactions = [...localTransactions] as TransactionLike[];
+      const startingSignature = getTransactionSignature(startingTransactions);
+      const startingTopupCount = getCompletedTopupCount(startingTransactions);
+
+      try {
+        setRefreshingAfterTopup(true);
+
+        for (let attempt = 0; attempt < TOPUP_REFRESH_ATTEMPTS; attempt += 1) {
+          if (cancelled) return;
+
+          try {
+            const latestWallet: WalletOverview = await getMyWalletOverview();
+            const latestTransactions = latestWallet.recent_transactions || [];
+            const latestSignature = getTransactionSignature(
+              latestTransactions as TransactionLike[]
+            );
+
+            if (cancelled) return;
+
+            setLocalTransactions(latestTransactions);
+
+            const latestTopupCount = getCompletedTopupCount(
+              latestTransactions as TransactionLike[]
+            );
+
+            const latestCompletedTopup = (
+              latestTransactions as TransactionLike[]
+            ).find(isCompletedTopup);
+
+            const latestTopupAmount = latestCompletedTopup
+              ? getAmount(latestCompletedTopup)
+              : 0;
+
+            const transactionListChanged =
+              latestSignature && latestSignature !== startingSignature;
+
+            const topupCountIncreased = latestTopupCount > startingTopupCount;
+
+            const expectedAmountAppeared =
+              amountParam > 0 &&
+              latestTopupAmount > 0 &&
+              Math.abs(latestTopupAmount - amountParam) < 0.01;
+
+            if (
+              transactionListChanged ||
+              topupCountIncreased ||
+              expectedAmountAppeared
+            ) {
+              return;
+            }
+          } catch (error) {
+            if (process.env.NODE_ENV !== "production") {
+              console.warn("Wallet transaction refresh failed:", error);
+            }
+          }
+
+          await sleep(TOPUP_REFRESH_DELAY_MS);
+        }
+      } finally {
+        if (!cancelled) {
+          setRefreshingAfterTopup(false);
+        }
+      }
+    };
+
+    void refreshTransactionsAfterTopup();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [localTransactions]);
 
   const sortedTransactions = useMemo(() => {
-    return [...(transactions || [])].sort((a, b) => {
+    return [...(localTransactions || [])].sort((a, b) => {
       const dateA = new Date(getDateValue(a)).getTime();
       const dateB = new Date(getDateValue(b)).getTime();
 
@@ -249,7 +379,7 @@ export default function WalletTransactionHistory({ transactions }: Props) {
 
       return dateB - dateA;
     });
-  }, [transactions]);
+  }, [localTransactions]);
 
   const totalTransactions = sortedTransactions.length;
   const hasMoreThanCompact = totalTransactions > COMPACT_LIMIT;
@@ -298,7 +428,9 @@ export default function WalletTransactionHistory({ transactions }: Props) {
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            {totalTransactions === 0
+            {refreshingAfterTopup
+              ? "Refreshing latest wallet transactions..."
+              : totalTransactions === 0
               ? "No wallet transactions yet."
               : expanded
               ? `Showing page ${safePage} of ${totalPages}`
@@ -334,11 +466,7 @@ export default function WalletTransactionHistory({ transactions }: Props) {
         <>
           <div className="mt-5 space-y-3">
             {visibleTransactions.map((tx, index) => (
-              <TransactionRow
-                key={getTransactionId(tx, index)}
-                tx={tx}
-                index={index}
-              />
+              <TransactionRow key={getTransactionId(tx, index)} tx={tx} />
             ))}
           </div>
 

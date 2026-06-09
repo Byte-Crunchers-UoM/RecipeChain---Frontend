@@ -436,7 +436,20 @@ function BuyerProfileContent() {
       }
 
       showToast("Purchase successful", message);
-      void loadWallet();
+
+      void Promise.all([
+        loadWallet(),
+        getMyBuyerProfile()
+          .then((latestProfile) => {
+            setProfile(latestProfile);
+          })
+          .catch((profileRefreshError) => {
+            console.error(
+              "Failed to refresh buyer profile after purchase:",
+              profileRefreshError
+            );
+          }),
+      ]);
     };
 
     window.addEventListener(
