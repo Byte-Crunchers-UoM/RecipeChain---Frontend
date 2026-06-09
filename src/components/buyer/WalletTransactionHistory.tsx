@@ -19,6 +19,13 @@ type Props = {
   transactions: WalletTransaction[];
 };
 
+type TransactionFilter =
+  | "all"
+  | "topup"
+  | "purchase"
+  | "withdrawal"
+  | "refund";
+
 type TransactionLike = WalletTransaction & {
   id?: string | number | null;
   transaction_id?: string | number | null;
@@ -38,6 +45,14 @@ const COMPACT_LIMIT = 3;
 const EXPANDED_PAGE_SIZE = 5;
 const TOPUP_REFRESH_ATTEMPTS = 15;
 const TOPUP_REFRESH_DELAY_MS = 1000;
+
+const filterOptions: { label: string; value: TransactionFilter }[] = [
+  { label: "All Transactions", value: "all" },
+  { label: "Top Ups", value: "topup" },
+  { label: "Recipe Purchases", value: "purchase" },
+  { label: "Withdrawals", value: "withdrawal" },
+  { label: "Refunds", value: "refund" },
+];
 
 function sleep(ms: number) {
   return new Promise<void>((resolve) => {
@@ -91,6 +106,17 @@ function normalizeType(type?: string | null) {
   return String(type || "transaction").trim().toLowerCase();
 }
 
+function getFilterType(tx: TransactionLike): TransactionFilter {
+  const type = normalizeType(tx.type);
+
+  if (type === "topup" || type === "top-up") return "topup";
+  if (type === "purchase" || type === "buy") return "purchase";
+  if (type === "withdraw" || type === "withdrawal") return "withdrawal";
+  if (type === "refund") return "refund";
+
+  return "all";
+}
+
 function formatType(type?: string | null) {
   const normalized = normalizeType(type);
 
@@ -102,7 +128,7 @@ function formatType(type?: string | null) {
     withdraw: "Withdrawal",
     withdrawal: "Withdrawal",
     refund: "Refund",
-    sale: "Sale",
+    adjustment: "Adjustment",
     transfer: "Transfer",
   };
 
@@ -118,7 +144,6 @@ function getDescription(tx: TransactionLike) {
   if (type === "purchase" || type === "buy") return "Recipe purchase completed";
   if (type === "withdraw" || type === "withdrawal") return "Withdrawal request";
   if (type === "refund") return "Refund transaction";
-  if (type === "sale") return "Recipe sale received";
 
   return "Wallet transaction";
 }
@@ -130,7 +155,7 @@ function isCredit(tx: TransactionLike) {
   if (direction === "credit") return true;
   if (direction === "debit") return false;
 
-  return ["topup", "top-up", "refund", "sale"].includes(type);
+  return ["topup", "top-up", "refund"].includes(type);
 }
 
 function isCompletedTopup(tx: TransactionLike) {
@@ -262,6 +287,7 @@ function TransactionRow({ tx }: { tx: TransactionLike }) {
 export default function WalletTransactionHistory({ transactions }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [page, setPage] = useState(1);
+  const [filter, setFilter] = useState<TransactionFilter>("all");
   const [refreshingAfterTopup, setRefreshingAfterTopup] = useState(false);
   const [localTransactions, setLocalTransactions] =
     useState<WalletTransaction[]>(transactions || []);
@@ -368,8 +394,20 @@ export default function WalletTransactionHistory({ transactions }: Props) {
     };
   }, [localTransactions]);
 
+  const filteredTransactions = useMemo(() => {
+    const safeTransactions = localTransactions || [];
+
+    if (filter === "all") {
+      return safeTransactions;
+    }
+
+    return safeTransactions.filter(
+      (tx) => getFilterType(tx as TransactionLike) === filter
+    );
+  }, [filter, localTransactions]);
+
   const sortedTransactions = useMemo(() => {
-    return [...(localTransactions || [])].sort((a, b) => {
+    return [...filteredTransactions].sort((a, b) => {
       const dateA = new Date(getDateValue(a)).getTime();
       const dateB = new Date(getDateValue(b)).getTime();
 
@@ -379,7 +417,7 @@ export default function WalletTransactionHistory({ transactions }: Props) {
 
       return dateB - dateA;
     });
-  }, [localTransactions]);
+  }, [filteredTransactions]);
 
   const totalTransactions = sortedTransactions.length;
   const hasMoreThanCompact = totalTransactions > COMPACT_LIMIT;
@@ -401,6 +439,12 @@ export default function WalletTransactionHistory({ transactions }: Props) {
     return sortedTransactions.slice(start, end);
   }, [expanded, safePage, sortedTransactions]);
 
+  const handleFilterChange = (value: TransactionFilter) => {
+    setFilter(value);
+    setExpanded(false);
+    setPage(1);
+  };
+
   const handleSeeMore = () => {
     setExpanded(true);
     setPage(1);
@@ -421,7 +465,7 @@ export default function WalletTransactionHistory({ transactions }: Props) {
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 className="text-[17px] font-semibold text-slate-900">
             Wallet Transactions
@@ -431,7 +475,7 @@ export default function WalletTransactionHistory({ transactions }: Props) {
             {refreshingAfterTopup
               ? "Refreshing latest wallet transactions..."
               : totalTransactions === 0
-              ? "No wallet transactions yet."
+              ? "No wallet transactions found for this filter."
               : expanded
               ? `Showing page ${safePage} of ${totalPages}`
               : `Showing latest ${Math.min(
@@ -441,25 +485,41 @@ export default function WalletTransactionHistory({ transactions }: Props) {
           </p>
         </div>
 
-        {hasMoreThanCompact ? (
-          <button
-            type="button"
-            onClick={expanded ? handleSeeLess : handleSeeMore}
-            className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <select
+            value={filter}
+            onChange={(event) =>
+              handleFilterChange(event.target.value as TransactionFilter)
+            }
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none transition hover:bg-slate-50 focus:border-teal-300 focus:ring-4 focus:ring-teal-50"
           >
-            {expanded ? "See Less" : "See More"}
-          </button>
-        ) : null}
+            {filterOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+
+          {hasMoreThanCompact ? (
+            <button
+              type="button"
+              onClick={expanded ? handleSeeLess : handleSeeMore}
+              className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              {expanded ? "See Less" : "See More"}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {totalTransactions === 0 ? (
         <div className="mt-5 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-5">
           <p className="text-[16px] font-medium text-slate-800">
-            No wallet transactions yet.
+            No wallet transactions found.
           </p>
 
           <p className="mt-2 text-sm text-slate-500">
-            Top-ups, purchases, withdrawals, and refunds will appear here.
+            Try changing the transaction filter.
           </p>
         </div>
       ) : (
