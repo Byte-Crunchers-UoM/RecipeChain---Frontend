@@ -11,7 +11,6 @@ import {
   Check,
   PencilLine,
   Shield,
-  Activity,
   Trophy,
   Trash2,
   PlusCircle,
@@ -24,6 +23,7 @@ import EditProfileModal from "@/components/buyer/EditProfileModal";
 import WalletTopUpModal from "@/components/buyer/WalletTopUpModal";
 import WalletWithdrawModal from "@/components/buyer/WalletWithdrawModal";
 import WalletTransactionHistory from "@/components/buyer/WalletTransactionHistory";
+import BuyerActivityHistory from "@/components/buyer/BuyerActivityHistory";
 import {
   deleteMyAccountPermanently,
   getMyBuyerProfile,
@@ -43,7 +43,6 @@ type ToastState = {
   message: string;
 };
 
-/** Formats the user's join date to return only the year, or "Recently" if invalid/missing. */
 function formatJoinedYear(dateString?: string) {
   if (!dateString) return "Recently";
 
@@ -54,7 +53,6 @@ function formatJoinedYear(dateString?: string) {
   return String(date.getFullYear());
 }
 
-/** Formats a wallet address by truncating the middle part for cleaner UI display. */
 function formatWallet(wallet?: string) {
   if (!wallet) return "Not connected";
   if (wallet.length <= 18) return wallet;
@@ -62,14 +60,12 @@ function formatWallet(wallet?: string) {
   return `${wallet.slice(0, 7)}...${wallet.slice(-5)}`;
 }
 
-/** Constructs the external XRPL explorer URL for a specific wallet address. */
 function getWalletExplorerUrl(wallet?: string) {
   if (!wallet || !XRPL_EXPLORER_BASE) return "";
 
   return `${XRPL_EXPLORER_BASE.replace(/\/$/, "")}/${wallet}`;
 }
 
-/** Extracts up to two initials from the user's name or email for the avatar placeholder. */
 function getInitials(name?: string, email?: string) {
   const source = String(name || email || "U").trim();
 
@@ -81,17 +77,6 @@ function getInitials(name?: string, email?: string) {
     .join("");
 }
 
-function formatDate(dateString?: string) {
-  if (!dateString) return "Recent";
-
-  const date = new Date(dateString);
-
-  if (Number.isNaN(date.getTime())) return "Recent";
-
-  return date.toLocaleDateString();
-}
-
-/** Component to display a statistic card with an icon, label, value, and subtext. */
 function StatCard({
   iconWrapClassName,
   icon,
@@ -120,7 +105,6 @@ function StatCard({
   );
 }
 
-/** Component to display a progress bar based on a current value and a target goal. */
 function ProgressBar({ value, target }: { value?: number; target?: number }) {
   const percentage =
     target && target > 0
@@ -137,7 +121,6 @@ function ProgressBar({ value, target }: { value?: number; target?: number }) {
   );
 }
 
-/** Component to display a temporary toast notification with a title and message. */
 function AppToast({
   open,
   title,
@@ -178,7 +161,6 @@ function AppToast({
   );
 }
 
-/** Main content component for the buyer profile, handling data fetching, state, and UI rendering. */
 function BuyerProfileContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -209,7 +191,6 @@ function BuyerProfileContent() {
 
   const shouldAutoOpenEdit = searchParams.get("edit") === "1";
 
-  /** Helper function to display the toast notification with a specific title and message. */
   const showToast = (title: string, message: string) => {
     setToast({
       open: true,
@@ -218,7 +199,6 @@ function BuyerProfileContent() {
     });
   };
 
-  /** Fetches the latest wallet overview data from the API and updates the local state. */
   const loadWallet = async () => {
     try {
       setWalletLoading(true);
@@ -238,10 +218,15 @@ function BuyerProfileContent() {
     }
   };
 
+  const loadProfile = async () => {
+    const latestProfile = await getMyBuyerProfile();
+    setProfile(latestProfile);
+    return latestProfile;
+  };
+
   useEffect(() => {
     let active = true;
 
-    /** Asynchronously loads both the user profile and wallet data on component mount. */
     const load = async () => {
       try {
         setLoading(true);
@@ -270,7 +255,7 @@ function BuyerProfileContent() {
       }
     };
 
-    load();
+    void load();
 
     return () => {
       active = false;
@@ -310,7 +295,6 @@ function BuyerProfileContent() {
 
     let cancelled = false;
 
-    /** Polls the wallet data to detect balance changes after a top-up action. */
     const refreshAfterTopup = async () => {
       const currentBalance = Number(
         walletData?.account_balance ?? profile?.account_balance ?? 0
@@ -359,6 +343,13 @@ function BuyerProfileContent() {
               )} XRP has been added to your RecipeChain wallet.`
             );
 
+            void loadProfile().catch((profileRefreshError) => {
+              console.error(
+                "Failed to refresh buyer profile after top-up:",
+                profileRefreshError
+              );
+            });
+
             router.replace(pathname, { scroll: false });
             return;
           }
@@ -380,7 +371,6 @@ function BuyerProfileContent() {
   }, [searchParams, router, pathname, walletData, profile]);
 
   useEffect(() => {
-    /** Event handler triggered when a withdrawal request is submitted successfully. */
     const handleWithdrawalSubmitted = (event: Event) => {
       const customEvent = event as CustomEvent<{ amount?: number }>;
       const amount = Number(customEvent.detail?.amount || 0);
@@ -395,9 +385,14 @@ function BuyerProfileContent() {
       );
 
       void loadWallet();
+      void loadProfile().catch((profileRefreshError) => {
+        console.error(
+          "Failed to refresh buyer profile after withdrawal:",
+          profileRefreshError
+        );
+      });
     };
 
-    /** Event handler triggered when a refund request is submitted successfully. */
     const handleRefundSubmitted = (event: Event) => {
       const customEvent = event as CustomEvent<{ amount?: number }>;
       const amount = Number(customEvent.detail?.amount || 0);
@@ -412,9 +407,14 @@ function BuyerProfileContent() {
       );
 
       void loadWallet();
+      void loadProfile().catch((profileRefreshError) => {
+        console.error(
+          "Failed to refresh buyer profile after refund:",
+          profileRefreshError
+        );
+      });
     };
 
-    /** Event handler triggered when a recipe is purchased successfully. */
     const handleRecipePurchased = (event: Event) => {
       const customEvent = event as CustomEvent<{
         title?: string;
@@ -439,16 +439,12 @@ function BuyerProfileContent() {
 
       void Promise.all([
         loadWallet(),
-        getMyBuyerProfile()
-          .then((latestProfile) => {
-            setProfile(latestProfile);
-          })
-          .catch((profileRefreshError) => {
-            console.error(
-              "Failed to refresh buyer profile after purchase:",
-              profileRefreshError
-            );
-          }),
+        loadProfile().catch((profileRefreshError) => {
+          console.error(
+            "Failed to refresh buyer profile after purchase:",
+            profileRefreshError
+          );
+        }),
       ]);
     };
 
@@ -495,7 +491,6 @@ function BuyerProfileContent() {
     walletData?.account_balance ?? profile?.account_balance ?? 0
   );
 
-  /** Closes the edit profile modal and removes the 'edit' query parameter if present. */
   const closeModal = () => {
     setModalOpen(false);
 
@@ -504,7 +499,6 @@ function BuyerProfileContent() {
     }
   };
 
-  /** Saves the updated profile details to the backend. */
   const handleSave = async (payload: {
     displayName: string;
     bio: string;
@@ -525,7 +519,6 @@ function BuyerProfileContent() {
     }
   };
 
-  /** Copies the current effective wallet address to the user's clipboard. */
   const handleCopyWallet = async () => {
     if (!effectiveWalletAddress) return;
 
@@ -538,7 +531,6 @@ function BuyerProfileContent() {
     }
   };
 
-  /** Permanently deletes the user's account and redirects them to the signup page. */
   const handlePermanentDelete = async () => {
     if (deleteConfirmText !== "DELETE") {
       alert("Type DELETE to confirm permanent account deletion.");
@@ -833,64 +825,11 @@ function BuyerProfileContent() {
               transactions={walletData?.recent_transactions || []}
             />
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-teal-600" />
-                <h2 className="text-[17px] font-semibold text-slate-900">
-                  Activity
-                </h2>
-              </div>
-
-              <p className="mt-4 text-[15px] text-slate-500">
-                You have {profile.total_purchases || 0} purchases and{" "}
-                {profile.feedback_count || 0} reviews.
-              </p>
-
-              {recentActivity.length === 0 ? (
-                <div className="mt-5 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-5">
-                  <p className="text-[16px] font-medium text-slate-800">
-                    No recent buyer activity yet.
-                  </p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    Start exploring recipes and your purchases will appear here.
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-5 space-y-3">
-                  {recentActivity.map((item) => (
-                    <div
-                      key={item.id}
-                      className="rounded-2xl border border-slate-200 p-4"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <p className="truncate text-[15px] font-semibold text-slate-900">
-                            {item.title}
-                          </p>
-                          <p className="mt-1 text-sm text-slate-600">
-                            {formatDate(item.date)} •{" "}
-                            {Number(item.amount_xrp || 0).toFixed(2)} XRP
-                          </p>
-                        </div>
-
-                        <span
-                          className={[
-                            "rounded-full px-3 py-1 text-xs font-medium",
-                            item.status === "completed"
-                              ? "bg-green-50 text-green-700"
-                              : item.status === "pending"
-                              ? "bg-amber-50 text-amber-700"
-                              : "bg-slate-100 text-slate-700",
-                          ].join(" ")}
-                        >
-                          {item.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
+            <BuyerActivityHistory
+              activities={recentActivity}
+              totalPurchases={profile.total_purchases || 0}
+              feedbackCount={profile.feedback_count || 0}
+            />
           </div>
 
           <div className="space-y-5">
@@ -984,9 +923,12 @@ function BuyerProfileContent() {
                     <label className="mb-2 block text-sm font-medium text-red-700">
                       Type DELETE to confirm
                     </label>
+
                     <input
                       value={deleteConfirmText}
-                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      onChange={(event) =>
+                        setDeleteConfirmText(event.target.value)
+                      }
                       placeholder="DELETE"
                       className="w-full rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-red-400 focus:ring-4 focus:ring-red-100"
                     />
@@ -1028,13 +970,18 @@ function BuyerProfileContent() {
         onCloseAction={() => setWithdrawOpen(false)}
         onSuccessAction={() => {
           void loadWallet();
+          void loadProfile().catch((profileRefreshError) => {
+            console.error(
+              "Failed to refresh buyer profile after withdrawal:",
+              profileRefreshError
+            );
+          });
         }}
       />
     </>
   );
 }
 
-/** Page wrapper component that provides a Suspense boundary for the buyer profile content. */
 export default function BuyerProfilePage() {
   return (
     <Suspense

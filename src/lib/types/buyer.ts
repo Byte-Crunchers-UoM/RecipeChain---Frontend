@@ -3,17 +3,23 @@ export type BuyerBadge = {
   title: string;
   description: string;
   earned: boolean;
-  progress?: number;
-  target?: number;
+  progress: number;
+  target: number;
 };
+
+export type BuyerActivityType = "purchase" | "review" | "profile_update";
 
 export type BuyerActivityItem = {
   id: string;
   title: string;
+  description?: string;
   amount_xrp: number;
   status: string;
-  type: "purchase" | "sale" | "review";
+  type: BuyerActivityType;
   date: string;
+  reference_table?: string | null;
+  reference_id?: string | number | null;
+  metadata?: Record<string, unknown>;
 };
 
 export type BuyerProfile = {
