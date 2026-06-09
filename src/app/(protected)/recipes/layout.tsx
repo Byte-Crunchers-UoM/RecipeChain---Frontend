@@ -1,6 +1,6 @@
-// src/app/recipes/layout.tsx
 import { ReactNode } from "react";
+import BuyerAppShell from "@/components/layout/BuyerAppShell";
 
 export default function RecipesLayout({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return <BuyerAppShell>{children}</BuyerAppShell>;
 }

@@ -571,7 +571,7 @@ function BuyerProfileContent() {
         onCloseAction={() => setToast((prev) => ({ ...prev, open: false }))}
       />
 
-      <div className="mx-auto max-w-[1320px] space-y-5">
+      <div className="mx-auto w-full max-w-[1320px] space-y-5 px-5 py-6 sm:px-6 lg:px-8">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             iconWrapClassName="bg-green-50"

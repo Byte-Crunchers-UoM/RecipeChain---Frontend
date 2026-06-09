@@ -1,143 +1,100 @@
-"use client"; 
-import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Bell } from 'lucide-react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { useAuth } from '@/context/AuthContext';
-import { usePathname } from 'next/navigation'; // 🛠️ 1. Import usePathname
-import CartBadge from '../recipe/CartBadge';
+"use client";
+
+import React from "react";
+import { Sparkles } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+
+import { useAuth } from "@/context/AuthContext";
+import CartBadge from "@/components/recipe/CartBadge";
+import TopNavProfileMenu from "@/components/layout/TopNavProfileMenu";
 
 export const Navbar = () => {
-  const { isAuthenticated, user, isLoading, logout } = useAuth();
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  
-  const pathname = usePathname(); // 🛠️ 2. Get the current route
+  const { isAuthenticated, isLoading } = useAuth();
+  const pathname = usePathname();
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsProfileOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const handleHowItWorksClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (pathname === "/") {
+      event.preventDefault();
 
-  // 🛠️ 3. Create a custom scroll handler
-  const handleHowItWorksClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (pathname === '/') {
-      e.preventDefault(); // Stop Next.js from intercepting
-      const section = document.getElementById('how-it-works');
+      const section = document.getElementById("how-it-works");
+
       if (section) {
-        section.scrollIntoView({ behavior: 'smooth' }); // Scroll smoothly!
+        section.scrollIntoView({ behavior: "smooth" });
       }
     }
   };
 
   return (
-    <nav className="relative z-50 flex items-center justify-between px-8 py-5 bg-white/50 backdrop-blur-sm border-b border-green-100/50">
-      
-      {/* Logo Section */}
+    <nav className="relative z-50 flex items-center justify-between border-b border-green-100/50 bg-white/50 px-8 py-5 backdrop-blur-sm">
       <Link href="/" className="flex items-center gap-2 cursor-pointer">
-        <Image 
-          src="/Logo.png" 
-          alt="RecipeChain Logo" 
-          width={36} 
-          height={36} 
+        <Image
+          src="/Logo.png"
+          alt="RecipeChain Logo"
+          width={36}
+          height={36}
+          priority
           className="h-9 w-auto"
         />
-        <div className="text-xl font-bold text-slate-800 tracking-tight">
+
+        <div className="text-xl font-bold tracking-tight text-slate-800">
           RecipeChain
         </div>
       </Link>
-      
-      {/* Middle Links */}
-      <div className="hidden md:flex items-center gap-8 font-medium text-slate-600">
-        <Link href="/recipes" className="hover:text-[#16a34a] transition-colors">Marketplace</Link>
-        
-        {/* 🛠️ 4. Attach the onClick handler to the Link */}
-        <Link 
-          href="/#how-it-works" 
-          onClick={handleHowItWorksClick} 
-          className="hover:text-[#16a34a] transition-colors"
+
+      <div className="hidden items-center gap-8 font-medium text-slate-600 md:flex">
+        <Link
+          href="/recipes"
+          className="transition-colors hover:text-[#16a34a]"
+        >
+          Marketplace
+        </Link>
+
+        <Link
+          href="/#how-it-works"
+          onClick={handleHowItWorksClick}
+          className="transition-colors hover:text-[#16a34a]"
         >
           How It Works
-        </Link>        
-        
-        <Link href="/ai-assistant" className="hover:text-[#16a34a] transition-colors">AI Assistant</Link>
+        </Link>
+
+        <Link
+          href="/ai-assistant"
+          className="transition-colors hover:text-[#16a34a]"
+        >
+          AI Assistant
+        </Link>
       </div>
 
-      <div className="flex items-center gap-6 font-medium">
+      <div className="flex items-center gap-5 font-medium">
         {isLoading ? (
-          <div className="text-slate-600 animate-pulse">Loading...</div>
+          <div className="animate-pulse text-sm text-slate-600">
+            Loading...
+          </div>
         ) : isAuthenticated ? (
           <div className="flex items-center gap-4">
-            
-        
-
-            {/* Shopping Cart */}
             <CartBadge />
-
-            {/* Profile Button & Dropdown */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="w-9 h-9 bg-[#16a34a] text-white rounded-full flex items-center justify-center hover:bg-[#15803d] transition-colors font-semibold shadow-sm ring-2 ring-white"
-              >
-                {user?.email?.[0]?.toUpperCase() || 'P'}
-              </button>
-              
-              {/* Profile Dropdown Menu */}
-              {isProfileOpen && (
-                <div className="absolute right-0 mt-3 w-48 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
-                    <p className="text-sm font-medium text-gray-900 truncate">{user?.email || 'User'}</p>
-                  </div>
-                  <Link 
-                    href="/buyer/profile" 
-                    onClick={() => setIsProfileOpen(false)}
-                    className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-[#16a34a] transition-colors"
-                  >
-                    My Profile
-                  </Link>
-                  <Link 
-                    href="/settings" 
-                    onClick={() => setIsProfileOpen(false)}
-                    className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-[#16a34a] transition-colors"
-                  >
-                    Settings
-                  </Link>
-                  <button 
-                    onClick={() => {
-                      setIsProfileOpen(false);
-                      if (logout) logout(); 
-                    }}
-                    className="w-full text-left block px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50"
-                  >
-                    Log Out
-                  </button>
-                </div>
-              )}
-            </div>
+            <TopNavProfileMenu mode="home" />
           </div>
         ) : (
-          <>
-            <Link 
-              href="/login" 
-              className="text-slate-700 hover:text-slate-900 transition-colors"
+          <div className="flex items-center gap-4">
+            <Link
+              href="/login"
+              className="hidden font-medium text-slate-700 transition-colors hover:text-slate-900 sm:block"
             >
               Sign In
             </Link>
 
-            <Link 
-              href="/signup" 
-              className="flex items-center gap-2 bg-[#16a34a] text-white px-5 py-2.5 rounded-lg hover:bg-[#15803d] transition-colors shadow-sm"
+            <Link
+              href="/signup"
+              className="flex items-center gap-2 rounded-lg bg-teal-500 px-5 py-2.5 font-medium text-white shadow-sm transition-colors hover:bg-teal-600"
             >
               <Sparkles size={18} />
-              Start Cooking
+              <span className="hidden sm:inline">Start Cooking</span>
+              <span className="sm:hidden">Join</span>
             </Link>
-          </>
+          </div>
         )}
       </div>
     </nav>
