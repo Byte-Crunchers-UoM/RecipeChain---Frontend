@@ -1,7 +1,6 @@
-//src/app/(protected)/buyer/profile/page.jsx)
 "use client";
 
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   DollarSign,
@@ -20,6 +19,7 @@ import {
   CheckCircle2,
   X,
 } from "lucide-react";
+
 import EditProfileModal from "@/components/buyer/EditProfileModal";
 import WalletTopUpModal from "@/components/buyer/WalletTopUpModal";
 import WalletWithdrawModal from "@/components/buyer/WalletWithdrawModal";
@@ -30,9 +30,9 @@ import {
   updateMyBuyerProfile,
 } from "@/lib/api/buyer";
 import { getMyWalletOverview } from "@/lib/api/wallet";
+import { useAuth } from "@/context/AuthContext";
 import type { BuyerProfile } from "@/lib/types/buyer";
 import type { WalletOverview } from "@/lib/types/wallet";
-import { useAuth } from "@/context/AuthContext";
 
 const XRPL_EXPLORER_BASE =
   process.env.NEXT_PUBLIC_XRPL_EXPLORER_BASE_URL || "";
@@ -46,8 +46,11 @@ type ToastState = {
 /** Formats the user's join date to return only the year, or "Recently" if invalid/missing. */
 function formatJoinedYear(dateString?: string) {
   if (!dateString) return "Recently";
+
   const date = new Date(dateString);
+
   if (Number.isNaN(date.getTime())) return "Recently";
+
   return String(date.getFullYear());
 }
 
@@ -55,18 +58,21 @@ function formatJoinedYear(dateString?: string) {
 function formatWallet(wallet?: string) {
   if (!wallet) return "Not connected";
   if (wallet.length <= 18) return wallet;
+
   return `${wallet.slice(0, 7)}...${wallet.slice(-5)}`;
 }
 
 /** Constructs the external XRPL explorer URL for a specific wallet address. */
 function getWalletExplorerUrl(wallet?: string) {
   if (!wallet || !XRPL_EXPLORER_BASE) return "";
+
   return `${XRPL_EXPLORER_BASE.replace(/\/$/, "")}/${wallet}`;
 }
 
 /** Extracts up to two initials from the user's name or email for the avatar placeholder. */
 function getInitials(name?: string, email?: string) {
   const source = String(name || email || "U").trim();
+
   return source
     .split(" ")
     .filter(Boolean)
@@ -77,8 +83,11 @@ function getInitials(name?: string, email?: string) {
 
 function formatDate(dateString?: string) {
   if (!dateString) return "Recent";
+
   const date = new Date(dateString);
+
   if (Number.isNaN(date.getTime())) return "Recent";
+
   return date.toLocaleDateString();
 }
 
@@ -103,6 +112,7 @@ function StatCard({
       >
         {icon}
       </div>
+
       <p className="text-sm text-slate-600">{label}</p>
       <p className="mt-2 text-[17px] font-semibold text-slate-900">{value}</p>
       <p className="mt-1 text-sm text-slate-500">{subtext}</p>
@@ -142,7 +152,7 @@ function AppToast({
   if (!open) return null;
 
   return (
-    <div className="fixed right-4 top-4 z-120 w-full max-w-sm">
+    <div className="fixed right-4 top-4 z-[120] w-full max-w-sm">
       <div className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-xl">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 rounded-full bg-emerald-100 p-2">
@@ -177,6 +187,7 @@ function BuyerProfileContent() {
 
   const [profile, setProfile] = useState<BuyerProfile | null>(null);
   const [walletData, setWalletData] = useState<WalletOverview | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [walletLoading, setWalletLoading] = useState(true);
   const [error, setError] = useState("");
@@ -211,12 +222,16 @@ function BuyerProfileContent() {
   const loadWallet = async () => {
     try {
       setWalletLoading(true);
+
       const data = await getMyWalletOverview();
+
       setWalletData(data);
+
       return data;
     } catch (err) {
       console.error("Failed to load wallet overview:", err);
       setWalletData(null);
+
       return null;
     } finally {
       setWalletLoading(false);
@@ -319,6 +334,7 @@ function BuyerProfileContent() {
           if (cancelled) return;
 
           setWalletData(latestWallet);
+
           const latestBalance = Number(latestWallet.account_balance || 0);
           const latestTopups = (latestWallet.recent_transactions || []).filter(
             (tx) =>
@@ -400,7 +416,10 @@ function BuyerProfileContent() {
 
     /** Event handler triggered when a recipe is purchased successfully. */
     const handleRecipePurchased = (event: Event) => {
-      const customEvent = event as CustomEvent<{ title?: string; amount?: number }>;
+      const customEvent = event as CustomEvent<{
+        title?: string;
+        amount?: number;
+      }>;
       const title = String(customEvent.detail?.title || "").trim();
       const amount = Number(customEvent.detail?.amount || 0);
 
@@ -417,7 +436,20 @@ function BuyerProfileContent() {
       }
 
       showToast("Purchase successful", message);
-      void loadWallet();
+
+      void Promise.all([
+        loadWallet(),
+        getMyBuyerProfile()
+          .then((latestProfile) => {
+            setProfile(latestProfile);
+          })
+          .catch((profileRefreshError) => {
+            console.error(
+              "Failed to refresh buyer profile after purchase:",
+              profileRefreshError
+            );
+          }),
+      ]);
     };
 
     window.addEventListener(
@@ -459,7 +491,6 @@ function BuyerProfileContent() {
   const recentActivity = profile?.recent_activity || [];
   const badges = profile?.badges || [];
   const earnedBadges = badges.filter((badge) => badge.earned).length;
-
   const effectiveBalance = Number(
     walletData?.account_balance ?? profile?.account_balance ?? 0
   );
@@ -467,12 +498,13 @@ function BuyerProfileContent() {
   /** Closes the edit profile modal and removes the 'edit' query parameter if present. */
   const closeModal = () => {
     setModalOpen(false);
+
     if (shouldAutoOpenEdit) {
       router.replace(pathname, { scroll: false });
     }
   };
 
-  /** Saves the updated profile details (name, bio, photo) to the backend. */
+  /** Saves the updated profile details to the backend. */
   const handleSave = async (payload: {
     displayName: string;
     bio: string;
@@ -480,7 +512,9 @@ function BuyerProfileContent() {
   }) => {
     try {
       setSaving(true);
+
       const updated = await updateMyBuyerProfile(payload);
+
       setProfile(updated);
       window.dispatchEvent(new Event("buyer-profile-updated"));
       closeModal();
@@ -494,6 +528,7 @@ function BuyerProfileContent() {
   /** Copies the current effective wallet address to the user's clipboard. */
   const handleCopyWallet = async () => {
     if (!effectiveWalletAddress) return;
+
     try {
       await navigator.clipboard.writeText(effectiveWalletAddress);
       setCopied(true);
@@ -506,14 +541,16 @@ function BuyerProfileContent() {
   /** Permanently deletes the user's account and redirects them to the signup page. */
   const handlePermanentDelete = async () => {
     if (deleteConfirmText !== "DELETE") {
-      alert('Type DELETE to confirm permanent account deletion.');
+      alert("Type DELETE to confirm permanent account deletion.");
       return;
     }
 
     try {
       setDeleteLoading(true);
+
       await deleteMyAccountPermanently();
       await resetAll();
+
       router.replace("/signup");
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to delete account");
@@ -547,7 +584,7 @@ function BuyerProfileContent() {
         onCloseAction={() => setToast((prev) => ({ ...prev, open: false }))}
       />
 
-      <div className="mx-auto max-w-330 space-y-5">
+      <div className="mx-auto w-full max-w-[1320px] space-y-5 px-5 py-6 sm:px-6 lg:px-8">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             iconWrapClassName="bg-green-50"
@@ -561,6 +598,7 @@ function BuyerProfileContent() {
             value={`${Number(profile.total_spent_xrp || 0).toFixed(2)} XRP`}
             subtext={`${profile.total_purchases || 0} purchases`}
           />
+
           <StatCard
             iconWrapClassName="bg-blue-50"
             icon={
@@ -570,6 +608,7 @@ function BuyerProfileContent() {
             value={String(profile.total_purchases || 0)}
             subtext={`${profile.saved_recipes_count || 0} saved`}
           />
+
           <StatCard
             iconWrapClassName="bg-amber-50"
             icon={<Star className="h-5 w-5 text-amber-500" strokeWidth={2.4} />}
@@ -577,6 +616,7 @@ function BuyerProfileContent() {
             value={String(profile.feedback_count || 0)}
             subtext="Community activity"
           />
+
           <StatCard
             iconWrapClassName="bg-purple-50"
             icon={
@@ -597,10 +637,14 @@ function BuyerProfileContent() {
                 <img
                   src={profile.profile_picture}
                   alt={profile.display_name || profile.email}
-                  className="h-19 w-19 rounded-full object-cover shadow-md ring-4 ring-slate-50"
+                  className="shrink-0 rounded-full object-cover shadow-md ring-4 ring-slate-50"
+                  style={{ width: "76px", height: "76px" }}
                 />
               ) : (
-                <div className="flex h-19 w-19 items-center justify-center rounded-full bg-teal-500 text-2xl font-bold text-white shadow-md">
+                <div
+                  className="flex shrink-0 items-center justify-center rounded-full bg-teal-500 text-2xl font-bold text-white shadow-md"
+                  style={{ width: "76px", height: "76px" }}
+                >
                   {initials}
                 </div>
               )}
@@ -609,6 +653,7 @@ function BuyerProfileContent() {
                 <h1 className="truncate text-[18px] font-semibold text-slate-900">
                   {profile.display_name}
                 </h1>
+
                 <p className="mt-1 text-[15px] text-slate-500">
                   XRPL buyer • Member since {formatJoinedYear(profile.joined_at)}
                 </p>
@@ -617,6 +662,7 @@ function BuyerProfileContent() {
                   <span className="rounded-full bg-teal-50 px-3 py-1 text-sm font-medium text-teal-700">
                     Buyer
                   </span>
+
                   {profile.total_purchases >= 10 ? (
                     <span className="rounded-full bg-fuchsia-50 px-3 py-1 text-sm font-medium text-fuchsia-700">
                       Top Buyer
@@ -647,7 +693,7 @@ function BuyerProfileContent() {
               <div className="mt-5 grid gap-5 md:grid-cols-2">
                 <div className="min-w-0">
                   <p className="text-sm text-slate-500">Display Name</p>
-                  <p className="mt-2 wrap-break-word text-[15px] font-semibold text-slate-900">
+                  <p className="mt-2 break-words text-[15px] font-semibold text-slate-900">
                     {profile.display_name}
                   </p>
                 </div>
@@ -675,7 +721,7 @@ function BuyerProfileContent() {
 
                 <div className="min-w-0 md:col-span-2">
                   <p className="text-sm text-slate-500">Bio</p>
-                  <p className="mt-2 wrap-break-word text-[15px] leading-7 text-slate-900">
+                  <p className="mt-2 break-words text-[15px] leading-7 text-slate-900">
                     {profile.bio?.trim() || "No bio added yet"}
                   </p>
                 </div>
@@ -856,6 +902,7 @@ function BuyerProfileContent() {
                     Achievements
                   </h2>
                 </div>
+
                 <p className="text-sm text-slate-500">
                   {earnedBadges} of {badges.length} earned
                 </p>
@@ -880,6 +927,7 @@ function BuyerProfileContent() {
                     >
                       {badge.title}
                     </p>
+
                     <p className="mt-1 text-sm text-slate-600">
                       {badge.description}
                     </p>
@@ -931,6 +979,7 @@ function BuyerProfileContent() {
                   <p className="text-sm text-red-700">
                     Permanently delete this account and related buyer data.
                   </p>
+
                   <div className="mt-4">
                     <label className="mb-2 block text-sm font-medium text-red-700">
                       Type DELETE to confirm

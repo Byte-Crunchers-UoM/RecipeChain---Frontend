@@ -1,136 +1,117 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Bell, Sparkles } from 'lucide-react';
-import { SearchBar } from './marcketplace/SearchBar';
-import { usePathname } from 'next/navigation';
-import CartBadge from '../recipe/CartBadge';
-import { useAuth } from '@/context/AuthContext';
+import { Suspense } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Bell, Sparkles } from "lucide-react";
+import { usePathname } from "next/navigation";
+
+import { SearchBar } from "@/components/layout/marcketplace/SearchBar";
+import CartBadge from "@/components/recipe/CartBadge";
+import { useAuth } from "@/context/AuthContext";
+import CookbookTopSearch from "@/components/layout/CookbookTopSearch";
+import TopNavProfileMenu from "@/components/layout/TopNavProfileMenu";
 
 interface HeaderProps {
   notificationCount?: number;
 }
 
-export default function Header({ notificationCount = 0 }: HeaderProps) {
-  //  1. Bring in Auth State
-  const { isAuthenticated, user, isLoading, logout } = useAuth();
-  
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const pathname = usePathname();
-  const isMarcketplace = pathname === '/recipes' || pathname === '/buyer/recipes';
+function SearchFallback() {
+  return (
+    <div className="h-12 w-full max-w-3xl animate-pulse rounded-full bg-slate-100" />
+  );
+}
 
-  //  2. Click outside logic to close the dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsProfileOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+export default function Header({ notificationCount = 0 }: HeaderProps) {
+  const pathname = usePathname();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  const isMarketplacePage = pathname === "/recipes";
+  const isCookbookPage = pathname === "/buyer/cookbook";
+
+  const renderSearchArea = () => {
+    if (isMarketplacePage) {
+      return (
+        <div className="w-full max-w-xl">
+          <SearchBar />
+        </div>
+      );
+    }
+
+    if (isCookbookPage) {
+      return (
+        <Suspense fallback={<SearchFallback />}>
+          <CookbookTopSearch />
+        </Suspense>
+      );
+    }
+
+    return null;
+  };
 
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm relative z-50">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-6">
-        
-        {/* Logo and Title */}
-        <Link href="/" className="flex items-center gap-2 min-w-fit cursor-pointer">
-          <Image 
-            src="/logo.png" 
-            alt="RecipeChain Logo" 
-            width={40} 
-            height={40} 
-            className="w-10 h-10 object-contain"
+    <header className="relative z-50 shrink-0 border-b border-gray-200 bg-white shadow-sm">
+      <div className="flex h-[76px] w-full items-center gap-6 px-6">
+        <Link
+          href="/"
+          className="flex min-w-fit items-center gap-2.5"
+          aria-label="Go to RecipeChain home"
+        >
+          <Image
+            src="/Logo.png"
+            alt="RecipeChain Logo"
+            width={42}
+            height={42}
+            priority
+            className="h-10 w-10 object-contain"
           />
-          <h1 className="text-xl font-bold text-gray-800 tracking-tight">RecipeChain</h1>
+
+          <span className="text-xl font-bold tracking-tight text-slate-800">
+            RecipeChain
+          </span>
         </Link>
 
-        {/* Search Bar */}
-        {isMarcketplace && (
-          <div className="flex-1 max-w-lg mx-8 hidden md:block">
-            <SearchBar />
-          </div>
-        )}
+        <div className="hidden min-w-0 flex-1 justify-center md:flex">
+          {renderSearchArea()}
+        </div>
 
-        {/* Right Side Section */}
-        <div className="flex items-center gap-4 md:gap-6 font-medium">
+        <div className="ml-auto flex shrink-0 items-center justify-end gap-3 md:gap-4">
           {isLoading ? (
-            // Loading State
-            <div className="text-slate-500 animate-pulse text-sm">Loading...</div>
+            <div className="animate-pulse text-sm text-slate-500">
+              Loading...
+            </div>
           ) : isAuthenticated ? (
-            // 🛠️ 3. Logged In View (Notifications, Cart, Profile)
             <>
+              <button
+                type="button"
+                className="relative flex h-11 w-11 items-center justify-center rounded-full transition hover:bg-slate-100"
+                aria-label="Notifications"
+              >
+                <Bell size={22} className="text-slate-700" />
 
-              {/* Shopping Cart */}
+                {notificationCount > 0 ? (
+                  <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-teal-600 px-1 text-[10px] font-semibold text-white">
+                    {notificationCount}
+                  </span>
+                ) : null}
+              </button>
+
               <CartBadge />
 
-              {/* Profile Button & Dropdown */}
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="w-10 h-10 bg-teal-500 text-white rounded-full flex items-center justify-center hover:bg-teal-600 transition-colors font-semibold shadow-sm ring-2 ring-white"
-                >
-                  {user?.email?.[0]?.toUpperCase() || 'P'}
-                </button>
-                
-                {/* Profile Dropdown Menu */}
-                {isProfileOpen && (
-                  <div className="absolute right-0 mt-3 w-48 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {user?.email || 'User'}
-                      </p>
-                    </div>
-                    <Link 
-                      href="/buyer/dashboard" 
-                      onClick={() => setIsProfileOpen(false)}
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors"
-                    >
-                      Dashboard
-                    </Link>
-                    <Link 
-                    href="/buyer/profile" 
-                      onClick={() => setIsProfileOpen(false)}
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors"
-                    >
-                      My Profile
-                    </Link>
-                    <Link 
-                      href="/settings" 
-                      onClick={() => setIsProfileOpen(false)}
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors"
-                    >
-                      Settings
-                    </Link>
-                    <button 
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        if (logout) logout();
-                      }}
-                      className="w-full text-left block px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50"
-                    >
-                      Log Out
-                    </button>
-                  </div>
-                )}
-              </div>
+              <TopNavProfileMenu />
             </>
           ) : (
-            // 🛠️ 4. Logged Out View (Sign In / Sign Up)
-            <div className="flex items-center gap-4">
-              <Link 
-                href="/login" 
-                className="text-slate-700 hover:text-slate-900 transition-colors font-medium hidden sm:block"
+            <div className="flex items-center gap-3">
+              <Link
+                href="/login"
+                className="hidden text-sm font-medium text-slate-700 transition hover:text-slate-900 sm:block"
               >
                 Sign In
               </Link>
-              <Link 
-                href="/signup" 
-                className="flex items-center gap-2 bg-teal-500 text-white px-5 py-2.5 rounded-lg hover:bg-teal-600 transition-colors shadow-sm font-medium"
+
+              <Link
+                href="/signup"
+                className="flex items-center gap-2 rounded-lg bg-teal-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-teal-700"
               >
                 <Sparkles size={18} />
                 <span className="hidden sm:inline">Start Cooking</span>

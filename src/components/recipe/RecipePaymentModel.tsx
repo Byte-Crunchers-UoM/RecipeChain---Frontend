@@ -1,12 +1,21 @@
-//src/components/recipe/RecipePaymentModel.tsx
-'use client';
+// src/components/recipe/RecipePaymentModel.tsx
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Client, xrpToDrops } from 'xrpl';
-import { getXrplWalletFromWeb3AuthPrivKey } from '@/lib/xrpl/getXrplWallet';
-import { useWeb3Auth } from '@web3auth/modal/react';
-import { AlertTriangle, X, CheckCircle, ShieldCheck, Coins, PartyPopper } from 'lucide-react';
-import { Recipe } from '@/lib/types/Recipe';
+import React, { useEffect, useState } from "react";
+import {
+  AlertTriangle,
+  X,
+  CheckCircle,
+  ShieldCheck,
+  Coins,
+  PartyPopper,
+} from "lucide-react";
+
+import { Recipe } from "@/lib/types/Recipe";
+import {
+  buyRecipeWithWalletBalance,
+  type BuyRecipeResponse,
+} from "@/lib/api/wallet";
 
 interface RecipePaymentModalProps {
   recipe: Recipe | null;
@@ -15,248 +24,278 @@ interface RecipePaymentModalProps {
   onSuccess: () => void;
 }
 
-export default function RecipePaymentModal({ recipe, isOpen, onClose, onSuccess }: RecipePaymentModalProps) {
+function toStringValue(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  return "";
+}
+
+function toNumberValue(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getResponsePaymentId(data: BuyRecipeResponse): string {
+  return (
+    toStringValue(data.paymentId) ||
+    toStringValue(data.payment?.id) ||
+    toStringValue(data.payment?.payment_id)
+  );
+}
+
+function getResponseRecipeId(data: BuyRecipeResponse, fallbackRecipeId: string) {
+  return (
+    toStringValue(data.recipeId) ||
+    toStringValue(data.recipe?.id) ||
+    fallbackRecipeId
+  );
+}
+
+export default function RecipePaymentModal({
+  recipe,
+  isOpen,
+  onClose,
+  onSuccess,
+}: RecipePaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  
-  // State to control the display of the success animation/screen
-  const [isSuccess, setIsSuccess] = useState(false); 
-  
-  const { provider } = useWeb3Auth();
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  // Reset all states (processing, errors, success UI) when the modal closes
   useEffect(() => {
     if (!isOpen) {
-      const timer = setTimeout(() => {
+      const timer = window.setTimeout(() => {
         setIsSuccess(false);
         setErrorMsg(null);
         setIsProcessing(false);
-      }, 300); // Wait for the closing animation to finish before resetting
-      return () => clearTimeout(timer);
+      }, 300);
+
+      return () => window.clearTimeout(timer);
     }
+
+    return undefined;
   }, [isOpen]);
 
   if (!isOpen || !recipe) return null;
 
+  const price = toNumberValue(recipe.price);
+
   const executePurchase = async () => {
+    if (isProcessing) return;
+
     setIsProcessing(true);
     setErrorMsg(null);
 
-    // Guard clause: Check if the recipe is actually free
-    if (!recipe.price || recipe.price <= 0) {
-      setErrorMsg("This recipe is free and does not require a payment transaction.");
+    if (!recipe.recipe_id) {
+      setErrorMsg("Recipe ID is missing. Please refresh and try again.");
       setIsProcessing(false);
       return;
     }
 
-    const networkUrl = process.env.NEXT_PUBLIC_XRPL_NETWORK || "wss://s.altnet.rippletest.net:51233";
-    const platformAddress = process.env.NEXT_PUBLIC_PLATFORM_XRPL_ADDRESS || "rMCnGCWskZYWMd5Vr6SeCmPF1kgg2jX2tX";
-    
-    if (!platformAddress) {
-      setErrorMsg("Platform address not configured.");
-      setIsProcessing(false); 
+    if (price <= 0) {
+      setErrorMsg("This recipe is free and does not require wallet payment.");
+      setIsProcessing(false);
       return;
     }
-
-    if (!provider) {
-      setErrorMsg("Web3 provider not found. Please log in again.");
-      setIsProcessing(false); 
-      return;
-    }
-
-    let client = new Client(networkUrl);
 
     try {
-      await client.connect();
+      const data = await buyRecipeWithWalletBalance(recipe.recipe_id);
 
-      // STEP 1: Retrieve the user's XRPL wallet via Web3Auth private key
-      const privateKey = await provider.request({ method: "private_key" }) as string;
-      if (!privateKey) throw new Error("Could not get private key from Web3Auth");
-      const userWallet = await getXrplWalletFromWeb3AuthPrivKey(privateKey);
+      if (data?.ok === false) {
+        throw new Error(data.message || "Failed to purchase recipe");
+      }
 
-      // STEP 2: Construct the XRPL Payment Transaction
-      const recipeIdHex = Buffer.from(recipe.recipe_id.toString()).toString('hex');
-      const actionHex = Buffer.from('RecipePurchase').toString('hex');
+      const paymentId = getResponsePaymentId(data);
+      const purchasedRecipeId = getResponseRecipeId(data, recipe.recipe_id);
 
-      const tx: any = {
-        TransactionType: "Payment",
-        Account: userWallet.classicAddress,
-        Destination: platformAddress,
-        Amount: xrpToDrops(recipe.price), 
-        Memos: [{ Memo: { MemoType: actionHex, MemoData: recipeIdHex } }]
+      const purchaseDetail = {
+        title: data.payment?.recipe_title || data.recipe?.title || recipe.title || "",
+        amount:
+          toNumberValue(data.payment?.amount) ||
+          toNumberValue(data.recipe?.price) ||
+          price,
+        paymentId,
+        recipeId: purchasedRecipeId,
       };
 
-      // STEP 3: Sign, Submit, and Wait for Ledger Validation
-      const prepared = await client.autofill(tx);
-      const signed = userWallet.sign(prepared);
-      const result = await client.submitAndWait(signed.tx_blob);
-
-      // Extract transaction result code (e.g., "tesSUCCESS")
-      const txResult = typeof result?.result?.meta === 'string' ? result.result.meta : result?.result?.meta?.TransactionResult;
-      
-      if (result?.result?.hash == null || txResult !== "tesSUCCESS") {
-        throw new Error(`XRPL Transaction failed. Status: ${txResult || 'Unknown'}`);
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Recipe purchased successfully:", purchaseDetail);
       }
 
-      // STEP 4: Backend Verification (Confirm transaction validity & grant database access)
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-      const response = await fetch(`${apiUrl}/recipes/unlock`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: "include", 
-        body: JSON.stringify({ 
-          recipeId: recipe.recipe_id, 
-          transactionHash: result.result.hash 
-        })
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Backend verification failed.");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("recipe-purchased-successfully", {
+            detail: purchaseDetail,
+          })
+        );
       }
 
-      // STEP 5: Payment Confirmed! Trigger the success UI instead of closing immediately
       setIsSuccess(true);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to complete purchase. Please try again.";
 
-    } catch (error: any) {
-      console.error("Purchase error:", error);
-      
-      const errorMessage = error?.message || String(error);
-      
-      // Industrial standard error handling: Parse common XRPL errors into user-friendly messages
-      if (errorMessage.includes('tecUNFUNDED_PAYMENT') || errorMessage.includes('insufficient funds')) {
-        setErrorMsg("You don't have enough XRP to buy this recipe. Please add funds to your wallet and try again.");
-      } else if (errorMessage.includes('User rejected') || errorMessage.includes('declined')) {
-        setErrorMsg("Payment was cancelled by the user.");
+      if (errorMessage.toLowerCase().includes("insufficient")) {
+        setErrorMsg(
+          "You do not have enough RecipeChain wallet balance to buy this recipe. Please top up your wallet and try again."
+        );
+      } else if (errorMessage.toLowerCase().includes("already purchased")) {
+        setErrorMsg("You already purchased this recipe.");
       } else {
-        setErrorMsg(errorMessage || "Failed to complete purchase. Please try again.");
+        setErrorMsg(errorMessage);
       }
     } finally {
-      // Always disconnect from the XRPL client to prevent memory leaks
-      await client.disconnect();
       setIsProcessing(false);
     }
   };
 
   return (
     <div className="fixed inset-0 z-9999 flex items-center justify-center p-4">
-      {/* Darkened Backdrop: Click outside to close (disabled during processing or success screen) */}
-      <div 
-        className="absolute inset-0 bg-slate-900/60 transition-opacity backdrop-blur-sm"
+      <div
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
         onClick={!isProcessing && !isSuccess ? onClose : undefined}
       />
 
-      <div className="relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 z-10">
-        
-        {/* Top decorative bar: Turns green upon success */}
-        <div className={`h-2 transition-colors duration-500 ${isSuccess ? 'bg-emerald-500' : 'bg-linear-to-r from-teal-500 to-blue-500'}`} />
-        
-        {/* Close Button: Hidden during success state to guide user to the primary action button */}
-        {!isSuccess && (
-          <button 
+      <div className="relative z-10 w-full max-w-md animate-in overflow-hidden rounded-3xl bg-white shadow-2xl fade-in zoom-in duration-300">
+        <div
+          className={[
+            "h-2 transition-colors duration-500",
+            isSuccess
+              ? "bg-emerald-500"
+              : "bg-linear-to-r from-teal-500 to-blue-500",
+          ].join(" ")}
+        />
+
+        {!isSuccess ? (
+          <button
+            type="button"
             onClick={onClose}
             disabled={isProcessing}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 text-slate-400 transition disabled:opacity-50"
+            className="absolute right-4 top-4 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 disabled:opacity-50"
+            aria-label="Close payment modal"
           >
             <X size={20} />
           </button>
-        )}
+        ) : null}
 
         {isSuccess ? (
-        //SUCCESS UI (Displayed after payment clears)
-          <div className="p-10 text-center animate-in zoom-in duration-500">
-            {/* Animated Celebration Icon */}
-            <div className="relative mx-auto w-24 h-24 mb-6">
-              <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-75"></div>
-              <div className="relative flex items-center justify-center w-24 h-24 bg-emerald-100 rounded-full">
-                <PartyPopper className="w-12 h-12 text-emerald-500 animate-bounce" />
+          <div className="animate-in p-10 text-center zoom-in duration-500">
+            <div className="relative mx-auto mb-6 h-24 w-24">
+              <div className="absolute inset-0 animate-ping rounded-full bg-emerald-100 opacity-75" />
+              <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100">
+                <PartyPopper className="h-12 w-12 animate-bounce text-emerald-500" />
               </div>
             </div>
-            
-            <h3 className="text-3xl font-extrabold text-slate-900 mb-2 tracking-tight">
+
+            <h3 className="mb-2 text-3xl font-extrabold tracking-tight text-slate-900">
               Recipe Unlocked!
             </h3>
-            <p className="text-slate-500 mb-8 leading-relaxed">
-              Payment successful! You now have full lifetime access to the premium ingredients and instructions.
+
+            <p className="mb-8 leading-relaxed text-slate-500">
+              Payment successful. This recipe is now available in your cookbook,
+              and your RecipeChain wallet balance has been updated.
             </p>
-            
-            {/* Final Call to Action: Redirects user to the full recipe view */}
+
             <button
-              onClick={onSuccess} 
-              className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-[0.98]"
+              type="button"
+              onClick={onSuccess}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-4 text-lg font-bold text-white shadow-lg shadow-emerald-200 transition-all hover:bg-emerald-600 active:scale-[0.98]"
             >
-              <CheckCircle className="w-5 h-5" /> View Full Recipe
+              <CheckCircle className="h-5 w-5" />
+              View Full Recipe
             </button>
           </div>
         ) : (
-          //PAYMENT UI (Initial Checkout Screen)
           <div className="p-8">
-            {/* Payment Header Icon */}
-            <div className="flex justify-center mb-6">
+            <div className="mb-6 flex justify-center">
               <div className="relative">
-                <div className="h-20 w-20 bg-teal-50 rounded-full flex items-center justify-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-teal-50">
                   <Coins size={40} className="text-teal-600" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-sm">
+
+                <div className="absolute -bottom-1 -right-1 rounded-full bg-white p-1 shadow-sm">
                   <ShieldCheck size={24} className="text-blue-500" />
                 </div>
               </div>
             </div>
 
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-slate-900">Unlock Recipe?</h3>
-              <p className="text-slate-500 mt-2 text-sm">
-                Authorize a secure XRPL payment to access this premium content.
+            <div className="mb-8 text-center">
+              <h3 className="text-2xl font-bold text-slate-900">
+                Unlock Recipe?
+              </h3>
+
+              <p className="mt-2 text-sm text-slate-500">
+                Pay securely using your RecipeChain wallet balance.
               </p>
             </div>
 
-            {/* Receipt Summary Box */}
-            <div className="bg-slate-50 rounded-2xl p-5 mb-6 border border-slate-100">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Item</span>
-                <span className="text-sm font-semibold text-slate-800 truncate max-w-45">{recipe.title}</span>
+            <div className="mb-6 rounded-2xl border border-slate-100 bg-slate-50 p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                  Item
+                </span>
+
+                <span className="max-w-45 truncate text-sm font-semibold text-slate-800">
+                  {recipe.title}
+                </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Price</span>
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                  Total Price
+                </span>
+
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xl font-black text-teal-600">{recipe.price || 0}</span>
+                  <span className="text-xl font-black text-teal-600">
+                    {price.toFixed(2)}
+                  </span>
+
                   <span className="text-xs font-bold text-teal-500">XRP</span>
                 </div>
               </div>
             </div>
 
-            {/* Blockchain Immutability Warning */}
-            <div className="flex gap-3 bg-amber-50 border border-amber-100 rounded-2xl p-4 mb-4">
-              <AlertTriangle className="text-amber-500 shrink-0" size={20} />
-              <p className="text-[13px] text-amber-800 leading-snug">
-                Blockchain transactions are permanent. Ensure sufficient balance before confirming.
+            <div className="mb-4 flex gap-3 rounded-2xl border border-amber-100 bg-amber-50 p-4">
+              <AlertTriangle className="shrink-0 text-amber-500" size={20} />
+
+              <p className="text-[13px] leading-snug text-amber-800">
+                This will deduct XRP from your RecipeChain buyer wallet balance.
+                Make sure your wallet has enough balance before confirming.
               </p>
             </div>
 
-            {/* Error Message Display */}
-            {errorMsg && (
-              <div className="mb-4 text-[13px] font-medium text-red-600 bg-red-50 p-3 rounded-xl border border-red-100 text-center animate-in fade-in duration-200">
+            {errorMsg ? (
+              <div className="mb-4 animate-in rounded-xl border border-red-100 bg-red-50 p-3 text-center text-[13px] font-medium text-red-600 fade-in duration-200">
                 {errorMsg}
               </div>
-            )}
+            ) : null}
 
-            {/* Action Buttons */}
             <div className="flex flex-col gap-3">
               <button
+                type="button"
                 onClick={executePurchase}
                 disabled={isProcessing}
-                className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-teal-200 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 py-4 font-bold text-white shadow-lg shadow-teal-200 transition-all hover:bg-teal-700 active:scale-[0.98] disabled:opacity-50"
               >
                 {isProcessing ? (
-                  <><div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing Payment...</>
+                  <>
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Processing Payment...
+                  </>
                 ) : (
-                  <><CheckCircle size={20} /> Confirm & Pay</>
+                  <>
+                    <CheckCircle size={20} />
+                    Confirm & Pay
+                  </>
                 )}
               </button>
+
               <button
+                type="button"
                 onClick={onClose}
                 disabled={isProcessing}
-                className="w-full bg-white hover:bg-slate-50 text-slate-500 font-semibold py-4 rounded-2xl transition disabled:opacity-30"
+                className="w-full rounded-2xl bg-white py-4 font-semibold text-slate-500 transition hover:bg-slate-50 disabled:opacity-30"
               >
                 Cancel
               </button>

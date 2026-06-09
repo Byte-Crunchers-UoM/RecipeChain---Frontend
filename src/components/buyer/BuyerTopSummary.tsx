@@ -4,11 +4,12 @@ type Props = {
   displayName?: string;
   email?: string;
   profilePicture?: string;
-  onShowProfile?: () => void;
+  onShowProfileAction?: () => void;
 };
 
 function getInitials(name?: string, email?: string) {
   const source = String(name || email || "U").trim();
+
   return source
     .split(" ")
     .filter(Boolean)
@@ -21,7 +22,7 @@ export default function BuyerTopSummary({
   displayName,
   email,
   profilePicture,
-  onShowProfile,
+  onShowProfileAction,
 }: Props) {
   const initials = getInitials(displayName, email);
 
@@ -44,7 +45,9 @@ export default function BuyerTopSummary({
           <p className="truncate text-2xl font-semibold text-slate-900">
             {displayName || email || "Buyer"}
           </p>
+
           <p className="truncate text-base text-slate-500">{email || "-"}</p>
+
           <p className="mt-1 text-base text-slate-400">
             XRPL buyer • Recipe collector
           </p>
@@ -53,7 +56,7 @@ export default function BuyerTopSummary({
 
       <button
         type="button"
-        onClick={onShowProfile}
+        onClick={onShowProfileAction}
         className="mt-5 w-full rounded-2xl bg-teal-600 px-4 py-3 text-lg font-semibold text-white hover:bg-teal-700"
       >
         Show Profile
