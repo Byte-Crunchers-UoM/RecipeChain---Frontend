@@ -13,6 +13,9 @@ export type WalletTransactionType =
 
 export type WalletTransactionDirection = "credit" | "debit" | string;
 
+// Backward-compatible alias for files that may import WalletDirection.
+export type WalletDirection = WalletTransactionDirection;
+
 export type WalletTransactionStatus =
   | "pending"
   | "processing"

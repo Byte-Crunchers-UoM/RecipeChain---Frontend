@@ -145,7 +145,9 @@ export default function SignupPage() {
       const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const web3AuthClientId = process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID;
 
-      if (!apiBase) throw new Error("Missing NEXT_PUBLIC_API_URL");
+      if (!apiBase) {
+        throw new Error("Missing NEXT_PUBLIC_API_URL");
+      }
 
       if (!web3AuthClientId) {
         // Surfacing this early avoids confusing Web3Auth errors later in the flow.
@@ -259,7 +261,7 @@ export default function SignupPage() {
               width={120}
               height={120}
               priority
-              className="h-auto w-[120px]"
+              className="h-auto w-30"
             />
           </div>
 

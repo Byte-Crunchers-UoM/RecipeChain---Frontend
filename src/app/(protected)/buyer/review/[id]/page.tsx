@@ -17,24 +17,33 @@ import {
   getCookbookRecipeForReview,
   saveCookbookRecipeReview,
 } from "@/lib/api/cookbook";
-import type { CookbookRecipeReviewData } from "@/types/cookbook";
+import type { CookbookRecipeReviewData } from "@/lib/types/cookbook";
 
 const MAX_PHOTOS = 5;
 const MAX_COMMENT_LENGTH = 500;
 
+type ReviewImage = {
+  image_id: string | number;
+  image_url: string;
+};
+
 function formatMinutes(prep?: number | null, cook?: number | null) {
   const total = Number(prep || 0) + Number(cook || 0);
+
   if (!total) return "Time not available";
+
   return `${total} min`;
 }
 
 function getSafeImageSrc(value?: string | null) {
   const cleaned = String(value || "").trim();
+
   return cleaned.length > 0 ? cleaned : null;
 }
 
 function getDifficultyLabel(value?: string | null) {
   const safe = String(value || "").trim();
+
   return safe || "Not specified";
 }
 
@@ -71,6 +80,7 @@ export default function BuyerRecipeReviewPage() {
         setFormError("");
 
         const data = await getCookbookRecipeForReview(recipeId);
+
         setRecipe(data);
         setRating(Number(data?.my_feedback?.rating || 0));
         setComment(String(data?.my_feedback?.comment || ""));
@@ -90,6 +100,7 @@ export default function BuyerRecipeReviewPage() {
 
   useEffect(() => {
     const urls = selectedPhotos.map((file) => URL.createObjectURL(file));
+
     setPhotoPreviewUrls(urls);
 
     return () => {
@@ -99,7 +110,14 @@ export default function BuyerRecipeReviewPage() {
 
   const imageSrc = useMemo(() => getSafeImageSrc(recipe?.image_url), [recipe]);
 
-  const existingPhotoCount = recipe?.my_feedback?.images?.length || 0;
+  const existingReviewImages = useMemo<ReviewImage[]>(() => {
+    return (recipe?.my_feedback?.images || []).map((image: ReviewImage) => ({
+      image_id: image.image_id,
+      image_url: image.image_url,
+    }));
+  }, [recipe?.my_feedback?.images]);
+
+  const existingPhotoCount = existingReviewImages.length;
   const remainingSlots = Math.max(
     MAX_PHOTOS - existingPhotoCount - selectedPhotos.length,
     0
@@ -148,12 +166,13 @@ export default function BuyerRecipeReviewPage() {
     }
 
     const limited = validImages.slice(0, remainingSlots);
+
     setSelectedPhotos((prev) => [...prev, ...limited]);
     setFormError("");
     setSuccessMessage("");
-    
+
     if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+      fileInputRef.current.value = "";
     }
   };
 
@@ -204,12 +223,16 @@ export default function BuyerRecipeReviewPage() {
       setSaving(false);
     }
   };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 pb-20">
         <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-6 py-4 shadow-sm">
           <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
-          <span className="text-sm font-medium text-slate-600">Loading your cookbook recipe...</span>
+
+          <span className="text-sm font-medium text-slate-600">
+            Loading your cookbook recipe...
+          </span>
         </div>
       </div>
     );
@@ -219,9 +242,15 @@ export default function BuyerRecipeReviewPage() {
     return (
       <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-red-200 bg-red-50 p-8 text-center">
         <AlertCircle className="mx-auto mb-4 h-10 w-10 text-red-500" />
-        <h2 className="text-lg font-semibold text-red-800">Oops! Something went wrong</h2>
+
+        <h2 className="text-lg font-semibold text-red-800">
+          Oops! Something went wrong
+        </h2>
+
         <p className="mt-2 text-red-600">{pageError}</p>
+
         <button
+          type="button"
           onClick={() => router.push("/buyer/cookbook")}
           className="mt-6 rounded-full bg-red-100 px-6 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-200"
         >
@@ -234,7 +263,10 @@ export default function BuyerRecipeReviewPage() {
   const totalPhotos = existingPhotoCount + photoPreviewUrls.length;
 
   return (
-    <div className="bg-slate-50 px-4 py-8 sm:px-6 md:py-12" style={{ minHeight: "calc(100vh - 76px)" }}>
+    <div
+      className="bg-slate-50 px-4 py-8 sm:px-6 md:py-12"
+      style={{ minHeight: "calc(100vh - 76px)" }}
+    >
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex items-center justify-between">
           <button
@@ -248,8 +280,7 @@ export default function BuyerRecipeReviewPage() {
         </div>
 
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
-          
-          <div 
+          <div
             className="relative flex w-full flex-col justify-end overflow-hidden bg-slate-100"
             style={{ minHeight: "240px" }}
           >
@@ -261,6 +292,7 @@ export default function BuyerRecipeReviewPage() {
                     alt={recipe?.title || "Recipe"}
                     className="h-full w-full object-cover"
                   />
+
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent opacity-80" />
                 </>
               ) : (
@@ -270,48 +302,74 @@ export default function BuyerRecipeReviewPage() {
               )}
             </div>
 
-            <div className={`relative z-10 mt-auto w-full p-6 sm:p-8 ${imageSrc ? "text-white" : "text-slate-900"}`}>
+            <div
+              className={`relative z-10 mt-auto w-full p-6 sm:p-8 ${
+                imageSrc ? "text-white" : "text-slate-900"
+              }`}
+            >
               <div className="mb-3 flex items-center gap-2">
                 {hasExistingReview ? (
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border ${
-                    imageSrc 
-                      ? "bg-white/20 text-white border-white/30 backdrop-blur-md" 
-                      : "bg-slate-200/50 text-slate-800 border-slate-300"
-                  }`}>
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
+                      imageSrc
+                        ? "border-white/30 bg-white/20 text-white backdrop-blur-md"
+                        : "border-slate-300 bg-slate-200/50 text-slate-800"
+                    }`}
+                  >
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     Editing Review
                   </span>
                 ) : (
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border ${
-                    imageSrc 
-                      ? "bg-teal-500/80 text-white border-teal-400/50 backdrop-blur-md" 
-                      : "bg-teal-100 text-teal-800 border-teal-200"
-                  }`}>
-                    <Star className={`h-3.5 w-3.5 ${imageSrc ? "fill-white/80" : "fill-teal-800"}`} />
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
+                      imageSrc
+                        ? "border-teal-400/50 bg-teal-500/80 text-white backdrop-blur-md"
+                        : "border-teal-200 bg-teal-100 text-teal-800"
+                    }`}
+                  >
+                    <Star
+                      className={`h-3.5 w-3.5 ${
+                        imageSrc ? "fill-white/80" : "fill-teal-800"
+                      }`}
+                    />
                     New Review
                   </span>
                 )}
               </div>
-              
+
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
                 {recipe?.title}
               </h1>
 
-              <div className={`mt-4 flex flex-wrap items-center gap-4 text-sm font-medium ${imageSrc ? "text-slate-200" : "text-slate-600"}`}>
+              <div
+                className={`mt-4 flex flex-wrap items-center gap-4 text-sm font-medium ${
+                  imageSrc ? "text-slate-200" : "text-slate-600"
+                }`}
+              >
                 <div className="flex items-center gap-1.5">
-                  <Clock3 size={16} className={imageSrc ? "text-slate-300" : "text-slate-500"} />
+                  <Clock3
+                    size={16}
+                    className={imageSrc ? "text-slate-300" : "text-slate-500"}
+                  />
                   {formatMinutes(recipe?.prep_time, recipe?.cook_time)}
                 </div>
+
                 <div className="flex items-center gap-1.5">
                   <Star size={16} color="#fbbf24" fill="#fbbf24" />
                   {Number(recipe?.rating_avg || 0).toFixed(1)} Rating
                 </div>
-                {recipe?.difficulty_level && (
+
+                {recipe?.difficulty_level ? (
                   <div className="flex items-center gap-1.5 capitalize">
-                    <ChefHat size={16} className={imageSrc ? "text-slate-300" : "text-slate-500"} />
+                    <ChefHat
+                      size={16}
+                      className={
+                        imageSrc ? "text-slate-300" : "text-slate-500"
+                      }
+                    />
                     {getDifficultyLabel(recipe.difficulty_level)}
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -319,24 +377,27 @@ export default function BuyerRecipeReviewPage() {
           <div className="p-6 sm:p-8">
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-slate-900">
-                {hasExistingReview ? "Update your experience" : "How was the recipe?"}
+                {hasExistingReview
+                  ? "Update your experience"
+                  : "How was the recipe?"}
               </h2>
+
               <p className="mt-1 text-sm text-slate-500">{reviewHelperText}</p>
             </div>
 
-            {successMessage && (
+            {successMessage ? (
               <div className="mb-8 flex items-start gap-3 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-800 shadow-sm">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-teal-600" />
                 <span className="font-medium">{successMessage}</span>
               </div>
-            )}
+            ) : null}
 
-            {formError && (
+            {formError ? (
               <div className="mb-8 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 shadow-sm">
                 <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
                 <span className="font-medium">{formError}</span>
               </div>
-            )}
+            ) : null}
 
             <div className="flex flex-col gap-8">
               <div>
@@ -374,8 +435,12 @@ export default function BuyerRecipeReviewPage() {
                     })}
                   </div>
 
-                  <div className="mt-4 ml-2 text-sm font-medium transition-colors duration-200">
-                    <span className={visibleRating > 0 ? "text-amber-600" : "text-slate-400"}>
+                  <div className="ml-2 mt-4 text-sm font-medium transition-colors duration-200">
+                    <span
+                      className={
+                        visibleRating > 0 ? "text-amber-600" : "text-slate-400"
+                      }
+                    >
                       {visibleRating === 0
                         ? "Tap a star to rate"
                         : visibleRating === 1
@@ -407,10 +472,13 @@ export default function BuyerRecipeReviewPage() {
                     }}
                     maxLength={MAX_COMMENT_LENGTH}
                     placeholder="Did you make any changes? How did it turn out? Share your tips with others..."
-                    className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/50 p-5 text-base leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-teal-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-400/10 transition-all duration-200 min-h-[160px]"
+                    className="min-h-[160px] w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/50 p-5 text-base leading-relaxed text-slate-800 placeholder:text-slate-400 transition-all duration-200 focus:border-teal-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-400/10"
                     style={{ minHeight: "160px" }}
                   />
-                  <div className={`mt-2 flex justify-end text-xs font-medium ${commentCounterColor}`}>
+
+                  <div
+                    className={`mt-2 flex justify-end text-xs font-medium ${commentCounterColor}`}
+                  >
                     {comment.length} / {MAX_COMMENT_LENGTH}
                   </div>
                 </div>
@@ -419,8 +487,12 @@ export default function BuyerRecipeReviewPage() {
               <div>
                 <div className="flex flex-row flex-wrap items-center justify-between gap-2">
                   <label className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-                    Food Photos <span className="text-slate-400 normal-case tracking-normal font-normal">(Optional)</span>
+                    Food Photos{" "}
+                    <span className="font-normal normal-case tracking-normal text-slate-400">
+                      (Optional)
+                    </span>
                   </label>
+
                   <span className="text-xs font-medium text-slate-400">
                     {remainingSlots} slots left
                   </span>
@@ -451,19 +523,22 @@ export default function BuyerRecipeReviewPage() {
                     <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white text-teal-600 shadow-sm ring-1 ring-slate-100">
                       <ImagePlus size={28} />
                     </div>
+
                     <div className="text-base font-semibold text-slate-700">
                       Click to upload or drag and drop
                     </div>
+
                     <div className="mt-1 text-sm text-slate-500">
                       Share up to {MAX_PHOTOS} photos of your dish
                     </div>
+
                     <div className="mt-4 text-xs text-slate-400">
                       JPG, PNG, WEBP (Max 5MB each)
                     </div>
                   </div>
                 ) : (
                   <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    {recipe?.my_feedback?.images?.map((image) => (
+                    {existingReviewImages.map((image) => (
                       <div
                         key={image.image_id}
                         className="group relative aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
@@ -486,7 +561,9 @@ export default function BuyerRecipeReviewPage() {
                           alt={`Selected ${index + 1}`}
                           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                         />
+
                         <div className="absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/20" />
+
                         <button
                           type="button"
                           onClick={(e) => {
@@ -501,7 +578,7 @@ export default function BuyerRecipeReviewPage() {
                       </div>
                     ))}
 
-                    {remainingSlots > 0 && (
+                    {remainingSlots > 0 ? (
                       <div
                         onDragOver={(e) => {
                           e.preventDefault();
@@ -529,7 +606,7 @@ export default function BuyerRecipeReviewPage() {
                           {remainingSlots} left
                         </span>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 )}
 

@@ -2,18 +2,45 @@ import type {
   CookbookItem,
   CookbookRecipeReviewData,
   CookbookRecipeDetails,
-} from "@/types/cookbook";
+} from "@/lib/types/cookbook";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
-async function parseJson(response: Response) {
+type ApiMessageResponse = {
+  message?: string;
+  error?: string;
+};
+
+type CookbookListResponse = ApiMessageResponse & {
+  items?: CookbookItem[];
+};
+
+type CookbookRecipeDetailsResponse = ApiMessageResponse & {
+  recipe?: CookbookRecipeDetails;
+};
+
+type CookbookRecipeReviewResponse = ApiMessageResponse & {
+  recipe?: CookbookRecipeReviewData;
+};
+
+type ToggleFavoriteResponse = ApiMessageResponse & {
+  is_favorite?: boolean;
+  saved_id?: string | null;
+};
+
+async function parseJson<T>(response: Response): Promise<T> {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(data?.message || "Request failed");
+    const errorData = data as ApiMessageResponse | null;
+
+    throw new Error(
+      errorData?.message || errorData?.error || "Request failed"
+    );
   }
 
-  return data;
+  return data as T;
 }
 
 export async function getMyCookbook(params?: {
@@ -35,19 +62,22 @@ export async function getMyCookbook(params?: {
     query.set("favoritesOnly", "true");
   }
 
+  const queryString = query.toString();
+
   const response = await fetch(
-    `${API_URL}/buyer/me/cookbook${query.toString() ? `?${query.toString()}` : ""}`,
+    `${API_URL}/buyer/me/cookbook${queryString ? `?${queryString}` : ""}`,
     {
       method: "GET",
       credentials: "include",
       headers: {
-        "Content-Type": "application/json",
+        Accept: "application/json",
       },
       cache: "no-store",
     }
   );
 
-  const data = await parseJson(response);
+  const data = await parseJson<CookbookListResponse>(response);
+
   return data.items || [];
 }
 
@@ -58,12 +88,17 @@ export async function getCookbookRecipeDetails(
     method: "GET",
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      Accept: "application/json",
     },
     cache: "no-store",
   });
 
-  const data = await parseJson(response);
+  const data = await parseJson<CookbookRecipeDetailsResponse>(response);
+
+  if (!data?.recipe) {
+    throw new Error("Cookbook recipe details were not returned by the server");
+  }
+
   return data.recipe;
 }
 
@@ -76,13 +111,18 @@ export async function getCookbookRecipeForReview(
       method: "GET",
       credentials: "include",
       headers: {
-        "Content-Type": "application/json",
+        Accept: "application/json",
       },
       cache: "no-store",
     }
   );
 
-  const data = await parseJson(response);
+  const data = await parseJson<CookbookRecipeReviewResponse>(response);
+
+  if (!data?.recipe) {
+    throw new Error("Cookbook recipe review data was not returned by the server");
+  }
+
   return data.recipe;
 }
 
@@ -91,8 +131,9 @@ export async function saveCookbookRecipeReview(payload: {
   rating: number;
   comment: string;
   photos?: File[];
-}) {
+}): Promise<ApiMessageResponse> {
   const formData = new FormData();
+
   formData.append("rating", String(payload.rating));
   formData.append("comment", payload.comment);
 
@@ -109,7 +150,7 @@ export async function saveCookbookRecipeReview(payload: {
     }
   );
 
-  return await parseJson(response);
+  return parseJson<ApiMessageResponse>(response);
 }
 
 export async function toggleCookbookFavorite(recipeId: string): Promise<{
@@ -123,10 +164,21 @@ export async function toggleCookbookFavorite(recipeId: string): Promise<{
       method: "POST",
       credentials: "include",
       headers: {
+        Accept: "application/json",
         "Content-Type": "application/json",
       },
     }
   );
 
-  return await parseJson(response);
+  const data = await parseJson<ToggleFavoriteResponse>(response);
+
+  if (typeof data.is_favorite !== "boolean") {
+    throw new Error("Favorite status was not returned by the server");
+  }
+
+  return {
+    is_favorite: data.is_favorite,
+    saved_id: data.saved_id ?? null,
+    message: data.message || "Favorite status updated",
+  };
 }

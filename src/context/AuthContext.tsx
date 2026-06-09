@@ -1,3 +1,4 @@
+// src/context/AuthContext.tsx
 "use client";
 
 import React, {
@@ -9,7 +10,7 @@ import React, {
   useState,
 } from "react";
 
-import type { UserRole } from "@/types";
+import type { UserRole } from "@/lib/types";
 
 export type MeUser = {
   user_id: string;
@@ -41,7 +42,10 @@ type ApiMeResponse = {
   ok?: boolean;
   data?: MeUser | { user?: MeUser };
   user?: MeUser;
-  profile?: Partial<MeUser>;
+  profile?: Partial<MeUser> & {
+    id?: string;
+    display_name?: string;
+  };
   message?: string;
   error?: string;
 };
@@ -88,7 +92,9 @@ function normalizeUser(rawUser: unknown): MeUser | null {
   };
 }
 
-function extractUserFromSessionResponse(json: ApiMeResponse | null): MeUser | null {
+function extractUserFromSessionResponse(
+  json: ApiMeResponse | null
+): MeUser | null {
   if (!json) return null;
 
   if (json.data && typeof json.data === "object" && "user" in json.data) {
@@ -102,6 +108,10 @@ function extractUserFromSessionResponse(json: ApiMeResponse | null): MeUser | nu
   );
 }
 
+/**
+ * Provider component that manages user authentication state,
+ * session refreshing, Web3Auth synchronization, logout, and role state.
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<MeUser | null>(null);
   const [role, setRoleState] = useState<UserRole | null>(null);
@@ -302,6 +312,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/** Custom hook to access the authentication context securely. */
 export function useAuth(): AuthContextType {
   const ctx = useContext(AuthContext);
 

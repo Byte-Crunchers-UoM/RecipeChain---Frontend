@@ -14,16 +14,22 @@ import {
   BookOpen,
   MessageSquareText,
 } from "lucide-react";
-import type { CookbookItem, CookbookRecipeDetails } from "@/types/cookbook";
+import type {
+  CookbookItem,
+  CookbookRecipeDetails,
+} from "@/lib/types/cookbook";
 
 function formatMinutes(prep?: number | null, cook?: number | null) {
   const total = Number(prep || 0) + Number(cook || 0);
+
   if (!total) return "Time not available";
+
   return `${total} min`;
 }
 
 function getSafeImageSrc(value?: string | null) {
   const cleaned = String(value || "").trim();
+
   return cleaned.length > 0 ? cleaned : null;
 }
 
@@ -33,7 +39,9 @@ function getPlaceholderLabel(title?: string | null) {
 
 function getDifficultyLabel(value?: string | null) {
   const safe = String(value || "").trim();
+
   if (!safe) return "Not specified";
+
   return safe;
 }
 
@@ -49,6 +57,7 @@ function normalizeIngredients(ingredients: unknown): string[] {
         const name = String(obj.name || obj.ingredient || "").trim();
         const qty = String(obj.quantity || obj.amount || "").trim();
         const unit = String(obj.unit || "").trim();
+
         return [qty, unit, name].filter(Boolean).join(" ").trim();
       }
 
@@ -66,6 +75,7 @@ function normalizeInstructions(instructions: unknown): string[] {
 
       if (item && typeof item === "object") {
         const obj = item as Record<string, unknown>;
+
         return String(obj.step || obj.instruction || obj.text || "").trim();
       }
 
@@ -78,23 +88,20 @@ function statusChip(reviewed: boolean, favorite: boolean) {
   if (reviewed) {
     return {
       text: "Reviewed",
-      className:
-        "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+      className: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
     };
   }
 
   if (favorite) {
     return {
       text: "Favorite",
-      className:
-        "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200",
+      className: "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200",
     };
   }
 
   return {
     text: "Not reviewed",
-    className:
-      "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
+    className: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
   };
 }
 
@@ -171,7 +178,7 @@ export default function RecipeQuickViewModal({
         <div
           className="flex w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.28)]"
           style={{ maxHeight: "calc(100vh - 24px)" }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
         >
           <div className="shrink-0 border-b border-slate-200 bg-white">
             <div className="flex items-start justify-between gap-4 px-4 py-4 sm:px-6 sm:py-5">
@@ -206,7 +213,10 @@ export default function RecipeQuickViewModal({
                   <div className="flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-slate-700">
                     <Clock3 size={14} className="text-teal-600" />
                     <span className="font-medium">
-                      {formatMinutes(detailSource.prep_time, detailSource.cook_time)}
+                      {formatMinutes(
+                        detailSource.prep_time,
+                        detailSource.cook_time
+                      )}
                     </span>
                   </div>
 
@@ -289,6 +299,7 @@ export default function RecipeQuickViewModal({
                           <h3 className="text-lg font-semibold text-slate-900">
                             Ingredients
                           </h3>
+
                           <p className="mt-1 text-xs text-slate-500">
                             Everything you need for this recipe
                           </p>
@@ -329,6 +340,7 @@ export default function RecipeQuickViewModal({
                             <Clock3 size={16} />
                             Total time
                           </span>
+
                           <span className="font-medium text-slate-800">
                             {formatMinutes(
                               detailSource.prep_time,
@@ -342,6 +354,7 @@ export default function RecipeQuickViewModal({
                             <Sparkles size={16} />
                             Difficulty
                           </span>
+
                           <span className="font-medium text-slate-800">
                             {getDifficultyLabel(detailSource.difficulty_level)}
                           </span>
@@ -352,6 +365,7 @@ export default function RecipeQuickViewModal({
                             <Users size={16} />
                             Servings
                           </span>
+
                           <span className="font-medium text-slate-800">
                             {detailSource.servings || "—"}
                           </span>
@@ -362,6 +376,7 @@ export default function RecipeQuickViewModal({
                             <Star size={16} />
                             Rating
                           </span>
+
                           <span className="font-medium text-slate-800">
                             {Number(detailSource.rating_avg || 0).toFixed(1)}
                           </span>
@@ -372,6 +387,7 @@ export default function RecipeQuickViewModal({
                             <DollarSign size={16} />
                             Price
                           </span>
+
                           <span className="font-medium text-slate-800">
                             {detailSource.price != null
                               ? `${detailSource.price} XRP`
@@ -385,6 +401,7 @@ export default function RecipeQuickViewModal({
                       <section className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
                         <div className="flex items-center gap-2 text-amber-800">
                           <ChefHat size={18} />
+
                           <h3 className="text-base font-semibold">
                             Chef’s Note
                           </h3>
@@ -401,6 +418,7 @@ export default function RecipeQuickViewModal({
                     <section>
                       <div className="flex items-center gap-2">
                         <BookOpen className="h-5 w-5 text-teal-600" />
+
                         <h3 className="text-2xl font-semibold text-slate-900">
                           Instructions
                         </h3>
@@ -423,6 +441,7 @@ export default function RecipeQuickViewModal({
                                 <h4 className="text-base font-semibold text-slate-900">
                                   Step {index + 1}
                                 </h4>
+
                                 <p className="mt-2 text-sm leading-7 text-slate-600">
                                   {step}
                                 </p>
@@ -449,7 +468,9 @@ export default function RecipeQuickViewModal({
                           disabled={favoriteLoading}
                           className={[
                             "inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold transition",
-                            favoriteLoading ? "cursor-not-allowed opacity-70" : "",
+                            favoriteLoading
+                              ? "cursor-not-allowed opacity-70"
+                              : "",
                             item.is_favorite
                               ? "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200 hover:bg-yellow-100"
                               : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
@@ -457,8 +478,13 @@ export default function RecipeQuickViewModal({
                         >
                           <Heart
                             size={16}
-                            className={item.is_favorite ? "fill-current text-yellow-500" : ""}
+                            className={
+                              item.is_favorite
+                                ? "fill-current text-yellow-500"
+                                : ""
+                            }
                           />
+
                           {favoriteLoading
                             ? "Updating..."
                             : item.is_favorite

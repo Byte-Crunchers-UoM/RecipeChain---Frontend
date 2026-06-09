@@ -34,6 +34,11 @@ function toStringValue(value: unknown): string {
   return "";
 }
 
+function toNumberValue(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export default function BuyRecipeButton({
   recipeId,
   onSuccess,
@@ -86,9 +91,8 @@ export default function BuyRecipeButton({
             detail: {
               title: data?.payment?.recipe_title || data?.recipe?.title || "",
               amount:
-                Number(data?.payment?.amount ?? 0) ||
-                Number(data?.recipe?.price ?? 0) ||
-                0,
+                toNumberValue(data?.payment?.amount) ||
+                toNumberValue(data?.recipe?.price),
             },
           })
         );

@@ -1,9 +1,18 @@
-import type { BuyerProfile } from "@/types/buyer";
+import type { BuyerProfile } from "@/lib/types/buyer";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
-async function safeJson<T = any>(response: Response): Promise<T | null> {
+type ApiMessageResponse = {
+  message?: string;
+  error?: string;
+};
+
+type BuyerProfileResponse = ApiMessageResponse & {
+  profile?: BuyerProfile;
+};
+
+async function safeJson<T = unknown>(response: Response): Promise<T | null> {
   const text = await response.text();
 
   if (!text) return null;
@@ -20,16 +29,12 @@ export async function getMyBuyerProfile(): Promise<BuyerProfile> {
     method: "GET",
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      Accept: "application/json",
     },
     cache: "no-store",
   });
 
-  const data = await safeJson<{
-    profile?: BuyerProfile;
-    message?: string;
-    error?: string;
-  }>(response);
+  const data = await safeJson<BuyerProfileResponse>(response);
 
   if (!response.ok) {
     throw new Error(
@@ -64,11 +69,7 @@ export async function updateMyBuyerProfile(payload: {
     body: formData,
   });
 
-  const data = await safeJson<{
-    profile?: BuyerProfile;
-    message?: string;
-    error?: string;
-  }>(response);
+  const data = await safeJson<BuyerProfileResponse>(response);
 
   if (!response.ok) {
     throw new Error(data?.message || data?.error || "Failed to update profile");
@@ -86,14 +87,11 @@ export async function deleteMyAccountPermanently(): Promise<void> {
     method: "DELETE",
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      Accept: "application/json",
     },
   });
 
-  const data = await safeJson<{
-    message?: string;
-    error?: string;
-  }>(response);
+  const data = await safeJson<ApiMessageResponse>(response);
 
   if (!response.ok) {
     throw new Error(data?.message || data?.error || "Failed to delete account");

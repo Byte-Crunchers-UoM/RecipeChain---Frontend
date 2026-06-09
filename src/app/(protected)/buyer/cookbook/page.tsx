@@ -16,7 +16,10 @@ import {
   getCookbookRecipeDetails,
   toggleCookbookFavorite,
 } from "@/lib/api/cookbook";
-import type { CookbookItem, CookbookRecipeDetails } from "@/types/cookbook";
+import type {
+  CookbookItem,
+  CookbookRecipeDetails,
+} from "@/lib/types/cookbook";
 import RecipeQuickViewModal from "@/components/buyer/RecipeQuickViewModal";
 
 type ReviewFilter = "all" | "reviewed" | "pending";
@@ -324,7 +327,7 @@ function BuyerCookbookContent() {
 
       const result = await toggleCookbookFavorite(recipeId);
 
-      setItems((prev) => {
+      setItems((prev: CookbookItem[]) => {
         const updated = prev.map((item) =>
           item.recipe_id === recipeId
             ? {
@@ -349,7 +352,7 @@ function BuyerCookbookContent() {
       /**
        * Keep the quick view modal favorite state synced with the card list.
        */
-      setSelectedRecipe((prev) =>
+      setSelectedRecipe((prev: CookbookItem | null) =>
         prev && prev.recipe_id === recipeId
           ? {
               ...prev,
@@ -532,8 +535,8 @@ function BuyerCookbookContent() {
                   >
                     <option value="newest">Newest</option>
                     <option value="oldest">Oldest</option>
-                    <option value="title_asc">Title A–Z</option>
-                    <option value="title_desc">Title Z–A</option>
+                    <option value="title_asc">Title A-Z</option>
+                    <option value="title_desc">Title Z-A</option>
                     <option value="rating_desc">Highest Rated</option>
                     <option value="favorites_first">Favorites First</option>
                     <option value="pending_first">Pending Review First</option>
@@ -650,9 +653,6 @@ function BuyerCookbookContent() {
                       <button
                         type="button"
                         onClick={(e) => {
-                          /**
-                           * Stop card click because this button has its own favorite action.
-                           */
                           e.stopPropagation();
                           void handleToggleFavorite(item.recipe_id);
                         }}
@@ -718,9 +718,6 @@ function BuyerCookbookContent() {
                         <button
                           type="button"
                           onClick={(e) => {
-                            /**
-                             * Prevent duplicate modal open caused by parent card click.
-                             */
                             e.stopPropagation();
                             void openRecipePopup(item);
                           }}
@@ -733,9 +730,6 @@ function BuyerCookbookContent() {
                         <button
                           type="button"
                           onClick={(e) => {
-                            /**
-                             * Review navigation should not also trigger quick view modal.
-                             */
                             e.stopPropagation();
                             goToReview(item.recipe_id);
                           }}

@@ -1,4 +1,4 @@
-import type { WalletOverview, WalletTransaction } from "@/types/wallet";
+import type { WalletOverview, WalletTransaction } from "@/lib/types/wallet";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
@@ -19,8 +19,8 @@ type WalletTransactionsResponse = ApiMessageResponse & {
 };
 
 type StripeTopupCheckoutResponse = ApiMessageResponse & {
-  sessionId: string;
-  url: string;
+  sessionId?: string;
+  url?: string;
 };
 
 export type BuyRecipeResponse = ApiMessageResponse & {
@@ -50,14 +50,16 @@ type RefundRequestResponse = ApiMessageResponse & {
 async function parseJson<T>(resp: Response): Promise<T> {
   const text = await resp.text();
 
-  let data: any = null;
+  let data: unknown = null;
 
   if (text) {
     try {
       data = JSON.parse(text);
     } catch {
       if (!resp.ok) {
-        throw new Error(`Server returned non-JSON response. Status: ${resp.status}`);
+        throw new Error(
+          `Server returned non-JSON response. Status: ${resp.status}`
+        );
       }
 
       throw new Error("Server returned an invalid JSON response");
@@ -65,7 +67,11 @@ async function parseJson<T>(resp: Response): Promise<T> {
   }
 
   if (!resp.ok) {
-    throw new Error(data?.message || data?.error || "Request failed");
+    const errorData = data as ApiMessageResponse | null;
+
+    throw new Error(
+      errorData?.message || errorData?.error || "Request failed"
+    );
   }
 
   return data as T;

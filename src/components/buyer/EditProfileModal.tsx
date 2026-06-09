@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { X, Camera, User, Mail, FileText, Check } from "lucide-react";
 
-import type { BuyerProfile } from "@/types/buyer";
+import type { BuyerProfile } from "@/lib/types/buyer";
 
 type Props = {
   open: boolean;

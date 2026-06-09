@@ -12,7 +12,7 @@ import {
   WalletCards,
 } from "lucide-react";
 
-import type { WalletTransaction } from "@/types/wallet";
+import type { WalletTransaction } from "@/lib/types/wallet";
 
 type Props = {
   transactions: WalletTransaction[];
@@ -20,8 +20,15 @@ type Props = {
 
 type TransactionLike = WalletTransaction & {
   id?: string | number | null;
+  transaction_id?: string | number | null;
   tx_hash?: string | null;
+  amount?: string | number | null;
   amount_xrp?: string | number | null;
+  type?: string | null;
+  direction?: string | null;
+  status?: string | null;
+  description?: string | null;
+  created_at?: string | null;
   time_stamp?: string | null;
   date?: string | null;
 };

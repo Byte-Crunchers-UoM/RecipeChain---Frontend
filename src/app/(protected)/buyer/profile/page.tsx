@@ -31,8 +31,8 @@ import {
 } from "@/lib/api/buyer";
 import { getMyWalletOverview } from "@/lib/api/wallet";
 import { useAuth } from "@/context/AuthContext";
-import type { BuyerProfile } from "@/types/buyer";
-import type { WalletOverview } from "@/types/wallet";
+import type { BuyerProfile } from "@/lib/types/buyer";
+import type { WalletOverview } from "@/lib/types/wallet";
 
 const XRPL_EXPLORER_BASE =
   process.env.NEXT_PUBLIC_XRPL_EXPLORER_BASE_URL || "";

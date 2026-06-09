@@ -32,6 +32,7 @@ export default function WalletWithdrawModal({
 
   const handleClose = () => {
     if (submitting) return;
+
     resetForm();
     onCloseAction();
   };
