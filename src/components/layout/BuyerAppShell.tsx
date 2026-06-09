@@ -7,7 +7,7 @@ export default function BuyerAppShell({ children }: { children: ReactNode }) {
   return (
     <RecipeFilterProvider>
       <div className="flex h-screen w-full flex-col overflow-hidden bg-gray-50">
-        <Header notificationCount={1} />
+        <Header />
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <BuyerSideBar />

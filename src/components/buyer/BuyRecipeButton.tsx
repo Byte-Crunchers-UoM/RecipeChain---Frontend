@@ -99,11 +99,6 @@ export default function BuyRecipeButton({
       }
 
       onSuccessAction?.();
-
-      console.log("Recipe purchased successfully:", {
-        paymentId,
-        purchasedRecipeId,
-      });
     } catch (err: unknown) {
       setError(
         err instanceof Error

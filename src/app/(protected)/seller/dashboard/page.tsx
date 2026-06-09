@@ -25,7 +25,10 @@ export default function SellerDashboardPage() {
 
         if (cancelled) return;
 
-        if (status?.verification_status !== "approved") {
+        if (
+          status?.verification_status !== "approved" ||
+          status?.kyc_approval_page_seen !== true
+        ) {
           router.replace("/seller/kyc");
           return;
         }

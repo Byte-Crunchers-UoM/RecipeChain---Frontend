@@ -306,7 +306,7 @@ export default function RecipeQuickViewModal({
                         </div>
 
                         <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-teal-700 ring-1 ring-teal-200">
-                          {ingredients.length}/{ingredients.length || 0}
+                          {ingredients.length}
                         </div>
                       </div>
 

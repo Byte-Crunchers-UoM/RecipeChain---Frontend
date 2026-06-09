@@ -48,7 +48,8 @@ function getTransactionId(tx: TransactionLike, index: number) {
 }
 
 function getAmount(tx: TransactionLike) {
-  return Number(tx.amount_xrp ?? tx.amount ?? 0);
+  const parsed = Number(tx.amount_xrp ?? tx.amount ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function getDateValue(tx: TransactionLike) {

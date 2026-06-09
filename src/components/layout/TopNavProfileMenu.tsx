@@ -30,6 +30,7 @@ type DropdownLink = {
 type AuthUserLike = {
   name?: string | null;
   email?: string | null;
+  role?: string | null;
 };
 
 function getInitials(name?: string | null, email?: string | null) {
@@ -59,9 +60,13 @@ export default function TopNavProfileMenu({
   const [isOpen, setIsOpen] = useState(false);
 
   const authUser = user as AuthUserLike | null;
+  const isBuyer = authUser?.role === "buyer";
 
   const loadProfile = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !isBuyer) {
+      setProfile(null);
+      return;
+    }
 
     try {
       setProfileLoading(true);
@@ -72,10 +77,14 @@ export default function TopNavProfileMenu({
     } finally {
       setProfileLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isBuyer]);
 
   useEffect(() => {
-    void loadProfile();
+    if (!isAuthenticated || !isBuyer) return;
+
+    const timer = window.setTimeout(() => {
+      void loadProfile();
+    }, 0);
 
     const handleProfileUpdated = () => {
       void loadProfile();
@@ -84,9 +93,12 @@ export default function TopNavProfileMenu({
     window.addEventListener("buyer-profile-updated", handleProfileUpdated);
 
     return () => {
+      window.clearTimeout(timer);
       window.removeEventListener("buyer-profile-updated", handleProfileUpdated);
     };
-  }, [loadProfile]);
+  }, [isAuthenticated, isBuyer, loadProfile]);
+
+  const activeProfile = isBuyer ? profile : null;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -135,12 +147,12 @@ export default function TopNavProfileMenu({
   }, [mode, pathname]);
 
   const displayName = String(
-    profile?.display_name || authUser?.name || authUser?.email || "Buyer"
+    activeProfile?.display_name || authUser?.name || authUser?.email || "Buyer"
   ).trim();
 
-  const email = String(profile?.email || authUser?.email || "").trim();
-  const bio = String(profile?.bio || "").trim();
-  const profilePicture = String(profile?.profile_picture || "").trim();
+  const email = String(activeProfile?.email || authUser?.email || "").trim();
+  const bio = String(activeProfile?.bio || "").trim();
+  const profilePicture = String(activeProfile?.profile_picture || "").trim();
   const avatarText = getInitials(displayName, email);
 
   const handleLogout = async () => {
