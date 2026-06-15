@@ -1,3 +1,4 @@
+// src/app/(protected)/buyer/review/[id]/page.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -126,10 +127,7 @@ export default function BuyerRecipeReviewPage() {
   const visibleRating = hoverRating || rating;
 
   const canSubmit =
-    rating >= 1 &&
-    comment.trim().length > 0 &&
-    comment.trim().length <= MAX_COMMENT_LENGTH &&
-    !saving;
+    rating >= 1 && comment.trim().length <= MAX_COMMENT_LENGTH && !saving;
 
   const commentCounterColor =
     comment.length >= 470
@@ -139,8 +137,8 @@ export default function BuyerRecipeReviewPage() {
       : "text-slate-400";
 
   const reviewHelperText = hasExistingReview
-    ? "Update your rating, comment, or photos below."
-    : "Share what you loved, modifications you made, and tips for others.";
+    ? "Update your rating, optional comment, or photos below."
+    : "Select a star rating. You can also add an optional written review and photos.";
 
   const handlePhotoAdd = (files: FileList | File[] | null) => {
     if (!files) return;
@@ -196,11 +194,6 @@ export default function BuyerRecipeReviewPage() {
   const handleSubmit = async () => {
     if (rating < 1) {
       setFormError("Please select a star rating.");
-      return;
-    }
-
-    if (!comment.trim()) {
-      setFormError("Please write a short review before submitting.");
       return;
     }
 
@@ -459,7 +452,10 @@ export default function BuyerRecipeReviewPage() {
 
               <div>
                 <label className="text-sm font-semibold uppercase tracking-wider text-slate-500">
-                  Written Review <span className="text-red-500">*</span>
+                  Written Review
+                  <span className="font-normal normal-case tracking-normal text-slate-400">
+                    {" "}(Optional)
+                  </span>
                 </label>
 
                 <div className="mt-3">
@@ -471,7 +467,7 @@ export default function BuyerRecipeReviewPage() {
                       setSuccessMessage("");
                     }}
                     maxLength={MAX_COMMENT_LENGTH}
-                    placeholder="Did you make any changes? How did it turn out? Share your tips with others..."
+                    placeholder="Optional: Did you make any changes? How did it turn out? Share your tips with others..."
                     className="min-h-[160px] w-full resize-y rounded-2xl border border-slate-200 bg-slate-50/50 p-5 text-base leading-relaxed text-slate-800 placeholder:text-slate-400 transition-all duration-200 focus:border-teal-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-400/10"
                     style={{ minHeight: "160px" }}
                   />
