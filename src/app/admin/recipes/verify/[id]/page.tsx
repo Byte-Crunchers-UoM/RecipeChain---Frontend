@@ -26,7 +26,7 @@ export default function RecipeVerificationDetail() {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const result = await res.json();
-                if (result.success) setRecipe(result.data);
+                if (result.success) setRecipe(result.recipe);
             } catch (err) {
                 console.error("Failed to fetch recipe details", err);
             }

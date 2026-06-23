@@ -28,7 +28,7 @@ export default function RecipesManagement() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   useEffect(() => {
     const fetchRecipes = async () => {
@@ -66,7 +66,7 @@ const filteredRecipes = recipes.filter(r => {
     (r.full_name?.toLowerCase().includes(searchQuery.toLowerCase()));
   
   // 3. Apply Top Tab Filter (Status)
-  const matchesStatus = filterStatus === "All" || r.approval_status === filterStatus;
+  const matchesStatus = filterStatus === "all" || r.approval_status === filterStatus;
   
   return matchesSearch && matchesStatus;
 });

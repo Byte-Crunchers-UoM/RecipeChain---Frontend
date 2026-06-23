@@ -11,6 +11,9 @@ export default function SellerVerificationDetail() {
   const [seller, setSeller] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // NEW: State to toggle the Reject Panel visibility
+  const [showRejectPanel, setShowRejectPanel] = useState(false);
+
   // State for Checkboxes
   const [rejectedFields, setRejectedFields] = useState({
     idDocumentFront: false,
@@ -44,7 +47,9 @@ export default function SellerVerificationDetail() {
     let finalRejectionReason: string | null = null;
 
     if (status === 'rejected') {
-      const items = [];
+      // Typed array for rejection items to avoid `never[]` inference
+      type RejectionItem = { field: string; label: string; status: string; message: string };
+      const items: RejectionItem[] = [];
       
       // 1. Add standard items based on checkboxes
       if (rejectedFields.idDocumentFront) {
@@ -93,7 +98,7 @@ export default function SellerVerificationDetail() {
         },
         body: JSON.stringify({ 
         status, 
-        rejection_reason: finalRejectionReason, // Make sure this key matches the controller
+        rejection_reason: finalRejectionReason, 
         kyc_approval_page_seen: false 
         })
       });
@@ -163,68 +168,96 @@ export default function SellerVerificationDetail() {
             <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-lg sticky top-8">
               <h2 className="text-xl font-black text-[#23262f] mb-6">Decision Panel</h2>
               
-              <div className="space-y-6">
-                {/* 1. Checkboxes for common issues */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Flag Issues</label>
-                  {[
-                    { id: 'idDocumentFront', label: 'ID Front Missing/Blurry' },
-                    { id: 'idDocumentBack', label: 'ID Back Missing/Blurry' },
-                    { id: 'nicNo', label: 'NIC Number Mismatch' },
-                    { id: 'dateOfBirth', label: 'DOB Mismatch' },
-                  ].map((item) => (
-                    <label key={item.id} className="flex items-center gap-3 p-3 rounded-2xl border border-gray-50 hover:bg-red-50 cursor-pointer transition-all">
-                      <input 
-                        type="checkbox" 
-                        className="h-5 w-5 accent-red-600"
-                        checked={(rejectedFields as any)[item.id]}
-                        onChange={(e) => setRejectedFields({...rejectedFields, [item.id]: e.target.checked})}
-                      />
-                      <span className="text-sm font-bold text-[#23262f]">{item.label}</span>
-                    </label>
-                  ))}
-                </div>
-
-                {/* 2. Textarea for custom reason */}
-                <div>
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Additional Instructions</label>
-                  <div className="relative">
-                    <MessageSquare size={16} className="absolute left-4 top-4 text-gray-300" />
-                    <textarea 
-                      className="w-full pl-11 p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-medium text-gray-600 min-h-[120px] focus:bg-white focus:border-[#149984] outline-none transition-all placeholder:text-gray-300"
-                      placeholder="Type a custom message for the chef..."
-                      value={customMessage}
-                      onChange={(e) => setCustomMessage(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                {/* 3. Action Buttons */}
-                <div className="space-y-3 pt-4 border-t border-gray-50">
+              {/* CONDITIONAL RENDERING STARTS HERE */}
+              {/* Ensure this opening curly brace '{' is right here! ---> */}
+              {!showRejectPanel ? (
+                
+                /* VIEW 1: CLEAN VIEW (Only 2 Buttons) */
+                <div className="space-y-4">
                   <button 
                     onClick={() => handleAction('approved')} 
                     disabled={isUpdating}
-                    className="w-full py-4 bg-[#149984] text-white rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-[#11806e] transition-all disabled:opacity-50"
+                    className="w-full py-4 bg-[#149984] text-white rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-[#11806e] transition-all disabled:opacity-50 shadow-sm"
                   >
-                    {isUpdating ? <Loader2 className="animate-spin" /> : <><CheckCircle size={20} /> APPROVE CHEF</>}
+                    {isUpdating ? <Loader2 className="animate-spin" /> : <><CheckCircle size={20} /> APPROVE SELLER</>}
                   </button>
                   
                   <button 
-                    onClick={() => handleAction('rejected')} 
-                    disabled={isUpdating}
-                    className="w-full py-4 bg-white text-red-600 border-2 border-red-100 rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-red-50 transition-all disabled:opacity-50"
+                    onClick={() => setShowRejectPanel(true)} 
+                    className="w-full py-4 bg-white text-red-600 border-2 border-red-100 rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-red-50 transition-all shadow-sm"
                   >
-                    {isUpdating ? <Loader2 className="animate-spin" /> : <><XCircle size={20} /> REJECT WITH REASONS</>}
+                    <XCircle size={20} /> REJECT SELLER
                   </button>
                 </div>
 
-                <div className="flex items-start gap-2 p-4 bg-blue-50 rounded-2xl">
-                  <AlertCircle size={16} className="text-blue-500 mt-0.5" />
-                  <p className="text-[10px] text-blue-600 font-bold leading-relaxed">
-                    Selecting checkboxes helps the user fix their application quickly.
-                  </p>
+              ) : (
+
+                /* VIEW 2: REJECTION FORM (Checkboxes, Textarea, Confirm) */
+                <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+                  {/* 1. Checkboxes */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Flag Issues</label>
+                    {[
+                      { id: 'idDocumentFront', label: 'ID Front Missing/Blurry' },
+                      { id: 'idDocumentBack', label: 'ID Back Missing/Blurry' },
+                      { id: 'nicNo', label: 'NIC Number Mismatch' },
+                      { id: 'dateOfBirth', label: 'DOB Mismatch' },
+                    ].map((item) => (
+                      <label key={item.id} className="flex items-center gap-3 p-3 rounded-2xl border border-gray-50 hover:bg-red-50 cursor-pointer transition-all">
+                        <input 
+                          type="checkbox" 
+                          className="h-5 w-5 accent-red-600"
+                          checked={(rejectedFields as any)[item.id]}
+                          onChange={(e) => setRejectedFields({...rejectedFields, [item.id]: e.target.checked})}
+                        />
+                        <span className="text-sm font-bold text-[#23262f]">{item.label}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* 2. Textarea */}
+                  <div>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Additional Instructions</label>
+                    <div className="relative">
+                      <MessageSquare size={16} className="absolute left-4 top-4 text-gray-300" />
+                      <textarea 
+                        className="w-full pl-11 p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-medium text-gray-600 min-h-[120px] focus:bg-white focus:border-[#149984] outline-none transition-all placeholder:text-gray-300"
+                        placeholder="Type a custom message for the seller..."
+                        value={customMessage}
+                        onChange={(e) => setCustomMessage(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3. Action Buttons */}
+                  <div className="flex gap-3 pt-4 border-t border-gray-50">
+                    <button 
+                      onClick={() => setShowRejectPanel(false)} 
+                      className="w-1/3 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs hover:bg-gray-200 transition-all"
+                    >
+                      CANCEL
+                    </button>
+                    
+                    <button 
+                      onClick={() => handleAction('rejected')} 
+                      disabled={isUpdating}
+                      className="w-2/3 py-3 bg-red-600 text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 hover:bg-red-700 transition-all disabled:opacity-50 shadow-sm"
+                    >
+                      {isUpdating ? <Loader2 className="animate-spin" /> : 'CONFIRM REJECT'}
+                    </button>
+                  </div>
+
+                  <div className="flex items-start gap-2 p-4 bg-blue-50 rounded-2xl">
+                    <AlertCircle size={16} className="text-blue-500 mt-0.5" />
+                    <p className="text-[10px] text-blue-600 font-bold leading-relaxed">
+                      Selecting checkboxes helps the user fix their application quickly.
+                    </p>
+                  </div>
                 </div>
-              </div>
+
+              )}
+              {/* CONDITIONAL RENDERING ENDS HERE */}
+              
             </div>
           </div>
         </div>

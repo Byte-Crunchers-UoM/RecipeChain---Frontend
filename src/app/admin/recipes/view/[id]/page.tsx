@@ -19,12 +19,13 @@ export default function ActiveRecipeView() {
   useEffect(() => {
     const fetchRecipe = async () => {
       const token = localStorage.getItem('adminToken');
+      console.log("TOKEN BEING SENT:", token);
       try {
         const res = await fetch(`http://localhost:4000/api/recipes/${id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const result = await res.json();
-        if (result.success) setRecipe(result.data);
+        if (result.success) setRecipe(result.recipe);
       } catch (err) {
         console.error("Failed to fetch recipe", err);
       }
@@ -99,7 +100,7 @@ export default function ActiveRecipeView() {
             <div className="flex items-center gap-3 text-blue-500 mb-2">
               <DollarSign size={20} /> <span className="text-[10px] font-black uppercase text-gray-400">Price</span>
             </div>
-            <p className="text-2xl font-black text-[#23262f]">{recipe.price} XRP</p>
+            <p className="text-2xl font-black text-[#23262f]">{recipe.price_xrp !== undefined ? recipe.price_xrp : 0} XRP</p>
           </div>
           <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
             <div className="flex items-center gap-3 text-yellow-500 mb-2">
