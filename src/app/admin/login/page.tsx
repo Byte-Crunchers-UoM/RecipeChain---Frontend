@@ -24,8 +24,7 @@ export default function AdminLogin() {
 
     try {
       // 1. Send the POST request to your Express server
-      const response = await fetch('http://localhost:4000/api/auth/admin-login', {
-        method: 'POST',
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/auth/admin-login`, {
         headers: {
           'Content-Type': 'application/json',
         },
