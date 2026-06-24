@@ -163,7 +163,7 @@ export default function RecipePaymentModal({ recipe, isOpen, onClose, onSuccess 
         )}
 
         {isSuccess ? (
-{/* SUCCESS UI (Displayed after payment clears) */}
+        //SUCCESS UI (Displayed after payment clears)
           <div className="p-10 text-center animate-in zoom-in duration-500">
             {/* Animated Celebration Icon */}
             <div className="relative mx-auto w-24 h-24 mb-6">
