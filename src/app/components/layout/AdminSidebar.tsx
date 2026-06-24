@@ -43,11 +43,15 @@ export default function AdminSidebar() {
       <nav className="flex-1 px-4 py-6 space-y-2">
         {navLinks.map((link) => (
           <div key={link.href} className="flex flex-col">
-            <a 
-              href={link.href} 
+            <a
+              href={link.href}
+              onClick={(e) => {
+                e.preventDefault();
+                router.push(link.href);
+              }}
               className={`w-full flex items-center px-4 py-3 rounded-xl font-semibold transition-all ${
-                isActive(link.href) 
-                  ? 'bg-[#149984] text-white shadow-lg shadow-[#149984]/20' 
+                isActive(link.href)
+                  ? 'bg-[#149984] text-white shadow-lg shadow-[#149984]/20'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-[#149984]'
               }`}
             >
