@@ -1,3 +1,4 @@
+
 import type { BuyerProfile } from "@/lib/types/buyer";
 
 const API_URL =
@@ -25,7 +26,7 @@ async function safeJson<T = unknown>(response: Response): Promise<T | null> {
 }
 
 export async function getMyBuyerProfile(): Promise<BuyerProfile> {
-  const response = await fetch(`${API_URL}/buyer/me/profile`, {
+  const response = await fetch(`${API_URL}/buyers/me/profile`, {
     method: "GET",
     credentials: "include",
     headers: {
@@ -63,7 +64,7 @@ export async function updateMyBuyerProfile(payload: {
     formData.append("profilePhoto", payload.profilePhoto);
   }
 
-  const response = await fetch(`${API_URL}/buyer/me/profile`, {
+  const response = await fetch(`${API_URL}/buyers/me/profile`, {
     method: "PATCH",
     credentials: "include",
     body: formData,

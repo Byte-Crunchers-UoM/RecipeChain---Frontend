@@ -65,7 +65,7 @@ export async function getMyCookbook(params?: {
   const queryString = query.toString();
 
   const response = await fetch(
-    `${API_URL}/buyer/me/cookbook${queryString ? `?${queryString}` : ""}`,
+    `${API_URL}/buyers/me/cookbook${queryString ? `?${queryString}` : ""}`,
     {
       method: "GET",
       credentials: "include",
@@ -84,7 +84,7 @@ export async function getMyCookbook(params?: {
 export async function getCookbookRecipeDetails(
   recipeId: string
 ): Promise<CookbookRecipeDetails> {
-  const response = await fetch(`${API_URL}/buyer/me/cookbook/${recipeId}`, {
+  const response = await fetch(`${API_URL}/buyers/me/cookbook/${recipeId}`, {
     method: "GET",
     credentials: "include",
     headers: {
@@ -106,7 +106,7 @@ export async function getCookbookRecipeForReview(
   recipeId: string
 ): Promise<CookbookRecipeReviewData> {
   const response = await fetch(
-    `${API_URL}/buyer/me/cookbook/${recipeId}/review`,
+    `${API_URL}/buyers/me/cookbook/${recipeId}/review`,
     {
       method: "GET",
       credentials: "include",
@@ -142,7 +142,7 @@ export async function saveCookbookRecipeReview(payload: {
   }
 
   const response = await fetch(
-    `${API_URL}/buyer/me/cookbook/${payload.recipeId}/review`,
+    `${API_URL}/buyers/me/cookbook/${payload.recipeId}/review`,
     {
       method: "POST",
       credentials: "include",
@@ -159,7 +159,7 @@ export async function toggleCookbookFavorite(recipeId: string): Promise<{
   message: string;
 }> {
   const response = await fetch(
-    `${API_URL}/buyer/me/cookbook/${recipeId}/favorite`,
+    `${API_URL}/buyers/me/cookbook/${recipeId}/favorite`,
     {
       method: "POST",
       credentials: "include",
