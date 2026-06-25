@@ -19,8 +19,9 @@ export default function ActiveRecipeView() {
   useEffect(() => {
     const fetchRecipe = async () => {
       const token = localStorage.getItem('adminToken');
+      console.log("TOKEN BEING SENT:", token);
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/recipes/${id}`, {
+        const res = await fetch(`http://localhost:4000/api/recipes/${id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const result = await res.json();

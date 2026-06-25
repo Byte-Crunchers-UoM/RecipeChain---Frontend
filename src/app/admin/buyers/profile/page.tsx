@@ -190,7 +190,7 @@ function BuyerProfileContent() {
               <div className="space-y-6">
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
                   <span className="text-[11px] font-black text-gray-400 uppercase">Total Spent</span>
-                  <span className="text-lg font-black text-[#149984]">{buyer.total_spent_xrp || 0} XRP</span>
+                  <span className="text-lg font-black text-[#149984]">{buyer.total_spent_xrep || 0} XRP</span>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
                   <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Joined RecipeChain</p>
