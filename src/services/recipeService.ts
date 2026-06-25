@@ -6,12 +6,13 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 const FETCH_TIMEOUT = 10000;
 
 /** Fetches a list of all available recipes from the API. */
-export async function fetchRecipes(): Promise<Recipe[]> {
+export async function fetchRecipes(page: number = 1, limit: number = 6): Promise<{ recipes: Recipe[], meta: any }> {
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
-        const response = await fetch(`${BASE_URL}/recipes`, {
+        // Append page and limit to the URL
+        const response = await fetch(`${BASE_URL}/recipes?page=${page}&limit=${limit}`, {
             signal: controller.signal,
             credentials: 'include', 
             cache: 'no-store'
@@ -21,15 +22,20 @@ export async function fetchRecipes(): Promise<Recipe[]> {
 
         if (!response.ok) {
             console.error(`Failed to fetch recipes: ${response.status}`);
-            return []; 
+            return { recipes: [], meta: null }; 
         }
 
-        const recipes: RecipeApiResponsed = await response.json();
-        return recipes.data || [];
+        const result = await response.json();
+        
+        // Return BOTH the recipes and the pagination metadata
+        return { 
+            recipes: result.data || [], 
+            meta: result.meta || null 
+        };
 
     } catch (error) {
         console.error("Fetch Recipes Error:", error);
-        return [];
+        return { recipes: [], meta: null };
     }
 }
 
