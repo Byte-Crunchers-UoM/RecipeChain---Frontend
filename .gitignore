@@ -39,7 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-  
-# Ignore standalone HTML mockups  
-All chef list/  
+
+# Ignore standalone HTML mockups   
 Trending Recipes - frontend/ 
