@@ -48,6 +48,8 @@ export default function RecipeDetailsPage() {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [reportingFeedbackId, setReportingFeedbackId] = useState<string | null>(null);
+  const [pendingReportFeedbackId, setPendingReportFeedbackId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchRecipeDetails() {
@@ -173,6 +175,9 @@ export default function RecipeDetailsPage() {
   const statusInfo = getRecipeStatus(recipe.status, recipe.approval_status);
   const isRejected = statusInfo.label === 'Rejected';
   const showFeedbackSection = statusInfo.label === 'Active' || statusInfo.label === 'Deactivated';
+  const pendingFeedback = pendingReportFeedbackId
+    ? feedbacks.find((item) => String(item.feedback_id || item.id) === pendingReportFeedbackId)
+    : null;
 
   return (
     <div className="min-h-screen bg-gray-50/50">
@@ -201,10 +206,6 @@ export default function RecipeDetailsPage() {
               <div className="flex items-start gap-3">
                 <div className="mt-1 rounded-full bg-red-100 p-2 text-red-600">
                   <AlertTriangle className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-base font-semibold text-red-900">Recipe rejected by admin</p>
-                  <p className="mt-1 text-sm text-red-700 leading-relaxed">{recipe.rejection_reason}</p>
                 </div>
               </div>
             </div>
@@ -410,49 +411,127 @@ export default function RecipeDetailsPage() {
               </div>
             ) : (
               <div className="space-y-6">
-                {feedbacks.map((feedback: any) => (
-                  <article key={feedback.feedback_id || feedback.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-center gap-4">
-                        <img
-                          src={feedback.buyers?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(feedback.buyers?.display_name || 'Buyer')}&background=0D9488&color=fff&size=128`}
-                          alt={feedback.buyers?.display_name || 'Buyer'}
-                          className="h-14 w-14 rounded-full object-cover border border-slate-200"
-                        />
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">{feedback.buyers?.display_name || 'Anonymous Buyer'}</p>
-                          <div className="mt-1 flex items-center gap-1 text-amber-500 text-sm">
-                            <Star className="w-4 h-4" />
-                            <span>{Number(feedback.rating ?? 0).toFixed(1)}</span>
+                {feedbacks.map((feedback: any) => {
+                  const feedbackKey = String(feedback.feedback_id || feedback.id);
+                  const isReported = feedback.status === 'reported';
+                  const isReporting = reportingFeedbackId === feedbackKey;
+
+                  return (
+                    <article key={feedbackKey} className="relative rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                      <button
+                        type="button"
+                        onClick={() => setPendingReportFeedbackId(feedbackKey)}
+                        disabled={isReported || isReporting}
+                        className={`absolute right-4 bottom-4 inline-flex h-10 w-24 items-center justify-center rounded-full border border-rose-500 bg-white text-sm font-semibold text-rose-600 shadow-sm text-center transition ${isReported ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300' : 'hover:bg-rose-50'}`}
+                        
+                      >
+                        {isReported ? 'Reported' : 'Report'}
+                      </button>
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={feedback.buyers?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(feedback.buyers?.display_name || 'Buyer')}&background=0D9488&color=fff&size=128`}
+                            alt={feedback.buyers?.display_name || 'Buyer'}
+                            className="h-14 w-14 rounded-full object-cover border border-slate-200"
+                          />
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">{feedback.buyers?.display_name || 'Anonymous Buyer'}</p>
+                            <div className="mt-1 flex items-center gap-1 text-amber-500 text-sm">
+                              <Star className="w-4 h-4" />
+                              <span>{Number(feedback.rating ?? 0).toFixed(1)}</span>
+                            </div>
                           </div>
                         </div>
+                        <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                          {feedback.created_at ? new Date(feedback.created_at).toLocaleDateString() : ''}
+                        </span>
                       </div>
-                      <span className="text-xs uppercase tracking-[0.25em] text-slate-400">
-                        {feedback.created_at ? new Date(feedback.created_at).toLocaleDateString() : ''}
-                      </span>
-                    </div>
 
-                    <p className="mt-6 text-sm leading-7 text-slate-600">{feedback.comment || 'No comment provided.'}</p>
+                      <p className="mt-6 text-sm leading-7 text-slate-600">{feedback.comment || 'No comment provided.'}</p>
 
-                    {feedback.feedback_images?.length > 0 && (
-                      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-                        {feedback.feedback_images.map((image: any, index: number) => (
-                          <img
-                            key={index}
-                            src={image.image_url}
-                            alt={`feedback-${index}`}
-                            className="h-28 w-60 rounded-xl object-cover border border-slate-200"
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </article>
-                ))}
+                      {feedback.feedback_images?.length > 0 && (
+                        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                          {feedback.feedback_images.map((image: any, index: number) => (
+                            <img
+                              key={index}
+                              src={image.image_url}
+                              alt={`feedback-${index}`}
+                              className="h-28 w-60 rounded-xl object-cover border border-slate-200"
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>
         )}
+
+        {pendingFeedback && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6">
+            <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
+              <div className="mb-4 text-center">
+                <h3 className="text-xl font-bold text-slate-900">Report Review</h3>
+                <p className="mt-2 text-sm text-slate-500">
+                  Are you sure you want to report this review from <span className="font-semibold text-slate-900">{pendingFeedback.buyers?.display_name || 'the buyer'}</span>?
+                </p>
+              </div>
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 mb-6">
+                <p className="text-sm text-slate-700">{pendingFeedback.comment || 'No comment provided.'}</p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setPendingReportFeedbackId(null)}
+                  className="inline-flex justify-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleReportFeedback(pendingFeedback.feedback_id || pendingFeedback.id)}
+                  disabled={Boolean(reportingFeedbackId)}
+                  className="inline-flex justify-center rounded-full bg-rose-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300"
+                >
+                  {reportingFeedbackId ? 'Reporting...' : 'Report Review'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
+
+  async function handleReportFeedback(feedbackId: string | number) {
+    const normalizedId = String(feedbackId);
+    setReportingFeedbackId(normalizedId);
+
+    try {
+      const { error } = await supabase
+        .from('feedbacks')
+        .update({ status: 'reported' })
+        .eq('feedback_id', normalizedId);
+
+      if (error) throw error;
+
+      setFeedbacks((current) =>
+        current.map((item: any) =>
+          String(item.feedback_id || item.id) === normalizedId
+            ? { ...item, status: 'reported' }
+            : item
+        )
+      );
+
+      setPendingReportFeedbackId(null);
+    } catch (err: any) {
+      console.error('Error reporting feedback:', err.message || err);
+      setPendingReportFeedbackId(null);
+    } finally {
+      setReportingFeedbackId(null);
+    }
+  }
+
 }

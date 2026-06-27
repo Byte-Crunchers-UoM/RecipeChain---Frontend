@@ -61,6 +61,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   const headerInfo = (() => {
+    if (pathname.includes('/analytics')) return { title: 'Analytics', subtitle: 'Track your recipe performance and revenue.' };
     if (pathname.includes('/recipes')) return { title: 'My Recipes', subtitle: 'Manage all your recipes!' };
     if (pathname.includes('/profile')) return { title: 'Your Profile', subtitle: 'Manage your personal details!' };
     if (pathname.includes('/settings')) return { title: 'Settings', subtitle: 'Account preferences' };
@@ -80,7 +81,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="p-6 border-b border-[#e5e7eb] flex items-center justify-between">
           {isSidebarOpen && (
             <div className="flex items-center gap-2 font-roboto">
-              <div className="w-8 h-8 bg-[#0d9488] rounded-lg flex items-center justify-center text-white font-bold text-[12px]">RC</div>
+              <img src="/Logo.png" alt="RecipeChain Logo" className="w-8 h-8 object-contain" />
               <span className="font-bold text-[#1a2632] text-[14px]">RecipeChain</span>
             </div>
           )}
@@ -92,6 +93,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2v-4z" strokeWidth={1.5} /></svg>
             {isSidebarOpen && <span>Dashboard</span>}
           </Link>
+          <Link href="/recipes/analytics" className={getLinkStyle('/recipes/analytics')} suppressHydrationWarning>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 17h3V9H3v8zm6 0h3V5H9v12zm6 0h3V11h-3v6zm6 0h3V13h-3v4z" strokeWidth={1.5} /></svg>
+            {isSidebarOpen && <span>Analytics</span>}
+          </Link>
           <Link href="/recipes" className={getLinkStyle('/recipes')} suppressHydrationWarning>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
             {isSidebarOpen && <span>My Recipes</span>}
@@ -99,10 +104,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <Link href="/profile" className={getLinkStyle('/profile')}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" strokeWidth={1.5} /></svg>
             {isSidebarOpen && <span>Profile</span>}
-          </Link>
-          <Link href="/settings" className={getLinkStyle('/settings')}>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z" strokeWidth={1.5} /></svg>
-            {isSidebarOpen && <span>Settings</span>}
           </Link>
         </nav>
 

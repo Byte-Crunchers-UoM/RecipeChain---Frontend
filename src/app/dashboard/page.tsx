@@ -8,16 +8,10 @@ import RecipesTable from '../../components/RecipesTable';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 
-// Static data for the analytics chart
-const chartData = [
-  { day: 'Mon', value: 45 },
-  { day: 'Tue', value: 52 },
-  { day: 'Wed', value: 48 },
-  { day: 'Thu', value: 61 },
-  { day: 'Fri', value: 55 },
-  { day: 'Sat', value: 67 },
-  { day: 'Sun', value: 72 },
-];
+interface ChartDataPoint {
+  day: string;
+  value: number | null;
+}
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -26,10 +20,12 @@ export default function Dashboard() {
   const [totalUnlocks, setTotalUnlocks] = useState<number>(0);
   const [activeRecipesCount, setActiveRecipesCount] = useState<number>(0);
   const [totalEarnings, setTotalEarnings] = useState<number>(0);
+  
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [maxChartValue, setMaxChartValue] = useState<number>(100);
 
   useEffect(() => {
     async function fetchDashboardData() {
-      // Prevent fetching if auth is still loading or user is not logged in
       if (authLoading || !isAuthenticated || !user) {
         return;
       }
@@ -49,17 +45,15 @@ export default function Dashboard() {
         const currentRecipes = recipeData || [];
         setRecipes(currentRecipes);
 
-        // Calculate count of recipes that are currently 'active' or 'published'
         const activeCount = currentRecipes.filter(
           r => r.status?.toLowerCase() === 'published' || r.status?.toLowerCase() === 'active'
         ).length;
         setActiveRecipesCount(activeCount);
 
         if (currentRecipes.length > 0) {
-          // Extract an array of recipe IDs to use for filtering purchases and payments
           const recipeIds = currentRecipes.map(r => r.recipe_id);
 
-          // 2. Calculate Total Unlocks (Total number of purchases for these recipes)
+          // 2. Calculate Total Unlocks
           const { count, error: countError } = await supabase
             .from('recipe_purchases')
             .select('*', { count: 'exact', head: true })
@@ -69,25 +63,64 @@ export default function Dashboard() {
             setTotalUnlocks(count);
           }
 
-          // 3. Calculate Total Earnings using the 'payments' table
-          // We fetch 'seller_amount' which is the actual net profit for the chef per sale
+          // 3. Calculate Total Earnings and Weekly Chart Data
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+          sevenDaysAgo.setHours(0, 0, 0, 0);
+
           const { data: paymentsData, error: paymentsError } = await supabase
             .from('payments')
-            .select('seller_amount')
+            .select('seller_amount, time_stamp')
             .in('recipe_id', recipeIds);
 
           if (!paymentsError && paymentsData) {
-            // Sum up all 'seller_amount' values from the returned payment records
             const earnings = paymentsData.reduce((acc, curr) => {
               return acc + (Number(curr.seller_amount) || 0);
             }, 0);
-            
             setTotalEarnings(earnings);
+
+            // ---- Weekly Chart Data Processing ----
+            const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const weekStart = new Date();
+            const currentWeekday = (weekStart.getDay() + 6) % 7; // Monday=0
+            weekStart.setDate(weekStart.getDate() - currentWeekday);
+            weekStart.setHours(0, 0, 0, 0);
+
+            const weekMap: Record<string, number | null> = {
+              Mon: null,
+              Tue: null,
+              Wed: null,
+              Thu: null,
+              Fri: null,
+              Sat: null,
+              Sun: null,
+            };
+
+            paymentsData.forEach(payment => {
+              const paymentDate = new Date(payment.time_stamp);
+              if (paymentDate < weekStart || paymentDate > new Date()) return;
+
+              const dayName = daysOfWeek[(paymentDate.getDay() + 6) % 7];
+              if (weekMap[dayName] !== undefined) {
+                weekMap[dayName] = (weekMap[dayName] || 0) + Number(payment.seller_amount) || 0;
+              }
+            });
+
+            const formattedChartData = daysOfWeek.map((day, index) => ({
+              day,
+              value: index <= currentWeekday ? parseFloat(((weekMap[day] || 0) as number).toFixed(2)) : null,
+            }));
+
+            setChartData(formattedChartData);
+
+            // Calculate dynamic maximum boundary for chart scaling (+20% padding)
+            const maxVal = Math.max(...formattedChartData.map(d => d.value ?? 0), 0);
+            setMaxChartValue(maxVal > 0 ? Math.ceil(maxVal * 1.2) : 100); 
           }
         } else {
-          // Reset stats if the chef has no recipes
           setTotalUnlocks(0);
           setTotalEarnings(0);
+          setChartData([]);
         }
       } catch (error: any) {
         console.error('Error fetching dashboard data:', error.message);
@@ -99,17 +132,16 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [user, isAuthenticated, authLoading]);
 
-      // Loading state UI while authentication is being verified
-      if (authLoading) {
-        return (
-          <div className="flex justify-center items-center min-h-[50vh]">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-8 h-8 border-4 border-[#0d9488] border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-gray-500 font-roboto">Loading dashboard...</p>
-            </div>
-          </div>
-        );
-      }
+  if (authLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-8 h-8 border-4 border-[#0d9488] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-500 font-roboto">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -136,7 +168,7 @@ export default function Dashboard() {
         />
         <DashboardCard
           title="Total Earnings"
-          value={loading ? "..." : `${totalEarnings.toFixed(3)}`}
+          value={loading ? "..." : `${totalEarnings.toFixed(2)}`}
           subtitle="XRP"
           icon={
             <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,7 +190,15 @@ export default function Dashboard() {
       {/* Analytics Chart Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <AnalyticsChart title="Analytics Overview" data={chartData} maxValue={80} />
+          <AnalyticsChart title="Analytics Overview" data={chartData} maxValue={maxChartValue} chartType="line" />
+            <div className="mt-4 text-right">
+        <Link
+          href="/recipes/analytics"
+          className="text-sm font-medium text-[#0d9488] flex items-center justify-end gap-1"
+        >
+          View detailed analytics <span>→</span>
+        </Link>
+      </div>
         </div>
       </div>
 

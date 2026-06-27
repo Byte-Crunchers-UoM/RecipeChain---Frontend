@@ -412,10 +412,6 @@ export default function RecipesPage() {
             <div className="mt-0.5 rounded-full bg-red-100 p-2 text-red-600">
               <AlertTriangle className="w-4 h-4" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">Rejected recipes found</p>
-              <p className="mt-1 text-sm text-slate-600">You have rejected recipes. Please check your dashboard for details.</p>
-            </div>
           </div>
         </div>
       )}

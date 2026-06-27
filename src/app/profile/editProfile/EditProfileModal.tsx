@@ -82,7 +82,6 @@ export default function EditProfileModal({ isOpen, onClose, profile: initialProf
           display_name: profile.display_name,
           profile_photo: uploadedImageUrl, 
           bio: profile.bio,
-          nationality: profile.nationality,
           experience: profile.experience,
           cuisine: profile.cuisine,
           social_links: profile.social_links,
@@ -204,15 +203,7 @@ export default function EditProfileModal({ isOpen, onClose, profile: initialProf
                         onChange={(e) => updateProfileField('bio', e.target.value)}
                       />
                     </div>
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-700">Nationality</label>
-                      <input
-                        type="text"
-                        className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-teal-300 focus:ring-4 focus:ring-teal-100 outline-none transition"
-                        value={profile.nationality || ''}
-                        onChange={(e) => updateProfileField('nationality', e.target.value)}
-                      />
-                    </div>
+                    
                     <div>
                       <label className="mb-2 block text-sm font-medium text-slate-700">Experience</label>
                       <textarea
@@ -292,22 +283,7 @@ export default function EditProfileModal({ isOpen, onClose, profile: initialProf
                         />
                       </div>
                     </div>
-                     {/* whatsapp */}
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-700">whatsapp</label>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">📸</span>
-                        <input
-                          type="text"
-                          className="w-full rounded-2xl border border-slate-200 pl-11 pr-4 py-3 text-sm focus:border-teal-300 focus:ring-4 focus:ring-teal-100 outline-none transition"
-                          placeholder="@username"
-                          value={profile?.social_links?.whatsapp || ''}
-                          onChange={(e) => updateSocialField('whatsapp', e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-
+                
                     {/* TikTok */}
                     <div>
                       <label className="mb-2 block text-sm font-medium text-slate-700">TikTok</label>

@@ -1444,6 +1444,17 @@ export default function AddRecipeForm() {
                   return;
                 }
 
+                let draftImageUrl = formData.image_url || null;
+                if (imageFile) {
+                  setIsUploadingImage(true);
+                  const uploadedUrl = await uploadToCloudinary(imageFile);
+                  setIsUploadingImage(false);
+                  if (!uploadedUrl) {
+                    throw new Error('Failed to upload image. Please try again.');
+                  }
+                  draftImageUrl = uploadedUrl;
+                }
+
                 const cleanIngredients = formData.ingredients
                   ? formData.ingredients
                       .filter(i => i.name && i.name.trim() !== '')
@@ -1464,7 +1475,7 @@ export default function AddRecipeForm() {
                   chef_id: currentChefId,
                   title: formData.title.trim(),
                   description: formData.description ? formData.description.trim() : null,
-                  image_url: formData.image_url || null,
+                  image_url: draftImageUrl,
                   difficulty_level: formData.difficulty_level || null,
                   prep_time: formData.prep_time !== '' ? Number(formData.prep_time) : null,
                   cook_time: formData.cook_time !== '' ? Number(formData.cook_time) : null,
@@ -1511,6 +1522,7 @@ export default function AddRecipeForm() {
                 localStorage.removeItem('recipeDraftForm');
                 setIsSuccessModalOpen(true);
               } catch (error) {
+                setIsUploadingImage(false);
                 console.error('Error saving draft:', error);
                 const message = error instanceof Error ? error.message : String(error);
                 alert(`Failed to save draft: ${message}`);

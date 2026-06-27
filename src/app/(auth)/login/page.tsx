@@ -32,6 +32,9 @@ export default function LoginPage() {
 
   const [error, setError] = useState("");
 
+  const isInitializing = status === "not_ready" || !web3Auth;
+  const isButtonDisabled = loading || isInitializing;
+
   const routeByRole = async (role: AppRole) => {
     let target = "/select-role";
 
@@ -80,6 +83,11 @@ export default function LoginPage() {
   };
 
   const handleLogin = async () => {
+    
+  if (isInitializing) {
+    setError("Web3Auth is still loading. Please wait a second.");
+    return;
+  }
     setError("");
 
     try {
@@ -181,6 +189,7 @@ export default function LoginPage() {
         <button
           onClick={() => router.push("/signup")}
           disabled={loading}
+          suppressHydrationWarning={true}
           className="rounded-xl border border-teal-500 px-6 py-3 text-sm font-medium text-teal-600 transition hover:bg-teal-50"
         >
           Switch to Sign Up
@@ -220,15 +229,15 @@ export default function LoginPage() {
 
           <button
             onClick={handleLogin}
-            disabled={loading}
+            disabled={isButtonDisabled}
             className={[
               "mt-10 w-full rounded-xl py-4 text-lg font-semibold transition shadow-md",
-              loading
-                ? "bg-gray-200 text-gray-500"
+              isButtonDisabled
+                ? "bg-gray-200 text-gray-400 cursor-not-allowed tier-disabled"
                 : "bg-teal-600 text-white hover:bg-teal-700",
             ].join(" ")}
           >
-            {loading ? "Connecting..." : "Continue with Web3Auth"}
+            {isInitializing ? "Initializing Auth..." : loading ? "Connecting..." : "Continue with Web3Auth"}
           </button>
 
           <div className="mt-6 text-xs text-gray-400">

@@ -187,25 +187,69 @@ export default function ProfilePage() {
               <div className="flex flex-col md:flex-row md:items-center border-b border-slate-50 pb-3">
                 <p className="text-[10px] font-normal text-slate-400 tracking-wider mb-0.5 md:mb-0 w-1/3">Instagram</p>
                 <p className={`text-sm text-left break-all font-normal ${social.instagram ? 'text-slate-800' : 'text-slate-400'}`}>
-                  {social.instagram || "Not specified"}
+                  {social.instagram ? (
+                    <a
+                      href={social.instagram.startsWith('http') ? social.instagram : `https://${social.instagram}`}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      {social.instagram}
+                    </a>
+                  ) : (
+                    'Not specified'
+                  )}
                 </p>
               </div>
               <div className="flex flex-col md:flex-row md:items-center border-b border-slate-50 pb-3">
                 <p className="text-[10px] font-normal text-slate-400 tracking-wider mb-0.5 md:mb-0 w-1/3">Facebook</p>
                 <p className={`text-sm text-left break-all font-normal ${social.facebook ? 'text-slate-800' : 'text-slate-400'}`}>
-                  {social.facebook || "Not specified"}
+                  {social.facebook ? (
+                    <a
+                      href={social.facebook.startsWith('http') ? social.facebook : `https://${social.facebook}`}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      {social.facebook}
+                    </a>
+                  ) : (
+                    'Not specified'
+                  )}
                 </p>
               </div>
               <div className="flex flex-col md:flex-row md:items-center border-b border-slate-50 pb-3">
                 <p className="text-[10px] font-normal text-slate-400 tracking-wider mb-0.5 md:mb-0 w-1/3">YouTube</p>
                 <p className={`text-sm text-left break-all font-normal ${social.youtube ? 'text-slate-800' : 'text-slate-400'}`}>
-                  {social.youtube || "Not specified"}
+                  {social.youtube ? (
+                    <a
+                      href={social.youtube.startsWith('http') ? social.youtube : `https://${social.youtube}`}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      {social.youtube}
+                    </a>
+                  ) : (
+                    'Not specified'
+                  )}
                </p>
               </div>
               <div className="flex flex-col md:flex-row md:items-center pt-1">
                 <p className="text-[10px] font-normal text-slate-400 tracking-wider mb-0.5 md:mb-0 w-1/3">TikTok</p>
                 <p className={`text-sm text-left break-all font-normal ${social.tiktok ? 'text-slate-800' : 'text-slate-400'}`}>
-                  {social.tiktok || "Not specified"}
+                  {social.tiktok ? (
+                    <a
+                      href={social.tiktok.startsWith('http') ? social.tiktok : `https://${social.tiktok}`}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      {social.tiktok}
+                    </a>
+                  ) : (
+                    'Not specified'
+                  )}
                 </p>
               </div>
             </div>
