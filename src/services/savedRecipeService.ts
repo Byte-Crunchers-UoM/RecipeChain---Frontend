@@ -1,6 +1,6 @@
 import { Recipe, RecipeApiResponsed } from "@/lib/types/Recipe";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ;
 const FETCH_TIMEOUT = 10000; // 10 seconds timeout
 
 /**
