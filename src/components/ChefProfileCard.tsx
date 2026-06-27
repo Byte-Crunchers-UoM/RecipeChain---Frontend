@@ -1,24 +1,34 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { useNotifications } from "./NotificationContext";
 import { followChef, getChefProfile } from "@/services/api";
 import { FaFacebook, FaYoutube, FaTiktok, FaInstagram } from 'react-icons/fa';
 
-const ChefProfileCard = () => {
+const ChefProfileCard = ({ chefId: chefIdProp }: { chefId?: string } = {}) => {
     const [isFollowing, setIsFollowing] = useState(false);
     const [followerCount, setFollowerCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [isVerified, setIsVerified] = useState(false);
     const [sellerData, setSellerData] = useState<any>(null);
     const [socialLinks, setSocialLinks] = useState<any>(null);
+    const { user } = useAuth();
     const { addNotification } = useNotifications();
 
-    const chefId = "c99cbd54-2d6a-40a2-b442-c8c8027d4851";
-    const currentBuyerId = 1;
+    const chefId = chefIdProp ?? user?.user_id ?? null;
+    const currentBuyerId = user?.user_id ?? null;
 
     useEffect(() => {
         const fetchSellerData = async () => {
+            if (!chefId) {
+                setSellerData(null);
+                setSocialLinks(null);
+                setFollowerCount(0);
+                setIsVerified(false);
+                return;
+            }
+
             try {
                 const profile = await getChefProfile(chefId);
                 console.log("Chef Profile Received from API:", profile);
@@ -31,6 +41,7 @@ const ChefProfileCard = () => {
                     console.log("Socials:", profile.socials);
 
                     setSellerData(profile.seller);
+                    setFollowerCount(profile.seller.followers_count ?? 0);
                     if (profile.seller.verify_badge_status === "verified") {
                         setIsVerified(true);
                     } else {
@@ -50,7 +61,7 @@ const ChefProfileCard = () => {
     }, [chefId]);
 
     const handleFollowToggle = async () => {
-        if (isLoading) return;
+        if (isLoading || !chefId || !currentBuyerId) return;
 
         if (!isFollowing) {
             setIsFollowing(true);
@@ -116,10 +127,11 @@ const ChefProfileCard = () => {
             <div className="w-full space-y-4 mb-8">
                 <button
                     onClick={handleFollowToggle}
+                    disabled={!chefId || !currentBuyerId || isLoading}
                     className={`w-full py-3.5 rounded-2xl font-bold sub-heading transition-all shadow-lg ${isFollowing
                         ? "bg-[var(--secondary)] text-[var(--primary)] shadow-none"
                         : "bg-[var(--primary)] text-white hover:brightness-110 shadow-teal-100"
-                        }`}
+                        } ${(!chefId || !currentBuyerId || isLoading) ? "opacity-60 cursor-not-allowed hover:brightness-100" : ""}`}
                 >
                     {isFollowing ? "Following" : "Follow"}
                 </button>

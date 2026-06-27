@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { getChefRecipes } from "@/services/api";
 
 const RecipeCard = ({ recipe }: { recipe: any }) => {
@@ -64,14 +65,21 @@ const RecipeCard = ({ recipe }: { recipe: any }) => {
     );
 };
 
-const CookbookSection = () => {
+const CookbookSection = ({ chefId: chefIdProp }: { chefId?: string } = {}) => {
     const [recipes, setRecipes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
 
-    const chefId = "c99cbd54-2d6a-40a2-b442-c8c8027d4851";
+    const chefId = chefIdProp ?? user?.user_id ?? null;
 
     useEffect(() => {
         const fetchRecipes = async () => {
+            if (!chefId) {
+                setRecipes([]);
+                setLoading(false);
+                return;
+            }
+
             setLoading(true);
             try {
                 const data = await getChefRecipes(chefId);

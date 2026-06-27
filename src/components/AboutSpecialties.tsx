@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { getChefProfile, getChefRecipes } from "@/services/api";
 
 interface Specialty {
@@ -8,15 +9,23 @@ interface Specialty {
   dietary_tags: string;
 }
 
-const AboutSpecialties = () => {
+const AboutSpecialties = ({ chefId: chefIdProp }: { chefId?: string } = {}) => {
   const [specialties, setSpecialties] = useState<Specialty[]>([]);
   const [bio, setBio] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  const chefId = "c99cbd54-2d6a-40a2-b442-c8c8027d4851";
+  const chefId = chefIdProp ?? user?.user_id ?? null;
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!chefId) {
+        setSpecialties([]);
+        setBio("");
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
         const [profile, recipes] = await Promise.all([
