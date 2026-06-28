@@ -1009,13 +1009,8 @@ export default function SellerKycForm() {
           if (!cancelled) {
             setKycStatus(statusData);
 
-            if (
-              statusData?.verification_status === "approved" &&
-              statusData?.kyc_approval_page_seen === true
-            ) {
-              router.replace("/seller/dashboard");
-              return;
-            }
+            // UPDATED: Removed automatic redirection to /seller/dashboard here
+            // to ensure VerifiedSuccessView is shown until button click.
 
             const derivedCountry = getDefaultCountryCode(
               statusData?.nationality || ""
@@ -1562,7 +1557,7 @@ export default function SellerKycForm() {
         verifiedAt={kycStatus?.verified_at}
         onLogoutAction={handleLogout}
         onGoDashboardAction={() => handleApprovedPageContinue("/seller/dashboard")}
-        onCreateRecipeAction={() => handleApprovedPageContinue("/seller/recipes")}
+        onCreateRecipeAction={() => handleApprovedPageContinue("/seller/recipes/add")}
         isLoading={isMarkingSeen}
       />
     );
