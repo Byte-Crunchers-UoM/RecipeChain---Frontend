@@ -1643,7 +1643,7 @@ export default function AddRecipeForm() {
                 type="button"
                 onClick={() => {
                   setIsSuccessModalOpen(false);
-                  router.push('/dashboard');
+                  router.push('/seller/dashboard');
                 }}
                 style={{
                   backgroundColor: '#0d9488',
@@ -1662,7 +1662,7 @@ export default function AddRecipeForm() {
                 type="button"
                 onClick={() => {
                   setIsSuccessModalOpen(false);
-                  router.push('/recipes/add');
+                  router.push('/seller/recipes/add');
                 }}
                 style={{
                   backgroundColor: '#e0f2f1',

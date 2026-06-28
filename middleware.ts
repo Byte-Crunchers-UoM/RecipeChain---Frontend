@@ -1,12 +1,16 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+const BUYER_HOME = "/recipes";
+const SELLER_HOME = "/seller/kyc";
+
+export default async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
-  })
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,15 +48,13 @@ export async function middleware(request: NextRequest) {
   const authed = request.cookies.get("recipe_chain_authed")?.value
   
   if (!user && authed === "1") {
-  const url = request.nextUrl.clone()
-  url.pathname = '/login'
-  const response = NextResponse.redirect(url)
-  response.cookies.delete('recipe_chain_authed')
-  response.cookies.delete('recipe_chain_role')
-  return response
-}
-
-  const { pathname } = request.nextUrl
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    const redirectResponse = NextResponse.redirect(url)
+    redirectResponse.cookies.delete('recipe_chain_authed')
+    redirectResponse.cookies.delete('recipe_chain_role')
+    return redirectResponse
+  }
 
   if (pathname === "/dashboard" || pathname === "/profile") {
     if (authed === "1") {
@@ -80,38 +82,33 @@ export async function middleware(request: NextRequest) {
     }
 
     if (role === "seller") {
-      if (pathname.startsWith("/seller/kyc")) {
-        return response
-      }
-      return NextResponse.redirect(new URL("/dashboard", request.url))
+      return NextResponse.redirect(new URL(SELLER_HOME, request.url));
     }
 
     if (role === "buyer") {
-      return NextResponse.redirect(new URL("/dashboard", request.url))
+      return NextResponse.redirect(new URL(BUYER_HOME, request.url));
     }
 
-    return NextResponse.redirect(new URL("/select-role", request.url))
+    return NextResponse.redirect(new URL("/select-role", request.url));
   }
 
   if (isSellerRoute && role !== "seller") {
-    return NextResponse.redirect(new URL("/dashboard", request.url))
+    if (role === "buyer") {
+      return NextResponse.redirect(new URL(BUYER_HOME, request.url));
+    }
+    return NextResponse.redirect(new URL("/select-role", request.url));
   }
 
   if (isBuyerRoute && role !== "buyer") {
-    return NextResponse.redirect(new URL("/dashboard", request.url))
+    if (role === "seller") {
+      return NextResponse.redirect(new URL(SELLER_HOME, request.url));
+    }
+    return NextResponse.redirect(new URL("/select-role", request.url));
   }
 
   return response
 }
 
 export const config = {
-  matcher: [
-    "/dashboard",
-    "/profile",
-    "/seller/:path*",
-    "/buyer/:path*",
-    "/login",
-    "/signup",
-    "/select-role"
-  ],
-}
+  matcher: ["/seller/:path*", "/buyer/:path*", "/login", "/signup", "/select-role"],
+};

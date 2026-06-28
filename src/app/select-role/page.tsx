@@ -20,12 +20,16 @@ type Role = "buyer" | "seller";
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
+const BUYER_HOME = "/buyer/profile";
+const SELLER_HOME = "/seller/kyc";
+
 function RoleCard({
   title,
   description,
   features,
   icon: Icon,
   selected,
+  disabled,
   onClick,
 }: {
   title: string;
@@ -33,15 +37,19 @@ function RoleCard({
   features: string[];
   icon: LucideIcon;
   selected: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={[
         "relative w-full rounded-3xl border p-6 text-left transition-all",
-        "hover:-translate-y-0.5 hover:shadow-md",
+        disabled
+          ? "cursor-not-allowed opacity-60"
+          : "hover:-translate-y-0.5 hover:shadow-md",
         selected
           ? "border-teal-500 bg-teal-50 shadow-sm"
           : "border-slate-200 bg-white hover:border-teal-300",
@@ -58,6 +66,7 @@ function RoleCard({
       </div>
 
       <h3 className="mt-5 text-2xl font-bold text-slate-900">{title}</h3>
+
       <p className="mt-3 text-sm leading-6 text-slate-600">{description}</p>
 
       <div className="mt-6">
@@ -81,6 +90,11 @@ function RoleCard({
   );
 }
 
+/**
+ * Lets authenticated users choose their permanent RecipeChain role.
+ *
+ * Buyer users are sent to the buyer profile, while seller users are sent to KYC.
+ */
 export default function SelectRolePage() {
   const router = useRouter();
   const { isLoading, isAuthenticated, role, refreshSession } = useAuth();
@@ -98,16 +112,18 @@ export default function SelectRolePage() {
     }
 
     if (role === "buyer") {
-      router.replace("/");
+      router.replace(BUYER_HOME);
       return;
     }
 
     if (role === "seller") {
-      router.replace("/seller/kyc");
+      router.replace(SELLER_HOME);
     }
   }, [isLoading, isAuthenticated, role, router]);
 
   const handleContinue = async () => {
+    if (submitting) return;
+
     setError("");
 
     if (!selectedRole) {
@@ -127,16 +143,17 @@ export default function SelectRolePage() {
         body: JSON.stringify({ role: selectedRole }),
       });
 
-      const result: { message?: string } | null =
-        await response.json().catch(() => null);
+      const result = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(result?.message || "Failed to save your role");
+        throw new Error(
+          result?.message || result?.error || "Failed to save your role"
+        );
       }
 
       await refreshSession();
 
-      const target = selectedRole === "seller" ? "/seller/kyc" : "/";
+      const target = selectedRole === "seller" ? SELLER_HOME : BUYER_HOME;
 
       if (typeof window !== "undefined") {
         window.location.replace(target);
@@ -149,6 +166,7 @@ export default function SelectRolePage() {
         e instanceof Error
           ? e.message
           : "Failed to save your role. Please try again.";
+
       setError(message);
     } finally {
       setSubmitting(false);
@@ -160,7 +178,9 @@ export default function SelectRolePage() {
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
           <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
-          <span className="text-sm text-slate-600">Loading account setup...</span>
+          <span className="text-sm text-slate-600">
+            Loading account setup...
+          </span>
         </div>
       </div>
     );
@@ -173,7 +193,8 @@ export default function SelectRolePage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900"
+            disabled={submitting}
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -209,14 +230,15 @@ export default function SelectRolePage() {
           <div className="mt-8 grid gap-4 lg:grid-cols-2">
             <RoleCard
               title="Buyer"
-              description="Browse, purchase, and collect blockchain-secured recipes from creators."
+              description="Browse, purchase, save, and manage your blockchain-secured recipe collection."
               features={[
                 "Discover premium recipes from verified chefs",
-                "Save purchased recipes to your collection",
-                "Review, rate, and follow your favorite creators",
+                "Save purchased recipes to your personal cookbook",
+                "Review recipes and build your buyer profile",
               ]}
               icon={ShoppingBag}
               selected={selectedRole === "buyer"}
+              disabled={submitting}
               onClick={() => setSelectedRole("buyer")}
             />
 
@@ -230,6 +252,7 @@ export default function SelectRolePage() {
               ]}
               icon={ChefHat}
               selected={selectedRole === "seller"}
+              disabled={submitting}
               onClick={() => setSelectedRole("seller")}
             />
           </div>
@@ -238,7 +261,8 @@ export default function SelectRolePage() {
             <div className="flex items-start gap-3">
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
               <p className="text-center text-sm leading-6 text-amber-900">
-                This selection is permanent. Your account role cannot be changed after confirmation.
+                This selection is permanent. Your account role cannot be changed
+                after confirmation.
               </p>
             </div>
           </div>
@@ -258,11 +282,12 @@ export default function SelectRolePage() {
                   ? "Seller selected"
                   : "No role selected yet"}
               </p>
+
               <p className="mt-1 text-sm text-slate-500">
                 {selectedRole === "seller"
                   ? "Next step: complete seller verification"
                   : selectedRole === "buyer"
-                  ? "Next step: go to the home page"
+                  ? "Next step: open your buyer profile"
                   : "Select one option to continue"}
               </p>
             </div>
@@ -282,6 +307,10 @@ export default function SelectRolePage() {
                 "Confirm Role & Continue"
               )}
             </button>
+          </div>
+
+          <div className="mt-6 text-center text-xs text-slate-400">
+            Role will be saved to your account and used on future logins.
           </div>
         </div>
       </div>

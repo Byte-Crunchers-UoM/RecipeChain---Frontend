@@ -1,17 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { BarChart3, BookOpen, LayoutDashboard, User } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
+
+const menuItems = [
+  { label: 'Dashboard', path: '/seller/dashboard', icon: LayoutDashboard },
+  { label: 'Analytics', path: '/seller/recipes/analytics', icon: BarChart3 },
+  { label: 'My Recipes', path: '/seller/recipes', icon: BookOpen },
+  { label: 'Profile', path: '/seller/profile', icon: User },
+];
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const pathname = usePathname();
   
@@ -61,10 +68,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   const headerInfo = (() => {
-    if (pathname.includes('/analytics')) return { title: 'Analytics', subtitle: 'Track your recipe performance and revenue.' };
-    if (pathname.includes('/recipes')) return { title: 'My Recipes', subtitle: 'Manage all your recipes!' };
-    if (pathname.includes('/profile')) return { title: 'Your Profile', subtitle: 'Manage your personal details!' };
-    if (pathname.includes('/settings')) return { title: 'Settings', subtitle: 'Account preferences' };
+    if (pathname.includes('/seller/recipes/analytics')) return { title: 'Analytics', subtitle: 'Track your recipe performance and revenue.' };
+    if (pathname.includes('/seller/recipes')) return { title: 'My Recipes', subtitle: 'Manage all your recipes!' };
+    if (pathname.includes('/seller/profile')) return { title: 'Your Profile', subtitle: 'Manage your personal details!' };
+    if (pathname.includes('/seller/settings')) return { title: 'Settings', subtitle: 'Account preferences' };
     return { title: 'Dashboard', subtitle: 'Welcome back, Chef!' };
   })();
 
@@ -77,46 +84,58 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="flex h-screen bg-[#f8fafb]">
-      <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-[#e5e7eb] transition-all duration-300 flex flex-col`}>
-        <div className="p-6 border-b border-[#e5e7eb] flex items-center justify-between">
-          {isSidebarOpen && (
-            <div className="flex items-center gap-2 font-roboto">
-              <img src="/Logo.png" alt="RecipeChain Logo" className="w-8 h-8 object-contain" />
-              <span className="font-bold text-[#1a2632] text-[14px]">RecipeChain</span>
+      <aside className="relative flex h-full min-h-0 w-72 shrink-0 flex-col border-r border-slate-200 bg-white shadow-[6px_0_18px_rgba(15,23,42,0.04)]">
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-px bg-gradient-to-b from-slate-100 via-slate-200 to-slate-100" />
+
+        <div className="p-6 border-b border-slate-200">
+          <div className="flex items-center gap-3">
+            <img src="/Logo.png" alt="RecipeChain Logo" className="h-10 w-10 rounded-2xl object-contain" />
+            <div>
+            <span className="text-xl font-bold tracking-tight text-slate-800">
+            RecipeChain
+          </span>
             </div>
-          )}
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-[#64748b] p-2 hover:bg-gray-100 rounded-md">☰</button>
+          </div>
         </div>
 
-        <nav className="flex-1 px-3 py-6 space-y-2">
-          <Link href="/dashboard" className={getLinkStyle('/dashboard')} suppressHydrationWarning={true}>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2v-4z" strokeWidth={1.5} /></svg>
-            {isSidebarOpen && <span>Dashboard</span>}
-          </Link>
-          <Link href="/recipes/analytics" className={getLinkStyle('/recipes/analytics')} suppressHydrationWarning>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 17h3V9H3v8zm6 0h3V5H9v12zm6 0h3V11h-3v6zm6 0h3V13h-3v4z" strokeWidth={1.5} /></svg>
-            {isSidebarOpen && <span>Analytics</span>}
-          </Link>
-          <Link href="/recipes" className={getLinkStyle('/recipes')} suppressHydrationWarning>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-            {isSidebarOpen && <span>My Recipes</span>}
-          </Link>
-          <Link href="/profile" className={getLinkStyle('/profile')}>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" strokeWidth={1.5} /></svg>
-            {isSidebarOpen && <span>Profile</span>}
-          </Link>
+        <nav className="flex flex-1 flex-col gap-1 px-4 py-5">
+          {menuItems.map((item) => {
+            const isActive = pathname === item.path;
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.path}
+                href={item.path}
+                className={[
+                  'group flex h-14 w-full items-center rounded-xl border-l-[5px] transition-all duration-200',
+                  isActive
+                    ? 'border-teal-600 bg-teal-50 text-teal-700'
+                    : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800',
+                ].join(' ')}
+              >
+                <div className="flex w-full items-center gap-4 px-4">
+                  <Icon
+                    size={22}
+                    strokeWidth={isActive ? 2.4 : 2}
+                    className={isActive ? 'text-teal-600' : 'text-slate-400'}
+                  />
+
+                  <span className={[
+                    'text-base',
+                    isActive ? 'font-bold' : 'font-medium',
+                  ].join(' ')}>
+                    {item.label}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
         </nav>
-
-        <div className="px-3 py-6 border-t border-[#e5e7eb]">
-          <button className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg text-[14px]">
-            <span className="text-xl">🚪</span>
-            {isSidebarOpen && <span>Logout</span>}
-          </button>
-        </div>
       </aside>
 
       <main className="flex-1 overflow-auto">
-        <header className="bg-white border-b border-[#e5e7eb] px-8 py-4 flex items-center justify-between sticky top-0 z-10 font-roboto">
+        <header className="bg-white border-b border-[#e5e7eb] px-8 py-5 flex items-center justify-between sticky top-0 z-10 font-roboto">
           <div>
             <h2 className="text-[18px] font-bold text-[#1a2632] leading-tight">{headerInfo.title}</h2>
             <p className="text-[12px] text-[#64748b]">{headerInfo.subtitle}</p>

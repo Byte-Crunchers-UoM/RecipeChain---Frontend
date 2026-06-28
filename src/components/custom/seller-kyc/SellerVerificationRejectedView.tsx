@@ -10,12 +10,14 @@ import {
 import Image from "next/image";
 import { parseSellerKycRejection } from "@/lib/kycRejection";
 
+type ButtonAction = () => void | Promise<void>;
+
 type Props = {
   rejectedAt?: string | null;
   rejectionReason?: string | null;
-  onResubmit: () => void;
-  onSupport?: () => void;
-  onLogout?: () => void;
+  onLogoutAction: ButtonAction;
+  onResubmitAction: ButtonAction;
+  onSupportAction?: ButtonAction;
 };
 
 function formatDecisionDate(value?: string | null) {
@@ -51,16 +53,16 @@ function getStatusBadgeClass(status?: string) {
 export default function SellerVerificationRejectedView({
   rejectedAt,
   rejectionReason,
-  onResubmit,
-  onSupport,
-  onLogout,
+  onLogoutAction,
+  onResubmitAction,
+  onSupportAction,
 }: Props) {
   const parsed = parseSellerKycRejection(rejectionReason);
 
   return (
     <div className="min-h-screen bg-[#F4F6F7]">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-[58px] max-w-[1280px] items-center justify-between px-4">
+        <div className="mx-auto flex min-h-[58px] max-w-[1280px] items-center justify-between px-4 py-1">
           <Image
             src="/Logo.png"
             alt="RecipeChain Logo"
@@ -69,20 +71,22 @@ export default function SellerVerificationRejectedView({
             className="h-auto w-[34px] object-contain"
             priority
           />
-          <div className="flex items-center gap-3">
-            <div className="rounded-[12px] border border-[#E5E7EB] bg-white px-4 py-1.5 text-sm font-medium text-[#3B4552]">
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                void onLogoutAction();
+              }}
+              className="inline-flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+
+            <div className="rounded-[12px] border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600">
               Status: Rejected
             </div>
-            {onLogout && (
-              <button
-                type="button"
-                onClick={onLogout}
-                className="flex items-center justify-center gap-2 rounded-[12px] border border-slate-200 bg-white px-4 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </button>
-            )}
           </div>
         </div>
       </header>
@@ -108,7 +112,8 @@ export default function SellerVerificationRejectedView({
               <div>
                 <p className="font-semibold text-[#A33A3A]">Action Required</p>
                 <p className="mt-1 text-sm text-[#A33A3A]">
-                  Your verification was rejected. You can resubmit corrected information at any time.
+                  Your verification was rejected. You can resubmit corrected
+                  information at any time.
                 </p>
               </div>
             </div>
@@ -163,7 +168,8 @@ export default function SellerVerificationRejectedView({
                 ))
               ) : (
                 <div className="rounded-[14px] border border-[#E6EAF0] bg-white px-4 py-4 text-sm text-[#708090]">
-                  No structured rejection items were provided yet. Review the summary above and resubmit.
+                  No structured rejection items were provided yet. Review the
+                  summary above and resubmit.
                 </div>
               )}
             </div>
@@ -203,7 +209,9 @@ export default function SellerVerificationRejectedView({
               <li>• Only provide the specific items requested above.</li>
               <li>• Your previously submitted information remains on file.</li>
               <li>• Review will resume immediately after submission.</li>
-              <li>• Contact support if you need clarification on requirements.</li>
+              <li>
+                • Contact support if you need clarification on requirements.
+              </li>
             </ul>
           </div>
 
@@ -221,7 +229,9 @@ export default function SellerVerificationRejectedView({
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
             <button
               type="button"
-              onClick={onResubmit}
+              onClick={() => {
+                void onResubmitAction();
+              }}
               className="inline-flex items-center justify-center gap-2 rounded-[12px] bg-[#169C97] px-5 py-4 text-sm font-semibold text-white transition hover:opacity-95"
             >
               <RefreshCcw className="h-4 w-4" />
@@ -230,8 +240,11 @@ export default function SellerVerificationRejectedView({
 
             <button
               type="button"
-              onClick={onSupport}
-              className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[#D7DCE2] bg-white px-5 py-4 text-sm font-semibold text-[#2E3742] transition hover:bg-[#F8FAFC]"
+              onClick={() => {
+                void onSupportAction?.();
+              }}
+              disabled={!onSupportAction}
+              className="inline-flex items-center justify-center gap-2 rounded-[12px] border border-[#D7DCE2] bg-white px-5 py-4 text-sm font-semibold text-[#2E3742] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Headphones className="h-4 w-4" />
               Get Help from Support
@@ -252,7 +265,8 @@ export default function SellerVerificationRejectedView({
           )}
 
           <p className="mt-8 text-center text-sm text-[#98A2B3]">
-            Need help? Your support team can assist with the verification process.
+            Need help? Your support team can assist with the verification
+            process.
           </p>
         </div>
       </main>

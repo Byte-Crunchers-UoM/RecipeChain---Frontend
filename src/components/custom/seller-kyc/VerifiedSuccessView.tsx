@@ -13,12 +13,14 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
+type ButtonAction = () => void | Promise<void>;
+
 type Props = {
   submittedAt?: string | null;
   verifiedAt?: string | null;
-  onLogout: () => void | Promise<void>;
-  onGoDashboard: () => void | Promise<void>;
-  onCreateRecipe: () => void | Promise<void>;
+  onLogoutAction: ButtonAction;
+  onGoDashboardAction: ButtonAction;
+  onCreateRecipeAction: ButtonAction;
   isLoading?: boolean;
 };
 
@@ -61,19 +63,17 @@ function FeatureCard({
       <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-teal-50 text-teal-600">
         {icon}
       </div>
-      <h3 className="mt-4 text-[17px] font-semibold text-slate-800">{title}</h3>
+
+      <h3 className="mt-4 text-[17px] font-semibold text-slate-800">
+        {title}
+      </h3>
+
       <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
     </div>
   );
 }
 
-function SummaryItem({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function SummaryItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
@@ -87,10 +87,10 @@ function SummaryItem({
 export default function VerifiedSuccessView({
   submittedAt,
   verifiedAt,
-  onLogout,
-  onGoDashboard,
-  onCreateRecipe,
-  isLoading: initialLoading = false,
+  onLogoutAction,
+  onGoDashboardAction,
+  onCreateRecipeAction,
+  isLoading = false,
 }: Props) {
 
   const router = useRouter(); // Step 1: Initialize router
@@ -102,7 +102,7 @@ export default function VerifiedSuccessView({
     if (onGoDashboard) {
       await onGoDashboard();
     }
-   window.location.href = '/dashboard';
+   window.location.href = '/seller/dashboard';
   };
 
   const timelineSteps = [
@@ -123,7 +123,7 @@ export default function VerifiedSuccessView({
   return (
     <div className="min-h-screen bg-[#F3F5F7]">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-1">
+        <div className="mx-auto flex min-h-[58px] max-w-[1280px] items-center justify-between px-4 py-1">
           <Image
             src="/Logo.png"
             alt="RecipeChain logo"
@@ -136,9 +136,11 @@ export default function VerifiedSuccessView({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={onLogout}
-              disabled={initialLoading}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => {
+                void onLogoutAction();
+              }}
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <LogOut className="h-4 w-4" />
               Logout
@@ -146,9 +148,11 @@ export default function VerifiedSuccessView({
 
             <button
               type="button"
-              onClick={onGoDashboard}
-              disabled={initialLoading}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => {
+                void onGoDashboardAction();
+              }}
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {initialLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -158,7 +162,7 @@ export default function VerifiedSuccessView({
               Dashboard
             </button>
 
-            <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800">
+            <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
               Status: Approved
             </div>
           </div>
@@ -197,9 +201,11 @@ export default function VerifiedSuccessView({
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
                       <Check className="h-5 w-5" />
                     </div>
+
                     <p className="mt-3 text-sm font-semibold text-slate-700">
                       {step.label}
                     </p>
+
                     <p className="mt-1 text-xs text-slate-500">{step.date}</p>
                   </div>
                 ))}
@@ -214,11 +220,13 @@ export default function VerifiedSuccessView({
                 title="Start Selling"
                 description="List and publish your recipes for buyers across the marketplace."
               />
+
               <FeatureCard
                 icon={<ShieldCheck className="h-5 w-5" />}
                 title="Trusted Seller"
                 description="Your verified badge builds confidence and trust with buyers."
               />
+
               <FeatureCard
                 icon={<LayoutDashboard className="h-5 w-5" />}
                 title="Manage Easily"
@@ -236,6 +244,7 @@ export default function VerifiedSuccessView({
                   label="Submitted On"
                   value={formatLongDate(submittedAt)}
                 />
+
                 <SummaryItem
                   label="Approved On"
                   value={formatLongDate(verifiedAt)}
@@ -245,9 +254,11 @@ export default function VerifiedSuccessView({
               <div className="mt-5 grid gap-3 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
                 <button
                   type="button"
-                  onClick={onGoDashboard}
-                  disabled={initialLoading}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-4 text-[15px] font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={() => {
+                    void onGoDashboardAction();
+                  }}
+                  disabled={isLoading}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-4 text-[15px] font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {initialLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -259,9 +270,11 @@ export default function VerifiedSuccessView({
 
                 <button
                   type="button"
-                  onClick={onCreateRecipe}
-                  disabled={initialLoading}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-[15px] font-semibold text-slate-800 transition-all duration-200 hover:bg-teal-600 hover:text-white hover:border-teal-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={() => {
+                    void onCreateRecipeAction();
+                  }}
+                  disabled={isLoading}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-[15px] font-semibold text-slate-800 transition-all duration-200 hover:border-teal-600 hover:bg-teal-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {initialLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
