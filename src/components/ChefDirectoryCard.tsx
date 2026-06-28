@@ -7,6 +7,8 @@ import { MapPin, ChefHat, Check, MoreHorizontal } from "lucide-react";
 import { followChef } from "@/services/api";
 import { useNotifications } from "@/components/NotificationContext";
 
+import { useFollowedChefs } from "@/context/FollowedChefsContext";
+
 interface ChefCardProps {
   chef: {
     user_id: string;
@@ -22,9 +24,11 @@ interface ChefCardProps {
 }
 
 const ChefDirectoryCard: React.FC<ChefCardProps> = ({ chef, currentBuyerId = 1 }) => {
-  const [isFollowing, setIsFollowing] = useState(false);
+  const { followChefLocally, unfollowChefLocally, isFollowingLocally } = useFollowedChefs();
   const [isLoading, setIsLoading] = useState(false);
   const { addNotification } = useNotifications();
+  
+  const isFollowing = isFollowingLocally(chef.user_id);
   
   const name = chef.display_name || chef.full_name || "Unknown Chef";
   const isVerified = chef.verify_badge_status === "verified";
@@ -35,19 +39,19 @@ const ChefDirectoryCard: React.FC<ChefCardProps> = ({ chef, currentBuyerId = 1 }
     if (isLoading) return;
 
     if (!isFollowing) {
-      setIsFollowing(true);
       setIsLoading(true);
       try {
         await followChef(chef.user_id, currentBuyerId);
+        await followChefLocally(chef);
         addNotification(`You started following ${name}.`, "success");
       } catch (error) {
-        setIsFollowing(false);
         addNotification("Failed to follow chef. " + (error instanceof Error ? error.message : ""), "info");
       } finally {
         setIsLoading(false);
       }
     } else {
-      setIsFollowing(false);
+      unfollowChefLocally(chef.user_id);
+      addNotification(`You unfollowed ${name}.`, "info");
     }
   };
 

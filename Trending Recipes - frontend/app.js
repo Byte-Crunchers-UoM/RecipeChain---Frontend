@@ -9,7 +9,7 @@ let allRecipes = [];
 async function fetchTrendingRecipes(category = null) {
     try {
         recipeGrid.innerHTML = '<div class="loader">Loading trending recipes...</div>';
-        
+
         let url = `${API_BASE_URL}/trending?limit=20`;
         if (category && category !== 'all') {
             url += `&category=${category}`;
@@ -44,13 +44,13 @@ function renderRecipes(recipes) {
     recipes.forEach(recipe => {
         const card = document.createElement('div');
         card.className = 'recipe-card';
-        
+
         // Handle difficulty class
         const difficultyClass = (recipe.difficulty_level || 'Medium').toLowerCase();
-        
+
         // Handle average rating
         const rating = (recipe.average_rating || recipe.rating || 0).toFixed(1);
-        
+
         // Handle reviews count
         const reviewsCount = recipe.rating_count || 0;
 
@@ -101,10 +101,10 @@ function renderRecipes(recipes) {
 // Category filter handling
 categoryTabs.addEventListener('click', (e) => {
     if (e.target.classList.contains('tab')) {
-        // Update UI
+
         document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
         e.target.classList.add('active');
-        
+
         // Fetch new data
         const category = e.target.getAttribute('data-category');
         fetchTrendingRecipes(category);

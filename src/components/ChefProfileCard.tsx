@@ -6,9 +6,10 @@ import { useSearchParams } from "next/navigation";
 import { useNotifications } from "./NotificationContext";
 import { followChef, getChefProfile } from "@/services/api";
 import { FaFacebook, FaYoutube, FaTiktok, FaInstagram } from 'react-icons/fa';
+import { useFollowedChefs } from "@/context/FollowedChefsContext";
 
 const ChefProfileCard = () => {
-    const [isFollowing, setIsFollowing] = useState(false);
+    const { followChefLocally, unfollowChefLocally, isFollowingLocally } = useFollowedChefs();
     const [followerCount, setFollowerCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [isVerified, setIsVerified] = useState(false);
@@ -61,22 +62,19 @@ const ChefProfileCard = () => {
                     setSocialLinks(profile.socials);
                 }
             } catch (error) {
-                console.error("Error fetching chef data:", error);
+                console.error("Error fetching chef profile:", error);
             }
         };
 
         fetchSellerData();
     }, [chefId]);
 
+    const isFollowing = chefId ? isFollowingLocally(chefId) : false;
+
     const handleFollowToggle = async () => {
-        if (!chefId) {
-            addNotification("Unable to follow: missing chef ID.", "info");
-            return;
-        }
-        if (isLoading) return;
+        if (!chefId || isLoading) return;
 
         if (!isFollowing) {
-            setIsFollowing(true);
             setIsLoading(true);
 
             try {
@@ -91,18 +89,28 @@ const ChefProfileCard = () => {
                 }
 
                 // Simultaneous notifications on success
-                addNotification("You are started to following new chef.", "success");
+                addNotification("You started following this chef.", "success");
                 addNotification("New buyer started following you.", "info");
+                
+                if (sellerData) {
+                    await followChefLocally({
+                        user_id: chefId,
+                        display_name: sellerData.display_name,
+                        full_name: sellerData.full_name,
+                        profile_photo: sellerData.profile_photo,
+                        verify_badge_status: sellerData.verify_badge_status,
+                        followers_count: followerCount + 1,
+                    });
+                }
             } catch (error) {
                 // Revert on failure
-                setIsFollowing(false);
                 addNotification("Failed to follow chef. " + (error instanceof Error ? error.message : ""), "info");
             } finally {
                 setIsLoading(false);
             }
         } else {
             // Basic unfollow logic 
-            setIsFollowing(false);
+            unfollowChefLocally(chefId);
             setFollowerCount((prev) => prev - 1);
         }
     };

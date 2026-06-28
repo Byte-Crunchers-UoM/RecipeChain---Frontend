@@ -64,7 +64,7 @@ const Sidebar = () => {
           <span className="font-medium">Market Place</span>
         </Link>
 
-        <Link href="/" className={navLinkClass('/')}>
+        <Link href="/trending" className={navLinkClass('/trending')}>
           <TrendingUp size={20} />
           <span className="font-medium">Trending Recipes</span>
         </Link>
@@ -88,13 +88,6 @@ const Sidebar = () => {
 
           {isChefsOpen && (
             <div className="pl-12 pr-4 space-y-1 mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
-              <Link
-                href="/chefs/profile"
-                className={`flex items-center gap-3 py-2 px-3 rounded-lg text-sm font-medium transition-all ${isActive('/chefs/profile') ? 'text-[#008080] bg-[#e6f2f2]' : 'text-slate-500 hover:bg-[#e6f2f2] hover:text-[#008080]'}`}
-              >
-                <User size={18} />
-                <span>Chef Profile</span>
-              </Link>
               <Link
                 href="/chefs/explore"
                 className={`flex items-center gap-3 py-2 px-3 rounded-lg text-sm font-medium transition-all ${isActive('/chefs/explore') ? 'text-[#008080] bg-[#e6f2f2]' : 'text-slate-500 hover:bg-[#e6f2f2] hover:text-[#008080]'}`}

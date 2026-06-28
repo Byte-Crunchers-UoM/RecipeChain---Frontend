@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@stripe/stripe-js": "^9.3.1",
+    "@supabase/supabase-js": "^2.108.2",
     "@web3auth/modal": "^10.7.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -25,15 +26,11 @@
     "ox": "^0.9.17",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-icons": "^5.6.0",
     "stripe": "^22.0.2",
     "tailwind-merge": "^3.5.0",
     "viem": "^2.41.2",
-    "xrpl": "^2.14.3""@supabase/supabase-js": "^2.108.2",
-    "lucide-react": "^1.14.0",
-    "next": "16.1.1",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "react-icons": "^5.6.0"
+    "xrpl": "^2.14.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
