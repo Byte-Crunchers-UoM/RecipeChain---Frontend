@@ -1,10 +1,11 @@
+//src/services/recipeServices.ts
 import { Recipe, RecipeApiResponsed } from "@/lib/types/Recipe";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const FETCH_TIMEOUT = 10000;
 
 /** Fetches a list of all available recipes from the API. */
-export async function fetchRecipes(page: number = 1, limit: number = 6): Promise<{ recipes: Recipe[], meta: any }> {
+export async function fetchRecipes(page: number = 1, limit: number = 12): Promise<{ recipes: Recipe[], meta: any }> {
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
@@ -134,4 +135,34 @@ export const searchRecipes = async (query: string): Promise<Recipe[]> => {
         console.error("Fetch Search Recipes Error:", error);
         return [];
     }
+}
+
+export async function getCheckoutQuote(recipeIds: string[]) {
+    const response = await fetch(`${BASE_URL}/recipes/checkout-quote`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipeIds }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to fetch checkout quote');
+    return data.data as {
+        payableItems: { recipe_id: string; title: string; price: number; seller_id: string }[];
+        skippedItems: { recipe_id: string; title: string; reason: string }[];
+        totalDue: number;
+    };
+}
+
+export async function unlockRecipesBatch(recipeIds: string[], transactionHash: string) {
+    const response = await fetch(`${BASE_URL}/recipes/unlock-batch`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipeIds, transactionHash }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Batch unlock failed');
+    return data.data as { batch_id: string; unlocked: string[]; duplicates: string[]; skipped: any[] };
 }

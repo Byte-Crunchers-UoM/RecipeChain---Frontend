@@ -4,6 +4,7 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { BrowseMarketplaceBtn } from '@/components/ui/MarcketplaceButton';
 import { CTA_TITLE, CTA_DESCRIPTION, CTA_BECOME_CHEF_TEXT } from '@/lib/constants/home.constants';
+import Link from 'next/link';
 
 /** Renders a Call-To-Action section encouraging users to browse the marketplace or become a chef. */
 export function CTASection(): React.ReactElement {
@@ -29,12 +30,13 @@ export function CTASection(): React.ReactElement {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <BrowseMarketplaceBtn />
-          <button 
+          <Link 
+            href="/signup" 
             className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white px-8 py-3.5 rounded-xl font-semibold hover:bg-white/20 transition-all duration-300"
             aria-label="Become a chef and start selling recipes"
           >
-            {CTA_BECOME_CHEF_TEXT} <ArrowRight size={20} />
-          </button>
+    {CTA_BECOME_CHEF_TEXT} <ArrowRight size={20} />
+  </Link>
         </div>
       </div>
     </section>

@@ -1,3 +1,5 @@
+//src/components/recipe/RecipePaymentModel.tsx
+
 'use client';
 
 import React, { useEffect } from 'react';
@@ -67,7 +69,7 @@ export default function RecipePaymentModal({ recipe, isOpen, onClose, onSuccess 
         {isUnauthenticated ? (
           <UnauthenticatedView onClose={onClose} />
         ) : isSuccess ? (
-          <SuccessView onSuccess={onSuccess} />
+          <SuccessView recipe={recipe} onSuccess={onSuccess} />
         ) : (
           <PaymentCheckoutView 
             recipe={recipe} 
@@ -113,7 +115,18 @@ function UnauthenticatedView({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
-function SuccessView({ onSuccess }: { onSuccess: () => void }) {
+
+function SuccessView({ recipe, onSuccess }: { recipe: Recipe; onSuccess: () => void }) {
+  const router = useRouter();
+
+  // Lets the parent run any side effects it needs (closing the modal,
+  // refreshing purchase state, etc.) and then takes the user straight
+  // to the full, now-unlocked recipe.
+  const handleViewRecipe = () => {
+    onSuccess();
+    router.push(`/recipes/${recipe.recipe_id}`);
+  };
+
   return (
     <div className="p-10 text-center animate-in zoom-in duration-500">
       <div className="relative mx-auto w-24 h-24 mb-6">
@@ -124,7 +137,7 @@ function SuccessView({ onSuccess }: { onSuccess: () => void }) {
       </div>
       <h3 className="text-3xl font-extrabold text-slate-900 mb-2 tracking-tight">Recipe Unlocked!</h3>
       <p className="text-slate-500 mb-8 leading-relaxed">Payment successful! You now have full lifetime access.</p>
-      <button onClick={onSuccess} className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-[0.98]">
+      <button onClick={handleViewRecipe} className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-[0.98]">
         <CheckCircle className="w-5 h-5" /> View Full Recipe
       </button>
     </div>
