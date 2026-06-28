@@ -1,11 +1,16 @@
 //src/components/recipe/RecipeCartOverlay.tsx
+
 "use client";
+
+import { useState } from 'react';
 import { useRecipeCart } from '@/context/RecipeCartContext';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Lock } from 'lucide-react';
 import RecipeCartItem from './RecipeCartItem';
+import RecipeBatchPaymentModal from './RecipeBatchPaymentModal';
 
 const RecipeCartOverlay = () => {
     const { isOpen, closeCart, cartItems, removeFromCart, isLoading, error } = useRecipeCart();
+    const [isPaymentOpen, setIsPaymentOpen] = useState(false);
 
     if (!isOpen) return null;
 
@@ -71,9 +76,29 @@ const RecipeCartOverlay = () => {
                 {/* Bottom Actions */}
                 {cartItems.length > 0 && (
                     <div className="p-6 border-t border-gray-100 space-y-3">
+                        <button
+                            onClick={() => setIsPaymentOpen(true)}
+                            className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-teal-200 transition-all active:scale-[0.98]"
+                        >
+                            <Lock size={18} /> Unlock All Saved Recipes
+                        </button>
                     </div>
                 )}
             </div>
+
+            {/*
+              Batch checkout modal — manages its own quote, payment, and
+              success screen internally, and only closes itself (via the
+              "Done" button or by navigating to a recipe). We deliberately
+              do NOT auto-close it from here on success, otherwise the user
+              would never see the "Recipes Unlocked" screen or the
+              View Recipe buttons.
+            */}
+            <RecipeBatchPaymentModal
+                recipes={cartItems}
+                isOpen={isPaymentOpen}
+                onClose={() => setIsPaymentOpen(false)}
+            />
         </div>
     );
 };

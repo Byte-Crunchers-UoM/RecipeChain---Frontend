@@ -1,4 +1,3 @@
-//src/app/%28protected%29/recipes/%5Bid%5D/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
