@@ -1,4 +1,10 @@
-import type { WalletOverview, WalletTransaction } from "@/lib/types/wallet";
+// src/lib/api/wallet.ts
+
+import type {
+  WalletOverview,
+  WalletTransaction,
+  XrpUsdRateQuote,
+} from "@/lib/types/wallet";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
@@ -18,32 +24,48 @@ type WalletTransactionsResponse = ApiMessageResponse & {
   transactions?: WalletTransaction[];
 };
 
+type XrpUsdRateResponse = ApiMessageResponse & {
+  quote?: XrpUsdRateQuote;
+};
+
 type StripeTopupCheckoutResponse = ApiMessageResponse & {
   sessionId?: string;
   url?: string;
+  quote?: XrpUsdRateQuote;
 };
 
 export type BuyRecipeResponse = ApiMessageResponse & {
   paymentId?: string | number;
   recipeId?: string | number;
+
   payment?: {
     id?: string | number;
     payment_id?: string | number;
+    recipe_id?: string | number;
     recipe_title?: string;
     amount?: number | string;
+    status?: string;
   };
+
   recipe?: {
     id?: string | number;
+    recipe_id?: string | number;
     title?: string;
     price?: number | string;
   };
+
+  newBalance?: number | string;
+  commissionAmount?: number | string;
+  sellerAmount?: number | string;
 };
 
 type WithdrawalRequestResponse = ApiMessageResponse & {
+  request?: unknown;
   withdrawalId?: string | number;
 };
 
 type RefundRequestResponse = ApiMessageResponse & {
+  request?: unknown;
   refundId?: string | number;
 };
 
@@ -81,7 +103,9 @@ export async function getMyWalletOverview(): Promise<WalletOverview> {
   const resp = await fetch(`${API_BASE}/wallet/me`, {
     method: "GET",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     cache: "no-store",
   });
 
@@ -98,7 +122,9 @@ export async function getMyWalletTransactions(): Promise<WalletTransaction[]> {
   const resp = await fetch(`${API_BASE}/wallet/transactions`, {
     method: "GET",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     cache: "no-store",
   });
 
@@ -107,14 +133,45 @@ export async function getMyWalletTransactions(): Promise<WalletTransaction[]> {
   return data.transactions || [];
 }
 
+export async function getXrpUsdRate(): Promise<XrpUsdRateQuote> {
+  const resp = await fetch(`${API_BASE}/wallet/xrp-rate`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
+  });
+
+  const data = await parseJson<XrpUsdRateResponse>(resp);
+
+  if (!data?.quote?.xrpUsdRate) {
+    throw new Error("XRP/USD rate was not returned by the server");
+  }
+
+  return data.quote;
+}
+
+/**
+ * New top-up flow:
+ * Frontend sends XRP amount.
+ * Backend gets live XRP/USD rate.
+ * Backend calculates USD amount.
+ * Stripe charges USD.
+ * Webhook credits exact XRP amount.
+ */
 export async function createStripeTopupCheckoutSession(payload: {
-  amount: number;
+  xrpAmount: number;
 }): Promise<StripeTopupCheckoutResponse> {
   const resp = await fetch(`${API_BASE}/wallet/topup/checkout-session`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      xrpAmount: payload.xrpAmount,
+    }),
   });
 
   const data = await parseJson<StripeTopupCheckoutResponse>(resp);
@@ -132,8 +189,12 @@ export async function buyRecipeWithWalletBalance(
   const resp = await fetch(`${API_BASE}/wallet/buy`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ recipeId }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      recipeId,
+    }),
   });
 
   return parseJson<BuyRecipeResponse>(resp);
@@ -147,8 +208,14 @@ export async function createWithdrawalRequest(payload: {
   const resp = await fetch(`${API_BASE}/wallet/withdrawals`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      amount: payload.amount,
+      destinationWallet: payload.destinationWallet,
+      note: payload.note,
+    }),
   });
 
   return parseJson<WithdrawalRequestResponse>(resp);
@@ -161,8 +228,13 @@ export async function createRefundRequest(payload: {
   const resp = await fetch(`${API_BASE}/wallet/refunds`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      paymentId: payload.paymentId,
+      reason: payload.reason,
+    }),
   });
 
   return parseJson<RefundRequestResponse>(resp);
