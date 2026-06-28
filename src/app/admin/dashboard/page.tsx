@@ -6,7 +6,9 @@ import { Poppins } from 'next/font/google';
 import AdminSidebar from '@/app/components/layout/AdminSidebar';
 import { 
   Bell, LayoutGrid, Users, FileText, UserCheck, 
-  Clock, DollarSign, CheckCircle2, FilePlus 
+  Clock, DollarSign, CheckCircle2, FilePlus, 
+  UserX,
+  XCircle
 } from 'lucide-react';
 
 const customFont = Poppins({ subsets: ['latin'], weight: ['500', '600', '700'] });
@@ -18,6 +20,8 @@ export default function AdminDashboard() {
   
   //This holds the live data from your Express backend
   const [liveStats, setLiveStats] = useState<any>(null);
+
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
 
   useEffect(() => {
     const checkAuthAndFetchData = async () => {
@@ -46,10 +50,12 @@ export default function AdminDashboard() {
         });
 
         const data = await response.json();
+        console.log("API Response:", data);
 
         if (response.ok) {
           // Save the live numbers into React state!
           setLiveStats(data.data); 
+          setRecentActivities(data.data.activities || []);
         } else {
           localStorage.removeItem('adminToken');
           router.push('/admin/login');
@@ -76,15 +82,26 @@ export default function AdminDashboard() {
     { title: "Total Transactions", value: liveStats?.totalTransactions || "0", icon: DollarSign },
     { title: "Platform Revenue", value: liveStats?.platformRevenue || "0 XRP", icon: DollarSign },
   ];
-
-  //  data for recent activity 
-  const activities = [
-    { title: "New Recipe Purchase", desc: "User @chef_marco purchased 'Italian Carbonara' for 50 XRP", time: "5 min ago", icon: FileText, iconBg: "bg-[#EBF7F6]", iconColor: "text-[#149984]" },
-    { title: "Recipe Approved", desc: "Admin approved 'Vegan Buddha Bowl' by @healthychef", time: "12 min ago", icon: CheckCircle2, iconBg: "bg-green-50", iconColor: "text-green-500" },
-    { title: "New User Registration", desc: "New chef @cooking_star joined the platform", time: "23 min ago", icon: Users, iconBg: "bg-purple-50", iconColor: "text-purple-500" },
-    { title: "Recipe Submitted", desc: "@pastaqueen submitted 'Authentic Pesto Pasta' for review", time: "1 hour ago", icon: FilePlus, iconBg: "bg-blue-50", iconColor: "text-blue-500" },
-    { title: "New Recipe Purchase", desc: "User @foodlover bought 'French Macarons' for 75 XRP", time: "2 hours ago", icon: FileText, iconBg: "bg-[#EBF7F6]", iconColor: "text-[#149984]" },
-  ];
+  const getIconProps = (type: string) => {
+    switch (type) {
+        case 'PURCHASE':
+            return { icon: FileText, iconBg: "bg-[#EBF7F6]", iconColor: "text-[#149984]" };
+        case 'APPROVAL':
+            return { icon: CheckCircle2, iconBg: "bg-green-50", iconColor: "text-green-500" };
+        case 'REGISTRATION':
+            return { icon: Users, iconBg: "bg-purple-50", iconColor: "text-purple-500" };
+        case 'SELLER_VERIFICATION':
+            return { icon: UserCheck, iconBg: "bg-blue-50", iconColor: "text-blue-500" };
+        case 'SELLER_REJECTION':
+            return { icon: UserX, iconBg: "bg-orange-50", iconColor: "text-orange-500" };
+        case 'USER_BLOCK':
+            return { icon: XCircle, iconBg: "bg-red-50", iconColor: "text-red-600" };
+          
+        default:
+            return { icon: FilePlus, iconBg: "bg-blue-50", iconColor: "text-blue-500" };
+    }
+};
+  
 
   return (
     <div className={`min-h-screen bg-[#F8FAFB] flex ${customFont.className}`}>
@@ -169,34 +186,43 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          
           {/* Recent Activity List */}
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
             <h3 className="text-lg font-bold text-[#23262f]">Recent Activity</h3>
             <p className="text-xs text-gray-500 font-medium mb-6">Latest platform events</p>
+           
             
             <div className="space-y-6">
-              {activities.map((activity, index) => (
+           {recentActivities.map((activity, index) => {
+           const { icon: Icon, iconBg, iconColor } = getIconProps(activity.activity_type); // Note: Use 'activity_type' here
+
+            return (
                 <div key={index} className="flex gap-4">
-                  <div className={`h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 ${activity.iconBg} ${activity.iconColor}`}>
-                    <activity.icon className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <h4 className="text-sm font-bold text-[#23262f]">{activity.title}</h4>
-                      <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap ml-2">{activity.time}</span>
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 ${iconBg} ${iconColor}`}>
+                        <Icon className="h-5 w-5" />
                     </div>
-                    <p className="text-xs text-gray-500 font-medium mt-0.5">{activity.desc}</p>
-                  </div>
+                    <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                            <h4 className="text-sm font-bold text-[#23262f]">{activity.title}</h4>
+                            {/* Format the date to look nice */}
+                            <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap ml-2">
+                                {new Date(activity.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        </div>
+                        {/* Use 'description' instead of 'desc' */}
+                        <p className="text-xs text-gray-500 font-medium mt-0.5">{activity.description}</p>
+                    </div>
                 </div>
-              ))}
-            </div>
+            );
+        })}
             
             <button className="w-full text-center text-xs font-bold text-[#149984] mt-6 hover:text-[#0f7d6d] transition-colors">
               View All Activity →
             </button>
           </div>
-          
         </div>
+      </div>
       </main>
     </div>
   );

@@ -98,7 +98,7 @@ export default function ActiveSellerProfile() {
                   <div className={`p-4 rounded-xl ${stat.bg} ${stat.color}`}><stat.icon size={24} /></div>
                   <div>
                     <p className="text-gray-400 text-[11px] font-bold uppercase">{stat.label}</p>
-                    <p className="text-[#23262f] font-black text-xl">{stat.val}</p>
+                    <p className="text-[#23262f] font-bold text-xl">{stat.val}</p>
                   </div>
                 </div>
               ))}
@@ -106,7 +106,7 @@ export default function ActiveSellerProfile() {
 
             {/* Personal Information */}
             <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-              <h2 className="text-xl font-black text-[#23262f] mb-8 border-b pb-4">Personal Information</h2>
+              <h2 className="text-xl font-semibold text-[#23262f] mb-8 border-b pb-4">Personal Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
                 <DetailItem icon={<User size={16}/>} label="Full Name" value={seller.full_name} />
                 <DetailItem icon={<Calendar size={16}/>} label="Date of Birth" value={seller.date_of_birth ? new Date(seller.date_of_birth).toLocaleDateString() : 'N/A'} />
@@ -142,7 +142,7 @@ export default function ActiveSellerProfile() {
 
             {/* Biography Section */}
             <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-              <h2 className="text-xl font-black text-[#23262f] mb-4">Chef Biography</h2>
+              <h2 className="text-xl font-semibold text-[#23262f] mb-4">Chef Biography</h2>
               <p className="text-gray-600 leading-relaxed font-medium">
                 {seller.bio || "No biography information available."}
               </p>
@@ -152,7 +152,7 @@ export default function ActiveSellerProfile() {
           {/* Right Column: Timeline & Address */}
           <div className="lg:col-span-1">
             <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm sticky top-8">
-              <h2 className="text-xl font-black text-[#23262f] mb-8">Trust & Safety</h2>
+              <h2 className="text-xl font-semibold text-[#23262f] mb-8">Trust & Safety</h2>
               
               <div className="space-y-8">
                 <TimelineItem 
@@ -171,7 +171,7 @@ export default function ActiveSellerProfile() {
               <div className="mt-10 pt-8 border-t border-gray-100">
                 <p className="text-[11px] font-black text-gray-400 uppercase mb-4">Blockchain Address</p>
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 break-all">
-                  <p className="text-[12px] font-mono font-bold text-[#149984]">{seller.users?.wallet_address}</p>
+                  <p className="text-[12px] font-mono font-semibold text-[#149984]">{seller.users?.wallet_address}</p>
                 </div>
               </div>
             </div>
