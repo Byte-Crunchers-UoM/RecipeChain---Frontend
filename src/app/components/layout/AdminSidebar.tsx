@@ -30,7 +30,7 @@ export default function AdminSidebar() {
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0">
-      
+
       {/* Brand Logo Area */}
       <div className="flex flex-col items-center pt-6 pb-4 border-b border-gray-100">
         <img src="/images/logo.svg" alt="RecipeChain Logo" className="h-10 mb-2 object-contain" />
@@ -38,23 +38,22 @@ export default function AdminSidebar() {
           RecipeChain
         </span>
       </div>
-      
+
       {/* Navigation Links */}
       <nav className="flex-1 px-4 py-6 space-y-2">
         {navLinks.map((link) => (
           <div key={link.href} className="flex flex-col">
-            <a 
-              href={link.href} 
-              className={`w-full flex items-center px-4 py-3 rounded-xl font-semibold transition-all ${
-                isActive(link.href) 
-                  ? 'bg-[#149984] text-white shadow-lg shadow-[#149984]/20' 
+            <a
+              href={link.href}
+              className={`w-full flex items-center px-4 py-3 rounded-xl font-semibold transition-all ${isActive(link.href)
+                  ? 'bg-[#149984] text-white shadow-lg shadow-[#149984]/20'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-[#149984]'
-              }`}
+                }`}
             >
-              <link.icon className={`h-5 w-5 mr-3 flex-shrink-0 ${isActive(link.href) ? 'text-white' : 'text-gray-400'}`} /> 
+              <link.icon className={`h-5 w-5 mr-3 flex-shrink-0 ${isActive(link.href) ? 'text-white' : 'text-gray-400'}`} />
               {link.name}
             </a>
-            
+
             {/* Cleaner separator logic */}
             {!isActive(link.href) && (
               <div className="h-px border-t border-gray-50 mx-4 my-1 last:hidden" />
@@ -65,14 +64,14 @@ export default function AdminSidebar() {
 
       {/* Logout Area */}
       <div className="p-4 border-t border-gray-100 mt-auto">
-        <button 
+        <button
           onClick={handleLogout}
           className="flex items-center w-full px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl font-semibold transition-colors gap-3"
         >
           <LogOut className="h-5 w-5 flex-shrink-0" /> Logout
         </button>
       </div>
-      
+
     </aside>
   );
 }

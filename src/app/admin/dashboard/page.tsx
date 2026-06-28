@@ -4,9 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Poppins } from 'next/font/google';
 import AdminSidebar from '@/app/components/layout/AdminSidebar';
-import { 
-  Bell, LayoutGrid, Users, FileText, UserCheck, 
-  Clock, DollarSign, CheckCircle2, FilePlus, 
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
+import {
+  Bell, LayoutGrid, Users, FileText, UserCheck,
+  Clock, DollarSign, CheckCircle2, FilePlus,
   UserX,
   XCircle
 } from 'lucide-react';
@@ -17,11 +20,13 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [adminName, setAdminName] = useState('Admin User');
   const [isAuthorizing, setIsAuthorizing] = useState(true);
-  
+
   //This holds the live data from your Express backend
   const [liveStats, setLiveStats] = useState<any>(null);
 
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartView, setChartView] = useState<'revenue' | 'transactions'>('revenue');
 
   useEffect(() => {
     const checkAuthAndFetchData = async () => {
@@ -45,7 +50,7 @@ export default function AdminDashboard() {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
+            'Authorization': `Bearer ${token}`
           }
         });
 
@@ -53,9 +58,9 @@ export default function AdminDashboard() {
         console.log("API Response:", data);
 
         if (response.ok) {
-          // Save the live numbers into React state!
-          setLiveStats(data.data); 
+          setLiveStats(data.data);
           setRecentActivities(data.data.activities || []);
+          setChartData(data.data.chartData || []);
         } else {
           localStorage.removeItem('adminToken');
           router.push('/admin/login');
@@ -84,32 +89,32 @@ export default function AdminDashboard() {
   ];
   const getIconProps = (type: string) => {
     switch (type) {
-        case 'PURCHASE':
-            return { icon: FileText, iconBg: "bg-[#EBF7F6]", iconColor: "text-[#149984]" };
-        case 'APPROVAL':
-            return { icon: CheckCircle2, iconBg: "bg-green-50", iconColor: "text-green-500" };
-        case 'REGISTRATION':
-            return { icon: Users, iconBg: "bg-purple-50", iconColor: "text-purple-500" };
-        case 'SELLER_VERIFICATION':
-            return { icon: UserCheck, iconBg: "bg-blue-50", iconColor: "text-blue-500" };
-        case 'SELLER_REJECTION':
-            return { icon: UserX, iconBg: "bg-orange-50", iconColor: "text-orange-500" };
-        case 'USER_BLOCK':
-            return { icon: XCircle, iconBg: "bg-red-50", iconColor: "text-red-600" };
-          
-        default:
-            return { icon: FilePlus, iconBg: "bg-blue-50", iconColor: "text-blue-500" };
+      case 'PURCHASE':
+        return { icon: FileText, iconBg: "bg-[#EBF7F6]", iconColor: "text-[#149984]" };
+      case 'APPROVAL':
+        return { icon: CheckCircle2, iconBg: "bg-green-50", iconColor: "text-green-500" };
+      case 'REGISTRATION':
+        return { icon: Users, iconBg: "bg-purple-50", iconColor: "text-purple-500" };
+      case 'SELLER_VERIFICATION':
+        return { icon: UserCheck, iconBg: "bg-blue-50", iconColor: "text-blue-500" };
+      case 'SELLER_REJECTION':
+        return { icon: UserX, iconBg: "bg-orange-50", iconColor: "text-orange-500" };
+      case 'USER_BLOCK':
+        return { icon: XCircle, iconBg: "bg-red-50", iconColor: "text-red-600" };
+
+      default:
+        return { icon: FilePlus, iconBg: "bg-blue-50", iconColor: "text-blue-500" };
     }
-};
-  
+  };
+
 
   return (
     <div className={`min-h-screen bg-[#F8FAFB] flex ${customFont.className}`}>
-      
+
       <AdminSidebar />
 
       <main className="flex-1 p-8 overflow-y-auto">
-        
+
         {/* Header Section */}
         <header className="flex justify-between items-start mb-10">
           <div className="flex items-center gap-4">
@@ -156,73 +161,128 @@ export default function AdminDashboard() {
 
         {/* Bottom Section: Chart and Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          
-          {/* Chart Area */}
+
+          {/* Live Dual-Line Chart */}
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
               <div>
-                <h3 className="text-lg font-bold text-[#23262f]">Revenue Growth</h3>
-                <p className="text-xs text-gray-500 font-medium">Platform earnings in XRP</p>
+                <h3 className="text-lg font-bold text-[#23262f]">Platform Growth</h3>
+                <p className="text-xs text-gray-500 font-medium">Revenue (XRP) &amp; Transactions per month</p>
               </div>
               <div className="flex bg-gray-50 p-1 rounded-lg">
-                <button className="px-4 py-1.5 text-xs font-bold bg-[#149984] text-white rounded-md shadow-sm">Daily</button>
-                <button className="px-4 py-1.5 text-xs font-bold text-gray-500 hover:text-gray-700">Monthly</button>
+                <button
+                  onClick={() => setChartView('revenue')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${chartView === 'revenue'
+                      ? 'bg-[#149984] text-white shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                >
+                  Revenue
+                </button>
+                <button
+                  onClick={() => setChartView('transactions')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${chartView === 'transactions'
+                      ? 'bg-[#149984] text-white shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                >
+                  Transactions
+                </button>
               </div>
             </div>
-            
-            <div className="flex-1 relative w-full min-h-[200px] mt-4">
-              <div className="absolute left-0 top-0 bottom-6 w-8 flex flex-col justify-between text-[10px] text-gray-400 font-medium text-right pr-2 border-r border-gray-100">
-                <span>280</span><span>210</span><span>140</span><span>70</span><span>0</span>
+
+            {chartData.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center text-gray-400 text-sm font-medium min-h-[200px]">
+                No chart data available yet.
               </div>
-              <div className="absolute left-8 right-0 top-0 bottom-6 border-b border-gray-100 overflow-hidden">
-                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
-                    <path d="M0,70 Q10,40 25,50 T50,20 T75,40 T100,10 L100,100 L0,100 Z" fill="#EBF7F6" opacity="0.8"/>
-                    <path d="M0,70 Q10,40 25,50 T50,20 T75,40 T100,10" fill="none" stroke="#149984" strokeWidth="2"/>
-                 </svg>
-              </div>
-              <div className="absolute left-8 right-0 bottom-0 h-6 flex justify-between items-end text-[10px] text-gray-400 font-medium px-2">
-                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-              </div>
-            </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={40}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: '1px solid #e5e7eb',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                      fontSize: 12,
+                      fontWeight: 600
+                    }}
+                    formatter={(value: any, name: any) =>
+                      name === 'revenue'
+                        ? [`${value} XRP`, 'Platform Revenue']
+                        : [value, 'Transactions']
+                    }
+                  />
+                  <Legend
+                    formatter={(value) =>
+                      value === 'revenue' ? 'Platform Revenue (XRP)' : 'Transactions'
+                    }
+                    wrapperStyle={{ fontSize: 11, fontWeight: 600, paddingTop: 8 }}
+                  />
+                  {(chartView === 'revenue' || chartView === 'transactions') && (
+                    <Line
+                      type="monotone"
+                      dataKey={chartView}
+                      stroke={chartView === 'revenue' ? '#149984' : '#6366f1'}
+                      strokeWidth={2.5}
+                      dot={{ r: 5, fill: chartView === 'revenue' ? '#149984' : '#6366f1', strokeWidth: 0 }}
+                      activeDot={{ r: 7 }}
+                    />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
-          
+
           {/* Recent Activity List */}
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
             <h3 className="text-lg font-bold text-[#23262f]">Recent Activity</h3>
             <p className="text-xs text-gray-500 font-medium mb-6">Latest platform events</p>
-           
-            
-            <div className="space-y-6">
-           {recentActivities.map((activity, index) => {
-           const { icon: Icon, iconBg, iconColor } = getIconProps(activity.activity_type); // Note: Use 'activity_type' here
 
-            return (
-                <div key={index} className="flex gap-4">
+
+            <div className="space-y-6">
+              {recentActivities.map((activity, index) => {
+                const { icon: Icon, iconBg, iconColor } = getIconProps(activity.activity_type); // Note: Use 'activity_type' here
+
+                return (
+                  <div key={index} className="flex gap-4">
                     <div className={`h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 ${iconBg} ${iconColor}`}>
-                        <Icon className="h-5 w-5" />
+                      <Icon className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                            <h4 className="text-sm font-bold text-[#23262f]">{activity.title}</h4>
-                            {/* Format the date to look nice */}
-                            <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap ml-2">
-                                {new Date(activity.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                        </div>
-                        {/* Use 'description' instead of 'desc' */}
-                        <p className="text-xs text-gray-500 font-medium mt-0.5">{activity.description}</p>
+                      <div className="flex justify-between items-start">
+                        <h4 className="text-sm font-bold text-[#23262f]">{activity.title}</h4>
+                        {/* Format the date to look nice */}
+                        <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap ml-2">
+                          {new Date(activity.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      {/* Use 'description' instead of 'desc' */}
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">{activity.description}</p>
                     </div>
-                </div>
-            );
-        })}
-            
-            <button className="w-full text-center text-xs font-bold text-[#149984] mt-6 hover:text-[#0f7d6d] transition-colors">
-              View All Activity →
-            </button>
+                  </div>
+                );
+              })}
+
+              <button className="w-full text-center text-xs font-bold text-[#149984] mt-6 hover:text-[#0f7d6d] transition-colors">
+                View All Activity →
+              </button>
+            </div>
           </div>
         </div>
-      </div>
       </main>
     </div>
   );

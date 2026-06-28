@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -64,11 +64,8 @@ useEffect(() => {
       if (response.ok && payload.success) {
         // We use 'display_name' and 'verification_status'
         const normalized = payload.data.map((record: any) => ({
-          user_id: record.user_id || record.id,
-          verification_status: record.verification_status || 'pending',
-          profile_photo: record.profile_picture || '/default-avatar.png',
-          full_name: record.full_name || record.users?.full_name || 'Anonymous Chef',
-          users: record.users || {}
+          ...normalizeSeller(record),
+          full_name: record.full_name || record.display_name || record.users?.full_name || 'Anonymous Chef',
         }));
         setSellers(normalized);
       }

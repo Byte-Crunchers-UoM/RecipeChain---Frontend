@@ -7,7 +7,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { Wallet, TrendingUp, Activity, DollarSign, CheckCircle2, Clock, XCircle, Loader2 } from 'lucide-react';
 
 
-const poppins = Poppins({ subsets: ['latin'], weight: ['400', '500', '600','700'] });
+const poppins = Poppins({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
 // Helper function to truncate long wallet addresses or UUIDs
 const truncateHash = (hash: string) => {
@@ -24,18 +24,18 @@ export default function FinanceDashboard() {
         recentTransactions: []
     });
 
-   useEffect(() => {
+    useEffect(() => {
         const fetchFinanceData = async () => {
             try {
                 const token = localStorage.getItem('adminToken');
-                
+
                 const res = await fetch('http://localhost:4000/api/dashboard/finance', {
                     method: 'GET',
                     // Note: If your middleware is still not picking up the token, 
                     // ensure you are passing it here:
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}` 
+                        'Authorization': `Bearer ${token}`
                     }
                 });
 
@@ -44,10 +44,10 @@ export default function FinanceDashboard() {
                 }
 
                 const result = await res.json();
-                
+
                 // 1. Update the state with the actual data
-                setDashboardData(result.data); 
-                
+                setDashboardData(result.data);
+
             } catch (error) {
                 console.error("Dashboard Fetch Error:", error);
             } finally {
@@ -69,7 +69,7 @@ export default function FinanceDashboard() {
 
     // Dynamic KPI Array based on fetched data
     const kpiCards = [
-        { title: "Total Platform Revenue", value: `${dashboardData.kpis.totalRevenue.toFixed(2)} XRP`, icon: Wallet, color: "text-[#149984]", bg: "bg-teal-50"  },
+        { title: "Total Platform Revenue", value: `${dashboardData.kpis.totalRevenue.toFixed(2)} XRP`, icon: Wallet, color: "text-[#149984]", bg: "bg-teal-50" },
         { title: "Revenue Growth Rate", value: "12.4%", subtext: "Active", icon: TrendingUp, color: "text-green-500", bg: "bg-green-50" }, // Growth is complex to calculate in 1 query, leaving static for UI
         { title: "Total Transactions", value: dashboardData.kpis.totalTransactions.toString(), icon: Activity, color: "text-blue-500", bg: "bg-blue-50" },
         { title: "Platform Commission", value: `${dashboardData.kpis.totalCommission.toFixed(2)} XRP`, icon: DollarSign, color: "text-purple-500", bg: "bg-purple-50" }
@@ -84,7 +84,7 @@ export default function FinanceDashboard() {
     return (
         <div className={`flex min-h-screen bg-[#F8FAFB] ${poppins.className}`}>
             <AdminSidebar />
-            
+
             <main className="flex-1 p-8 antialiased overflow-y-auto">
                 {/* Header Section */}
                 <header className="flex items-center gap-4 mb-10">
@@ -122,7 +122,7 @@ export default function FinanceDashboard() {
                     <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm col-span-1">
                         <h2 className="text-lg font-black text-[#23262f] mb-1">Commission Breakdown</h2>
                         <p className="text-xs font-semibold text-gray-400 mb-6">Revenue distribution overview</p>
-                        
+
                         <div className="h-[250px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -135,7 +135,7 @@ export default function FinanceDashboard() {
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
-                        
+
                         <div className="flex justify-center gap-4 text-xs font-semibold text-gray-500 mt-2">
                             <span className="flex items-center gap-1"><div className="w-3 h-3 bg-[#149984] rounded-sm"></div> Chef Earnings</span>
                             <span className="flex items-center gap-1"><div className="w-3 h-3 bg-[#34d399] rounded-sm"></div> Platform Fee</span>
@@ -157,7 +157,7 @@ export default function FinanceDashboard() {
                     <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm col-span-2 overflow-hidden flex flex-col">
                         <h2 className="text-lg font-black text-[#23262f] mb-1">Top Performers</h2>
                         <p className="text-xs font-semibold text-gray-400 mb-6">Highest earning chefs on the platform</p>
-                        
+
                         <div className="overflow-y-auto flex-1 pr-2">
                             <table className="w-full text-left border-collapse">
                                 <thead>
@@ -173,10 +173,10 @@ export default function FinanceDashboard() {
                                         <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                                             <td className="py-4 font-black text-[#149984]">#{idx + 1}</td>
                                             <td className="py-4 font-semibold text-[#23262f] flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-gray-200"></div> {chef.display_name || "Unknown Chef"}
+                                                <div className="w-8 h-8 rounded-full bg-gray-200"></div> {chef.sellerName || "Unknown Chef"}
                                             </td>
-                                            <td className="py-4 font-semibold text-gray-600">{chef.total_sales || 0}</td>
-                                            <td className="py-4 font-semibold text-[#149984]">{Number(chef.earnings_xrp || 0).toFixed(2)} XRP</td>
+                                            <td className="py-4 font-semibold text-gray-600">{chef.totalSales || 0}</td>
+                                            <td className="py-4 font-semibold text-[#149984]">{Number(chef.earnings || 0).toFixed(2)} XRP</td>
                                         </tr>
                                     ))}
                                     {dashboardData.topPerformers.length === 0 && (
@@ -192,7 +192,7 @@ export default function FinanceDashboard() {
                 <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
                     <h2 className="text-lg font-black text-[#23262f] mb-1">Recent Transactions</h2>
                     <p className="text-xs font-semibold text-gray-400 mb-6">Latest platform purchases</p>
-                    
+
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
@@ -209,36 +209,35 @@ export default function FinanceDashboard() {
                             </thead>
                             <tbody>
                                 {dashboardData.recentTransactions?.map((tx: any, idx: number) => {
-                                    const txDate = new Date(tx.time_stamp).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
-                                    const recipeName = tx.recipes?.title || "Unknown Recipe";
-                                    
+                                    const txDate = tx.date ? new Date(tx.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : "N/A";
+
                                     return (
                                         <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                                            <td className="py-4 font-semibold text-gray-500 text-xs">{truncateHash(tx.payment_id)}</td>
-                                            <td className="py-4 font-semibold text-[#23262f] text-sm">{recipeName}</td>
+                                            <td className="py-4 font-semibold text-gray-500 text-xs">{truncateHash(tx.paymentId)}</td>
+                                            <td className="py-4 font-semibold text-[#23262f] text-sm">{tx.recipeName || "Unknown Recipe"}</td>
                                             <td className="py-4 font-semibold text-gray-600 text-xs">
-                                            {tx.buyers?.username || tx.buyers?.display_name || "Unknown Buyer"}
-                                         </td>
+                                                {tx.buyerName || "Unknown Buyer"}
+                                            </td>
                                             <td className="py-4 font-semibold text-gray-600 text-xs">
-                                            {tx.sellers?.username || tx.sellers?.display_name || "Unknown Seller"}
-                                         </td>
+                                                {tx.sellerName || "Unknown Seller"}
+                                            </td>
                                             <td className="py-4 font-semibold text-[#149984] text-sm">{Number(tx.amount || 0).toFixed(2)} XRP</td>
-                                            <td className="py-4 font-semibold text-gray-600 text-sm">{Number(tx.commission_amount || 0).toFixed(4)} XRP</td>
+                                            <td className="py-4 font-semibold text-gray-600 text-sm">{Number(tx.fee || 0).toFixed(4)} XRP</td>
                                             <td className="py-4 font-semibold text-gray-400 text-xs">{txDate}</td>
                                             <td className="py-4">
                                                 {tx.status === 'completed' || tx.status === 'success' ? (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-50 text-green-600 text-[10px] font-black uppercase"><CheckCircle2 size={12}/> Success</span>
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-50 text-green-600 text-[10px] font-black uppercase"><CheckCircle2 size={12} /> Success</span>
                                                 ) : tx.status === 'pending' ? (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-orange-50 text-orange-600 text-[10px] font-black uppercase"><Clock size={12}/> Pending</span>
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-orange-50 text-orange-600 text-[10px] font-black uppercase"><Clock size={12} /> Pending</span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-red-50 text-red-600 text-[10px] font-black uppercase"><XCircle size={12}/> Failed</span>
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-red-50 text-red-600 text-[10px] font-black uppercase"><XCircle size={12} /> Failed</span>
                                                 )}
                                             </td>
                                         </tr>
                                     );
                                 })}
                                 {(!dashboardData.recentTransactions || dashboardData.recentTransactions.length === 0) && (
-                                <tr><td colSpan={8} className="text-center py-8 text-gray-400 font-semibold">No transactions recorded yet.</td></tr>
+                                    <tr><td colSpan={8} className="text-center py-8 text-gray-400 font-semibold">No transactions recorded yet.</td></tr>
                                 )}
                             </tbody>
                         </table>
