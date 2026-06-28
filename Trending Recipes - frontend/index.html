@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trending Recipes | RecipeChain</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <!-- Hamburger menu removed as requested -->
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item">
+                    <i data-lucide="home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i data-lucide="shopping-bag"></i>
+                    <span>Market Place</span>
+                </a>
+                <a href="#" class="nav-item active">
+                    <i data-lucide="trending-up"></i>
+                    <span>Trending Recipes</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i data-lucide="book-open"></i>
+                    <span>My Cookbook</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i data-lucide="users"></i>
+                    <span>Chefs</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i data-lucide="user"></i>
+                    <span>Profile</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="#" class="nav-item logout">
+                    <i data-lucide="log-out"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <img src="logo.png" alt="RecipeChain Logo" class="logo">
+                    <span class="brand-name">RecipeChain</span>
+                </div>
+
+            </header>
+
+            <!-- Trending Section -->
+            <section class="content-section">
+                <div class="section-header">
+                    <h1>Trending Recipes</h1>
+                    <p>Discover and share amazing recipes from around the world</p>
+                </div>
+
+                <!-- Filters -->
+                <div class="filters-container">
+                    <div class="category-tabs" id="category-tabs">
+                        <button class="tab active" data-category="all">All Recipes</button>
+                        <button class="tab" data-category="easy">Easy</button>
+                        <button class="tab" data-category="medium">Medium</button>
+                        <button class="tab" data-category="hard">Hard</button>
+                    </div>
+                    <div class="recipe-count" id="recipe-count">0 recipes</div>
+                </div>
+
+                <!-- Recipe Grid -->
+                <div class="recipe-grid" id="recipe-grid">
+                    <!-- Cards will be injected here -->
+                    <div class="loader">Loading trending recipes...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

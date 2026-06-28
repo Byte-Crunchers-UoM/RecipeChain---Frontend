@@ -1,17 +1,34 @@
-export async function closeWeb3AuthModal(web3Auth: any) {
+import type { Web3Auth } from "@web3auth/modal";
+
+type Web3AuthWithOptionalModals = Web3Auth & {
+  modal?: {
+    closeModal?: () => void;
+  };
+  logoutModal?: {
+    closeModal?: () => void;
+  };
+};
+
+export async function closeWeb3AuthModal(
+  web3Auth: Web3Auth | null | undefined
+) {
+  const instance = web3Auth as Web3AuthWithOptionalModals | null | undefined;
+
   try {
-    web3Auth?.modal?.closeModal?.();
+    instance?.modal?.closeModal?.();
   } catch {
     // ignore
   }
 
   try {
-    web3Auth?.logoutModal?.closeModal?.();
+    instance?.logoutModal?.closeModal?.();
   } catch {
     // ignore
   }
 
-  await new Promise((resolve) => setTimeout(resolve, 200));
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, 200);
+  });
 
   if (typeof document !== "undefined") {
     const selectors = [
@@ -31,7 +48,9 @@ export async function closeWeb3AuthModal(web3Auth: any) {
 
     selectors.forEach((selector) => {
       document.querySelectorAll(selector).forEach((node) => {
-        if (node instanceof HTMLElement) nodes.add(node);
+        if (node instanceof HTMLElement) {
+          nodes.add(node);
+        }
       });
     });
 
