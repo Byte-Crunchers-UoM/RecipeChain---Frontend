@@ -13,7 +13,6 @@ export type WalletTransactionType =
 
 export type WalletTransactionDirection = "credit" | "debit" | string;
 
-// Backward-compatible alias for files that may import WalletDirection.
 export type WalletDirection = WalletTransactionDirection;
 
 export type WalletTransactionStatus =
@@ -50,9 +49,28 @@ export type WalletTransaction = {
   date?: string | null;
 };
 
+export type XrpUsdRateQuote = {
+  usdAmount?: number;
+  amountXrp?: number;
+  xrpUsdRate: number;
+  source?: string;
+  coinId?: string;
+  fetchedAt?: string;
+  cacheSeconds?: number;
+  cached?: boolean;
+};
+
 export type WalletOverview = {
   wallet_address?: string | null;
   email?: string | null;
+
   account_balance?: number | string | null;
+  recipechain_balance?: number | string | null;
+
+  xrpl_testnet_balance?: number | string | null;
+  xrpl_balance_status?: string | null;
+  xrpl_balance_error?: string | null;
+  xrpl_network?: string | null;
+
   recent_transactions?: WalletTransaction[];
 };
