@@ -1,6 +1,5 @@
 //src/services/recipeServices.ts
 import { Recipe, RecipeApiResponsed } from "@/lib/types/Recipe";
-
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ;
 const FETCH_TIMEOUT = 10000;
 
