@@ -1,34 +1,84 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
 const BUYER_HOME = "/recipes";
 const SELLER_HOME = "/seller/kyc";
 
-export function middleware(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
-  const role = request.cookies.get("recipe_chain_role")?.value; // "seller" | "buyer"
-  const authed = request.cookies.get("recipe_chain_authed")?.value; // "1" means logged in
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({ name, value, ...options })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({ name, value, ...options })
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({ name, value: '', ...options })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({ name, value: '', ...options })
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const role = request.cookies.get("recipe_chain_role")?.value
+  const authed = request.cookies.get("recipe_chain_authed")?.value
+  
+  if (!user && authed === "1") {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    const redirectResponse = NextResponse.redirect(url)
+    redirectResponse.cookies.delete('recipe_chain_authed')
+    redirectResponse.cookies.delete('recipe_chain_role')
+    return redirectResponse
+  }
+
+  if (pathname === "/dashboard" || pathname === "/profile") {
+    if (authed === "1") {
+      return response
+    }
+    return NextResponse.redirect(new URL("/login", request.url))
+  }
 
   const isAuthRoute =
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
-    pathname.startsWith("/select-role");
+    pathname.startsWith("/select-role")
 
-  const isSellerRoute = pathname.startsWith("/seller");
-  const isBuyerRoute = pathname.startsWith("/buyer");
-  const isProtected = isSellerRoute || isBuyerRoute;
+  const isSellerRoute = pathname.startsWith("/seller")
+  const isBuyerRoute = pathname.startsWith("/buyer")
+  const isProtected = isSellerRoute || isBuyerRoute
 
-  // Not authenticated -> block protected routes
   if (isProtected && authed !== "1") {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/login", request.url))
   }
 
-  // Authenticated users shouldn't see login/signup/select-role
-  // EXCEPT: allow /select-role when role is missing
   if (isAuthRoute && authed === "1") {
     if (pathname.startsWith("/select-role") && !role) {
-      return NextResponse.next();
+      return response
     }
 
     if (role === "seller") {
@@ -42,7 +92,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/select-role", request.url));
   }
 
-  // Role-based access for protected routes
   if (isSellerRoute && role !== "seller") {
     if (role === "buyer") {
       return NextResponse.redirect(new URL(BUYER_HOME, request.url));
@@ -57,7 +106,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/select-role", request.url));
   }
 
-  return NextResponse.next();
+  return response
 }
 
 export const config = {

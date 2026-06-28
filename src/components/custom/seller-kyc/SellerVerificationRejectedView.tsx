@@ -4,8 +4,8 @@ import {
   AlertTriangle,
   CircleX,
   Headphones,
-  LogOut,
   RefreshCcw,
+  LogOut,
 } from "lucide-react";
 import Image from "next/image";
 import { parseSellerKycRejection } from "@/lib/kycRejection";
@@ -66,9 +66,9 @@ export default function SellerVerificationRejectedView({
           <Image
             src="/Logo.png"
             alt="RecipeChain Logo"
-            width={46}
-            height={46}
-            className="h-auto w-[46px] object-contain"
+            width={42}
+            height={42}
+            className="h-auto w-[34px] object-contain"
             priority
           />
 
@@ -250,6 +250,19 @@ export default function SellerVerificationRejectedView({
               Get Help from Support
             </button>
           </div>
+
+          {onLogout && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={onLogout}
+                className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-[#D7DCE2] bg-white px-5 py-4 text-sm font-semibold text-[#2E3742] transition hover:bg-[#F8FAFC]"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout Securely
+              </button>
+            </div>
+          )}
 
           <p className="mt-8 text-center text-sm text-[#98A2B3]">
             Need help? Your support team can assist with the verification
