@@ -197,7 +197,17 @@ export default function FinanceDashboard() {
                                         <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                                             <td className="py-4 font-black text-[#149984]">#{idx + 1}</td>
                                             <td className="py-4 font-semibold text-[#23262f] flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-gray-200"></div> {chef.sellerName || "Unknown Chef"}
+                                                {chef.profilePhoto ? (
+                                                    <img
+                                                        src={chef.profilePhoto}
+                                                        alt={chef.sellerName}
+                                                        className="w-8 h-8 rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
+                                                        {chef.sellerName?.charAt(0)}
+                                                    </div>
+                                                )} {chef.sellerName || "Unknown Chef"}
                                             </td>
                                             <td className="py-4 font-semibold text-gray-600">{chef.totalSales || 0}</td>
                                             <td className="py-4 font-semibold text-[#149984]">{Number(chef.earnings || 0).toFixed(2)} XRP</td>
