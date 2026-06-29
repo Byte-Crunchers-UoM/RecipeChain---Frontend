@@ -55,3 +55,13 @@ export interface FilterState{
   goal:string;
 
 }
+
+
+export interface PaginationMeta {
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  limit: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
