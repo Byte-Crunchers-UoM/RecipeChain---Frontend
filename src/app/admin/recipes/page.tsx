@@ -36,9 +36,10 @@ export default function RecipesManagement() {
       if (!token) return router.push('/admin/login');
 
       try {
-        const response = await fetch('http://localhost:4000/api/recipes', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        // Inside your fetchRecipes useEffect:
+const response = await fetch('http://localhost:4000/api/recipes/admin/all', {
+    headers: { 'Authorization': `Bearer ${token}` }
+});
         const result = await response.json();
         if (response.ok && result.success) {
           setRecipes(result.data || []);
