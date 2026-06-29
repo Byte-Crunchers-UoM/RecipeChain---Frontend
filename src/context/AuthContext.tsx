@@ -19,6 +19,9 @@ export type MeUser = {
   wallet_address?: string | null;
   name?: string | null;
   bio?: string | null;
+  full_name?: string | null;
+  display_name?: string | null;
+  profile_photo?: string | null;
 };
 
 export type AuthContextType = {

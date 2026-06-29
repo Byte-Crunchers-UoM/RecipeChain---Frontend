@@ -87,7 +87,7 @@ export const Navbar = () => {
             </Link>
 
             <Link
-              href="/signup"
+              href="/login"
               className="flex items-center gap-2 rounded-lg bg-teal-500 px-5 py-2.5 font-medium text-white shadow-sm transition-colors hover:bg-teal-600"
             >
               <Sparkles size={18} />

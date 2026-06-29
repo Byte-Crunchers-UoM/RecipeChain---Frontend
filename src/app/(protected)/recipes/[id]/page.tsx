@@ -1,4 +1,3 @@
-//src/app/recipes/[id]/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -7,7 +6,7 @@ import { FullRecipeView } from '@/components/recipe/FullRecipeView';
 import RecipePaymentModal from '@/components/recipe/RecipePaymentModel';
 import { Recipe } from '@/lib/types/Recipe';
 import { fetchRecipeById } from '@/services/recipeService';
-import { Loader2, Lock } from 'lucide-react';
+import { Loader2, Lock, ArrowLeft } from 'lucide-react'; // <-- Imported ArrowLeft
 
 /** Page component that displays the full details of a specific recipe, or a locked screen if premium access is required. */
 export default function RecipeDetailPage() {
@@ -53,6 +52,7 @@ export default function RecipeDetailPage() {
       </div>
     );
   }
+  
   // 2. Error Screen
   if (error || !recipe) {
     return (
@@ -72,12 +72,24 @@ export default function RecipeDetailPage() {
   }
 
   return (
-    <>
+    // 🛠️ Wrapped the entire content in a relative container to absolute-position the back button
+    <div className="relative min-h-[calc(100vh-80px)]"> 
+      
+      {/* 🛠️ FLOATING BACK BUTTON */}
+      <button
+        onClick={() => router.back()} // You can change this to router.push('/recipes') if you want to strictly go to the marketplace
+        className="absolute top-6 left-6 z-20 flex items-center gap-2 bg-white/80 hover:bg-white backdrop-blur-md px-4 py-2.5 rounded-full shadow-md text-slate-700 hover:text-teal-600 transition-all active:scale-95 border border-white/50"
+        aria-label="Go back"
+      >
+        <ArrowLeft size={18} strokeWidth={2.5} />
+        <span className="text-sm font-bold tracking-wide">Back</span>
+      </button>
+
       {/* 🛠️ 3. CONDITIONAL RENDERING (Locked Screen vs Full View) */}
       {recipe.is_premium_locked ? (
         
         // "Locked" screen shown if the user hasn't paid (Locked Screen)
-        <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center pt-24">
           <div className="bg-white p-10 rounded-3xl shadow-lg border border-slate-100 max-w-md w-full animate-in fade-in zoom-in duration-300">
             <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
               <Lock className="w-10 h-10 text-slate-400" />
@@ -119,6 +131,6 @@ export default function RecipeDetailPage() {
           window.location.reload(); 
         }}
       />
-    </>
+    </div>
   );
 }

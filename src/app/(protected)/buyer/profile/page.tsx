@@ -1,6 +1,13 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   DollarSign,
@@ -43,6 +50,10 @@ type ToastState = {
   message: string;
 };
 
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
 function formatJoinedYear(dateString?: string) {
   if (!dateString) return "Recently";
 
@@ -66,6 +77,14 @@ function getWalletExplorerUrl(wallet?: string) {
   return `${XRPL_EXPLORER_BASE.replace(/\/$/, "")}/${wallet}`;
 }
 
+function toNumberOrNull(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function getInitials(name?: string, email?: string) {
   const source = String(name || email || "U").trim();
 
@@ -77,6 +96,30 @@ function getInitials(name?: string, email?: string) {
     .join("");
 }
 
+function formatXrp(value: number | null) {
+  if (value === null || !Number.isFinite(value)) return "Unavailable";
+
+  return `${value.toFixed(2)} XRP`;
+}
+
+function getCompletedTopupCount(wallet?: WalletOverview | null) {
+  return (wallet?.recent_transactions || []).filter(
+    (tx) =>
+      tx.type === "topup" &&
+      tx.direction === "credit" &&
+      tx.status === "completed"
+  ).length;
+}
+
+function getCompletedPurchaseCount(wallet?: WalletOverview | null) {
+  return (wallet?.recent_transactions || []).filter(
+    (tx) =>
+      tx.type === "purchase" &&
+      tx.direction === "debit" &&
+      tx.status === "completed"
+  ).length;
+}
+
 function StatCard({
   iconWrapClassName,
   icon,
@@ -85,7 +128,7 @@ function StatCard({
   subtext,
 }: {
   iconWrapClassName: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string;
   subtext: string;
@@ -189,17 +232,19 @@ function BuyerProfileContent() {
     message: "",
   });
 
+  const topupStatus = searchParams.get("topup");
+  const topupAmountParam = Number(searchParams.get("amount") || 0);
   const shouldAutoOpenEdit = searchParams.get("edit") === "1";
 
-  const showToast = (title: string, message: string) => {
+  const showToast = useCallback((title: string, message: string) => {
     setToast({
       open: true,
       title,
       message,
     });
-  };
+  }, []);
 
-  const loadWallet = async () => {
+  const loadWallet = useCallback(async (): Promise<WalletOverview | null> => {
     try {
       setWalletLoading(true);
 
@@ -216,13 +261,34 @@ function BuyerProfileContent() {
     } finally {
       setWalletLoading(false);
     }
-  };
+  }, []);
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async (): Promise<BuyerProfile> => {
     const latestProfile = await getMyBuyerProfile();
     setProfile(latestProfile);
     return latestProfile;
-  };
+  }, []);
+
+  const refreshProfileAndWallet = useCallback(async () => {
+    const [latestProfile, latestWallet] = await Promise.all([
+      getMyBuyerProfile().catch((profileError) => {
+        console.error("Failed to refresh buyer profile:", profileError);
+        return null;
+      }),
+      getMyWalletOverview().catch((walletError) => {
+        console.error("Failed to refresh wallet overview:", walletError);
+        return null;
+      }),
+    ]);
+
+    if (latestProfile) setProfile(latestProfile);
+    if (latestWallet) setWalletData(latestWallet);
+
+    return {
+      profile: latestProfile,
+      wallet: latestWallet,
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -281,9 +347,6 @@ function BuyerProfileContent() {
   }, [toast.open]);
 
   useEffect(() => {
-    const topupStatus = searchParams.get("topup");
-    const amountParam = Number(searchParams.get("amount") || 0);
-
     if (topupStatus === "cancelled") {
       router.replace(pathname, { scroll: false });
       return;
@@ -295,69 +358,67 @@ function BuyerProfileContent() {
 
     let cancelled = false;
 
+    const previousWallet = walletData;
+    const previousTopupCount = getCompletedTopupCount(previousWallet);
+    const previousInternalBalance = Number(
+      previousWallet?.account_balance ?? profile?.account_balance ?? 0
+    );
+    const previousXrplBalance = toNumberOrNull(
+      previousWallet?.xrpl_testnet_balance
+    );
+
     const refreshAfterTopup = async () => {
-      const currentBalance = Number(
-        walletData?.account_balance ?? profile?.account_balance ?? 0
-      );
-
-      const currentTopupCount = (
-        walletData?.recent_transactions || []
-      ).filter(
-        (tx) =>
-          tx.type === "topup" &&
-          tx.direction === "credit" &&
-          tx.status === "completed"
-      ).length;
-
-      for (let attempt = 0; attempt < 10; attempt += 1) {
+      for (let attempt = 0; attempt < 30; attempt += 1) {
         if (cancelled) return;
 
-        try {
-          const latestWallet = await getMyWalletOverview();
+        const { profile: latestProfile, wallet: latestWallet } =
+          await refreshProfileAndWallet();
 
-          if (cancelled) return;
+        if (cancelled) return;
 
-          setWalletData(latestWallet);
+        const latestTopupCount = getCompletedTopupCount(latestWallet);
+        const latestInternalBalance = Number(
+          latestWallet?.account_balance ?? latestProfile?.account_balance ?? 0
+        );
+        const latestXrplBalance = toNumberOrNull(
+          latestWallet?.xrpl_testnet_balance
+        );
 
-          const latestBalance = Number(latestWallet.account_balance || 0);
-          const latestTopups = (latestWallet.recent_transactions || []).filter(
-            (tx) =>
-              tx.type === "topup" &&
-              tx.direction === "credit" &&
-              tx.status === "completed"
+        const topupCountIncreased = latestTopupCount > previousTopupCount;
+        const internalBalanceIncreased =
+          latestInternalBalance > previousInternalBalance;
+        const xrplBalanceChanged =
+          previousXrplBalance !== null &&
+          latestXrplBalance !== null &&
+          latestXrplBalance !== previousXrplBalance;
+
+        if (
+          topupCountIncreased ||
+          internalBalanceIncreased ||
+          xrplBalanceChanged ||
+          attempt >= 8
+        ) {
+          const addedAmount =
+            topupAmountParam > 0
+              ? topupAmountParam
+              : internalBalanceIncreased
+              ? Number((latestInternalBalance - previousInternalBalance).toFixed(2))
+              : 0;
+
+          showToast(
+            "Top-up successful",
+            addedAmount > 0
+              ? `${addedAmount.toFixed(
+                  2
+                )} XRP has been added to your RecipeChain wallet.`
+              : "Your wallet was refreshed after the successful top-up."
           );
 
-          const hasNewTopup = latestTopups.length > currentTopupCount;
-          const balanceIncreased = latestBalance > currentBalance;
-
-          if (balanceIncreased && hasNewTopup) {
-            const addedAmount =
-              amountParam > 0
-                ? amountParam
-                : Number((latestBalance - currentBalance).toFixed(2));
-
-            showToast(
-              "Top-up successful",
-              `${addedAmount.toFixed(
-                2
-              )} XRP has been added to your RecipeChain wallet.`
-            );
-
-            void loadProfile().catch((profileRefreshError) => {
-              console.error(
-                "Failed to refresh buyer profile after top-up:",
-                profileRefreshError
-              );
-            });
-
-            router.replace(pathname, { scroll: false });
-            return;
-          }
-        } catch (refreshError) {
-          console.error("Top-up refresh failed:", refreshError);
+          router.replace(pathname, { scroll: false });
+          return;
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 1200));
+        await wait(1500);
       }
 
       router.replace(pathname, { scroll: false });
@@ -368,7 +429,47 @@ function BuyerProfileContent() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams, router, pathname, walletData, profile]);
+  }, [
+    topupStatus,
+    topupAmountParam,
+    router,
+    pathname,
+    refreshProfileAndWallet,
+  ]);
+
+  useEffect(() => {
+    const refreshOnFocus = () => {
+      void refreshProfileAndWallet();
+    };
+
+    const refreshOnVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void refreshProfileAndWallet();
+      }
+    };
+
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnVisibilityChange);
+    };
+  }, [refreshProfileAndWallet]);
+
+  useEffect(() => {
+    const handleWalletRefresh = () => {
+      void refreshProfileAndWallet();
+    };
+
+    window.addEventListener("recipechain-wallet-refresh", handleWalletRefresh);
+    window.addEventListener("buyer-profile-updated", handleWalletRefresh);
+
+    return () => {
+      window.removeEventListener("recipechain-wallet-refresh", handleWalletRefresh);
+      window.removeEventListener("buyer-profile-updated", handleWalletRefresh);
+    };
+  }, [refreshProfileAndWallet]);
 
   useEffect(() => {
     const handleWithdrawalSubmitted = (event: Event) => {
@@ -384,13 +485,7 @@ function BuyerProfileContent() {
           : "Your withdrawal request has been submitted successfully."
       );
 
-      void loadWallet();
-      void loadProfile().catch((profileRefreshError) => {
-        console.error(
-          "Failed to refresh buyer profile after withdrawal:",
-          profileRefreshError
-        );
-      });
+      void refreshProfileAndWallet();
     };
 
     const handleRefundSubmitted = (event: Event) => {
@@ -406,20 +501,15 @@ function BuyerProfileContent() {
           : "Your refund request has been submitted successfully."
       );
 
-      void loadWallet();
-      void loadProfile().catch((profileRefreshError) => {
-        console.error(
-          "Failed to refresh buyer profile after refund:",
-          profileRefreshError
-        );
-      });
+      void refreshProfileAndWallet();
     };
 
-    const handleRecipePurchased = (event: Event) => {
+    const handleRecipePurchased = async (event: Event) => {
       const customEvent = event as CustomEvent<{
         title?: string;
         amount?: number;
       }>;
+
       const title = String(customEvent.detail?.title || "").trim();
       const amount = Number(customEvent.detail?.amount || 0);
 
@@ -437,15 +527,19 @@ function BuyerProfileContent() {
 
       showToast("Purchase successful", message);
 
-      void Promise.all([
-        loadWallet(),
-        loadProfile().catch((profileRefreshError) => {
-          console.error(
-            "Failed to refresh buyer profile after purchase:",
-            profileRefreshError
-          );
-        }),
-      ]);
+      const previousWallet = walletData;
+      const previousPurchaseCount = getCompletedPurchaseCount(previousWallet);
+
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        const { wallet: latestWallet } = await refreshProfileAndWallet();
+        const latestPurchaseCount = getCompletedPurchaseCount(latestWallet);
+
+        if (latestPurchaseCount > previousPurchaseCount || attempt >= 4) {
+          return;
+        }
+
+        await wait(1000);
+      }
     };
 
     window.addEventListener(
@@ -475,7 +569,7 @@ function BuyerProfileContent() {
         handleRecipePurchased as EventListener
       );
     };
-  }, []);
+  }, [refreshProfileAndWallet, showToast, walletData]);
 
   const initials = useMemo(() => {
     return getInitials(profile?.display_name, profile?.email);
@@ -484,12 +578,33 @@ function BuyerProfileContent() {
   const effectiveWalletAddress =
     walletData?.wallet_address || profile?.wallet_address || "";
   const walletExplorerUrl = getWalletExplorerUrl(effectiveWalletAddress);
+
   const recentActivity = profile?.recent_activity || [];
   const badges = profile?.badges || [];
   const earnedBadges = badges.filter((badge) => badge.earned).length;
-  const effectiveBalance = Number(
+
+  const internalRecipeChainBalance = Number(
     walletData?.account_balance ?? profile?.account_balance ?? 0
   );
+
+  const xrplTestnetBalance = toNumberOrNull(walletData?.xrpl_testnet_balance);
+  const xrplBalanceStatus = String(walletData?.xrpl_balance_status || "");
+  const xrplBalanceError = String(walletData?.xrpl_balance_error || "");
+
+  const hasLiveXrplBalance =
+    xrplTestnetBalance !== null && xrplBalanceStatus === "ok";
+
+  const displayedRecipeChainBalance = hasLiveXrplBalance
+    ? xrplTestnetBalance
+    : internalRecipeChainBalance;
+
+  const displayedRecipeChainBalanceText = formatXrp(displayedRecipeChainBalance);
+
+  const balanceSubtext = walletLoading
+    ? "Loading wallet..."
+    : hasLiveXrplBalance
+    ? "Real XRP available in your XRPL Testnet wallet"
+    : xrplBalanceError || "XRPL balance unavailable; showing internal balance";
 
   const closeModal = () => {
     setModalOpen(false);
@@ -549,6 +664,10 @@ function BuyerProfileContent() {
     } finally {
       setDeleteLoading(false);
     }
+  };
+
+  const handleTopUpSuccess = async (): Promise<void> => {
+    await refreshProfileAndWallet();
   };
 
   if (loading) {
@@ -614,11 +733,9 @@ function BuyerProfileContent() {
             icon={
               <Wallet className="h-5 w-5 text-purple-600" strokeWidth={2.4} />
             }
-            label="Balance"
-            value={`${effectiveBalance.toFixed(2)} XRP`}
-            subtext={
-              walletLoading ? "Loading wallet..." : "RecipeChain wallet balance"
-            }
+            label="RecipeChain Balance"
+            value={displayedRecipeChainBalanceText}
+            subtext={balanceSubtext}
           />
         </div>
 
@@ -655,7 +772,7 @@ function BuyerProfileContent() {
                     Buyer
                   </span>
 
-                  {profile.total_purchases >= 10 ? (
+                  {Number(profile.total_purchases || 0) >= 10 ? (
                     <span className="rounded-full bg-fuchsia-50 px-3 py-1 text-sm font-medium text-fuchsia-700">
                       Top Buyer
                     </span>
@@ -750,13 +867,18 @@ function BuyerProfileContent() {
                   </span>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm text-slate-500">RecipeChain Balance</p>
+                <div className="rounded-2xl border border-teal-100 bg-teal-50 p-4">
+                  <p className="text-sm text-teal-700">RecipeChain Balance</p>
+
                   <p className="mt-2 text-2xl font-bold text-slate-900">
-                    {effectiveBalance.toFixed(2)} XRP
+                    {walletLoading ? "Loading..." : displayedRecipeChainBalanceText}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Use this balance to buy recipes instantly.
+
+                  <p className="mt-1 text-xs text-teal-700">
+                    {hasLiveXrplBalance
+                      ? "Read live from your XRPL Testnet wallet."
+                      : xrplBalanceError ||
+                        "XRPL balance is unavailable now. Showing internal balance instead."}
                   </p>
                 </div>
 
@@ -962,20 +1084,14 @@ function BuyerProfileContent() {
       <WalletTopUpModal
         open={topUpOpen}
         onCloseAction={() => setTopUpOpen(false)}
-        onSuccessAction={loadWallet}
+        onSuccessAction={handleTopUpSuccess}
       />
 
       <WalletWithdrawModal
         open={withdrawOpen}
         onCloseAction={() => setWithdrawOpen(false)}
         onSuccessAction={() => {
-          void loadWallet();
-          void loadProfile().catch((profileRefreshError) => {
-            console.error(
-              "Failed to refresh buyer profile after withdrawal:",
-              profileRefreshError
-            );
-          });
+          void refreshProfileAndWallet();
         }}
       />
     </>
