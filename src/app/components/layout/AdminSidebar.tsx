@@ -29,12 +29,11 @@ export default function AdminSidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0">
-
+    <aside className="w-64 bg-[#EBF7F6] border-r border-[#D7F0EC] flex flex-col h-screen sticky top-0">
       {/* Brand Logo Area */}
       <div className="flex flex-col items-center pt-6 pb-4 border-b border-gray-100">
-        <img src="/images/logo.svg" alt="RecipeChain Logo" className="h-10 mb-2 object-contain" />
-        <span className={`text-xl text-[#23262f] tracking-tight ${customFont.className}`}>
+        <img src="/images/logo.svg" alt="RecipeChain Logo" className="h-16 mb-2 object-contain" />
+        <span className={`text-xl text-bold tracking-tight ${customFont.className}`}>
           RecipeChain
         </span>
       </div>
@@ -46,8 +45,8 @@ export default function AdminSidebar() {
             <a
               href={link.href}
               className={`w-full flex items-center px-4 py-3 rounded-xl font-semibold transition-all ${isActive(link.href)
-                  ? 'bg-[#149984] text-white shadow-lg shadow-[#149984]/20'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-[#149984]'
+                ? 'bg-[#149984] text-white shadow-lg shadow-[#149984]/20'
+                : 'text-gray-500 hover:bg-gray-50 hover:text-[#149984]'
                 }`}
             >
               <link.icon className={`h-5 w-5 mr-3 flex-shrink-0 ${isActive(link.href) ? 'text-white' : 'text-gray-400'}`} />
