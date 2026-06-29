@@ -192,7 +192,7 @@ export default function AIShoppingAssistant() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-teal-600 text-white shadow-2xl shadow-teal-900/25 transition hover:-translate-y-1 hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-200"
+          className="fixed bottom-[5.75rem] right-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-teal-600 text-white shadow-2xl shadow-teal-900/25 transition hover:-translate-y-1 hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-200"
           aria-label="Open AI Shopping Assistant"
         >
           <MessageCircle size={28} />
@@ -200,7 +200,7 @@ export default function AIShoppingAssistant() {
       )}
 
       {open && (
-        <section className="fixed bottom-6 right-4 z-50 flex h-[min(720px,calc(100vh-3rem))] w-[calc(100vw-2rem)] max-w-md flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-slate-50 shadow-2xl shadow-slate-900/20 sm:right-6">
+        <section className="fixed bottom-[5.75rem] right-4 z-50 flex h-[min(720px,calc(100vh-7rem))] w-[calc(100vw-2rem)] max-w-md flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-slate-50 shadow-2xl shadow-slate-900/20 sm:right-6">
           <div className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-50 text-teal-700">

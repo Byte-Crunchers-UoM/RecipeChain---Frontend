@@ -5,12 +5,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWeb3Auth, useWeb3AuthConnect } from "@web3auth/modal/react";
-
+import { getSellerEntryRoute } from "@/lib/getSellerEntryRoute";
 import { useAuth } from "@/context/AuthContext";
 import { getWeb3AuthPrivateKey } from "@/lib/web3/getWeb3AuthPrivKey";
 import { deriveXrplAddressFromWeb3AuthPrivKey } from "@/lib/xrpl/deriveXrpl";
 import { closeWeb3AuthModal } from "@/lib/web3/closeWeb3AuthModal";
-import { getSellerEntryRoute } from "@/lib/getSellerEntryRoute";
 
 const BUYER_HOME = "/recipes";
 

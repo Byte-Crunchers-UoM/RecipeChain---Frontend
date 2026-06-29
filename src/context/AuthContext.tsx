@@ -19,6 +19,9 @@ export type MeUser = {
   wallet_address?: string | null;
   name?: string | null;
   bio?: string | null;
+  full_name?: string | null;
+  display_name?: string | null;
+  profile_photo?: string | null;
 };
 
 export type AuthContextType = {
@@ -150,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return me;
       }
 
-      const fallbackResp = await fetch(`${API_BASE}/buyer/me/profile`, {
+      const fallbackResp = await fetch(`${API_BASE}/buyers/me/profile`, {
         method: "GET",
         credentials: "include",
         headers: {
