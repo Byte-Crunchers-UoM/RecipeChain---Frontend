@@ -56,9 +56,22 @@ function BuyerProfileContent() {
 
     setIsUpdating(true);
     const token = localStorage.getItem('adminToken');
+    if (!token) {
+      setIsUpdating(false);
+      alert('Admin authentication token is missing. Please login again.');
+      return;
+    }
+    console.log("Admin Token:", token);
 
     try {
-      const res = await fetch(`http://localhost:4000/api/buyers/${id}/status`, {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      console.log("Token Payload:", payload);
+    } catch (err) {
+      console.warn('Failed to parse token payload', err);
+    }
+    
+    try {
+      const res = await fetch(`http://localhost:4000/api/buyers/${id}/block`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
