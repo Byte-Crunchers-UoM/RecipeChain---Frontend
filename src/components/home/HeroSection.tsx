@@ -60,13 +60,14 @@ export function HeroSection(): React.ReactElement {
               <BrowseMarketplaceBtn />
               
               <button 
+                onClick={() => window.dispatchEvent(new Event('open-ai-chat'))}
                 className="group flex items-center justify-center gap-2 bg-white border border-orange-200/60 text-orange-600 px-6 py-3.5 rounded-xl font-semibold hover:bg-orange-50 hover:border-orange-300 transition-all duration-300 shadow-sm hover:shadow-md"
                 aria-label="Ask AI Chef for recipe recommendations"
               >
-                <div className="bg-orange-100 p-1.5 rounded-lg group-hover:scale-110 transition-transform">
+                <div className="bgs-orange-100 p-1.5 rounded-lg group-hover:scale-110 transition-transform">
                   <Bot size={18} className="text-orange-600" />
                 </div>
-                Ask AI Chef
+                Ask AI Chatbot
               </button>
             </div>
 

@@ -60,10 +60,10 @@ export const Navbar = () => {
         </Link>
 
         <Link
-          href="/ai-assistant"
+          href="/trendinge-recipes"
           className="transition-colors hover:text-[#16a34a]"
         >
-          AI Assistant
+         Trending Recipes
         </Link>
       </div>
 

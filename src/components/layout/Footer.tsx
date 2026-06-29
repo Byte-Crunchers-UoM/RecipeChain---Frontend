@@ -9,7 +9,8 @@ const footerSections = [
     title: 'PLATFORM',
     links: [
       { label: 'Marketplace', href: '/marketplace' },
-      { label: 'How It Works', href: '/how-it-works' },
+      // UPDATED: Added '/#' to route to the home page and scroll to the ID
+      { label: 'How It Works', href: '/#how-it-works' }, 
       { label: 'Pricing', href: '/pricing' },
       { label: 'AI Assistant', href: '/ai-assistant' },
       { label: 'For Chefs', href: '/chefs' },
@@ -19,9 +20,7 @@ const footerSections = [
     title: 'COMPANY',
     links: [
       { label: 'About Us', href: '/about' },
-      { label: 'Blog', href: '/blog' },
       { label: 'Careers', href: '/careers' },
-      { label: 'Press Kit', href: '/press' },
       { label: 'Contact', href: '/contact' },
     ],
   },
@@ -29,9 +28,7 @@ const footerSections = [
     title: 'LEGAL',
     links: [
       { label: 'Terms of Service', href: '/terms' },
-      { label: 'Privacy Policy', href: '/privacy' },
-      { label: 'Cookie Policy', href: '/cookies' },
-      { label: 'Chef Agreement', href: '/chef-agreement' },
+      { label: 'Privacy Policy', href: '/privacy' }
     ],
   },
   {
@@ -45,8 +42,6 @@ const footerSections = [
     ],
   },
 ];
-
-const supportedCrypto = ['ETH', 'BTC', 'USDC', 'SOL', 'MATIC'];
 
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -115,18 +110,6 @@ export const Footer = () => {
 
         {/* Bottom Section: Crypto Tags & Copyright */}
         <div className="flex flex-col items-center gap-6">
-          
-          {/* Supported Crypto Badges */}
-          <div className="flex flex-wrap justify-center gap-3">
-            {supportedCrypto.map((coin) => (
-              <span 
-                key={coin} 
-                className="px-4 py-1.5 rounded-full border border-[#10b981]/30 bg-[#10b981]/5 text-[#10b981] text-xs font-bold tracking-wide"
-              >
-                {coin}
-              </span>
-            ))}
-          </div>
 
           {/* Copyright */}
           <p className="text-sm text-slate-500 text-center">

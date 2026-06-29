@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Recipe } from '@/lib/types/recipe';
+import type { Recipe } from '@/lib/types/Recipe';
 
 interface RecipeWithId extends Recipe {
   _id?: string;
