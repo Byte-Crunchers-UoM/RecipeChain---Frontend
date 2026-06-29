@@ -8,7 +8,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import {
-  Bell, LayoutGrid, Users, FileText, UserCheck,
+  LogOut, LayoutGrid, Users, FileText, UserCheck,
   Clock, DollarSign, CheckCircle2, FilePlus,
   UserX,
   XCircle
@@ -27,6 +27,12 @@ export default function AdminDashboard() {
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [chartView, setChartView] = useState<'revenue' | 'transactions'>('revenue');
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
+    router.push('/admin/login');
+  };
 
   useEffect(() => {
     const checkAuthAndFetchData = async () => {
@@ -127,20 +133,19 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
-              <Bell className="h-6 w-6" />
-              <span className="absolute top-2 right-2.5 h-2 w-2 bg-red-500 rounded-full border-2 border-[#F8FAFB]"></span>
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-sm font-bold text-[#23262f]">{adminName}</p>
-                <p className="text-xs text-gray-500 font-medium">Super Admin</p>
-              </div>
-              <div className="h-11 w-11 bg-[#149984] rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                AU
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-sm font-bold text-[#23262f]">{adminName}</p>
+              <p className="text-xs text-gray-500 font-medium">Super Admin</p>
             </div>
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              className="group relative h-11 w-11 bg-[#149984] rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm hover:bg-red-500 transition-colors duration-200"
+            >
+              <span className="group-hover:hidden">AU</span>
+              <LogOut className="hidden group-hover:block h-5 w-5" />
+            </button>
           </div>
         </header>
 

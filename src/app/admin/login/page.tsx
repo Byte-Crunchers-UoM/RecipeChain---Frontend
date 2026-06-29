@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Eye, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Arimo}from 'next/font/google';
 
 const customFont = Arimo({ subsets: ['latin'], weight: ['400'] });
@@ -10,6 +10,8 @@ const customFont = Arimo({ subsets: ['latin'], weight: ['400'] });
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -94,23 +96,33 @@ export default function AdminLogin() {
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input 
-                type="password" 
+                type={showPassword ? 'text' : 'password'} 
                 value={password}
                 placeholder="Enter your password"
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full pl-12 pr-12 py-3.5 border border-gray-200 rounded-[12px] text-gray-900 focus:border-[#149984] focus:ring-2 focus:ring-[#149984]/20 transition-all placeholder:text-gray-400"
               />
-              <Eye className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 cursor-pointer hover:text-gray-600" />
+              <button
+                type="button"
+                onClick={() => setShowPassword(prev => !prev)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2.5">
-              <input type="checkbox" id="remember" className="h-4 w-4 rounded border-gray-300 text-[#149984] focus:ring-[#149984]" />
-              <label htmlFor="remember" className="text-gray-500 font-medium">Remember me</label>
-            </div>
-            <a href="#" className="text-[#149984] font-semibold hover:text-[#0f7d6d]">Forgot password?</a>
+          <div className="flex items-center gap-2.5">
+            <input
+              type="checkbox"
+              id="remember"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 accent-[#149984] cursor-pointer"
+            />
+            <label htmlFor="remember" className="text-gray-500 font-medium cursor-pointer select-none">Remember me</label>
           </div>
 
           <button 

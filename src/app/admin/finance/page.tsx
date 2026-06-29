@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Poppins } from 'next/font/google';
 import AdminSidebar from '@/app/components/layout/AdminSidebar';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { Wallet, TrendingUp, Activity, DollarSign, CheckCircle2, Clock, XCircle, Loader2 } from 'lucide-react';
+import { Wallet, TrendingUp, Activity, DollarSign, CheckCircle2, Clock, XCircle, Loader2, LogOut } from 'lucide-react';
 
 
 const poppins = Poppins({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
@@ -16,6 +17,7 @@ const truncateHash = (hash: string) => {
 };
 
 export default function FinanceDashboard() {
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
     const [dashboardData, setDashboardData] = useState({
         kpis: { totalRevenue: 0, totalCommission: 0, totalTransactions: 0 },
@@ -23,6 +25,12 @@ export default function FinanceDashboard() {
         topPerformers: [],
         recentTransactions: []
     });
+
+    const handleLogout = () => {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+        router.push('/admin/login');
+    };
 
     useEffect(() => {
         const fetchFinanceData = async () => {
@@ -87,13 +95,29 @@ export default function FinanceDashboard() {
 
             <main className="flex-1 p-8 antialiased overflow-y-auto">
                 {/* Header Section */}
-                <header className="flex items-center gap-4 mb-10">
-                    <div className="bg-[#149984] p-3 rounded-xl shadow-md shadow-[#149984]/20">
-                        <DollarSign className="text-white h-7 w-7" />
+                <header className="flex justify-between items-center mb-10">
+                    <div className="flex items-center gap-4">
+                        <div className="bg-[#149984] p-3 rounded-xl shadow-md shadow-[#149984]/20">
+                            <DollarSign className="text-white h-7 w-7" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-bold text-[#23262f] tracking-tight">Finance & Revenue</h1>
+                            <p className="text-gray-500 text-sm font-medium mt-1">Monitor platform earnings, transactions, and growth</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-3xl font-bold text-[#23262f] tracking-tight">Finance & Revenue</h1>
-                        <p className="text-gray-500 text-sm font-medium mt-1">Monitor platform earnings, transactions, and growth</p>
+                    <div className="flex items-center gap-3">
+                        <div className="text-right">
+                            <p className="text-sm font-bold text-[#23262f]">Admin User</p>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase">Super Admin</p>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            title="Logout"
+                            className="group relative h-10 w-10 bg-[#149984] rounded-full flex items-center justify-center text-white font-bold shadow-sm hover:bg-red-500 transition-colors duration-200"
+                        >
+                            <span className="group-hover:hidden">AU</span>
+                            <LogOut className="hidden group-hover:block h-4 w-4" />
+                        </button>
                     </div>
                 </header>
 

@@ -6,7 +6,7 @@ import { Poppins } from 'next/font/google';
 import Image from 'next/image';
 import AdminSidebar from '@/app/components/layout/AdminSidebar';
 import { 
-  Bell, ChefHat, Search, MoreVertical, 
+  ChefHat, Search, MoreVertical, LogOut,
   CheckCircle, Clock, XCircle, FileText, Loader2 
 } from 'lucide-react';
 
@@ -28,6 +28,12 @@ export default function RecipesManagement() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
+    router.push('/admin/login');
+  };
   const [filterStatus, setFilterStatus] = useState("all");
 
   useEffect(() => {
@@ -88,17 +94,19 @@ const filteredRecipes = recipes.filter(r => {
               <p className="text-gray-500 text-sm font-medium">Manage Recipes, Approved or Reject</p>
             </div>
           </div>
-          <div className="flex items-center gap-6">
-            <Bell className="text-gray-400 h-6 w-6 cursor-pointer hover:text-[#149984] transition-colors" />
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="text-sm font-bold text-[#23262f]">Admin User</p>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Super Admin</p>
-              </div>
-              <div className="h-10 w-10 bg-[#149984] rounded-full flex items-center justify-center text-white font-bold shadow-sm">
-                AU
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-sm font-bold text-[#23262f]">Admin User</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Super Admin</p>
             </div>
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              className="group relative h-10 w-10 bg-[#149984] rounded-full flex items-center justify-center text-white font-bold shadow-sm hover:bg-red-500 transition-colors duration-200"
+            >
+              <span className="group-hover:hidden">AU</span>
+              <LogOut className="hidden group-hover:block h-4 w-4" />
+            </button>
           </div>
         </header>
 

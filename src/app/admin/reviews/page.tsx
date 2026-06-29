@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Poppins } from 'next/font/google';
 import AdminSidebar from '@/app/components/layout/AdminSidebar';
 import {
-  Bell,
+  LogOut,
   Search,
   CheckCircle,
   Clock,
@@ -56,6 +56,12 @@ export default function ReportedReviewsPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [actioningId, setActioningId] = useState<string | null>(null);
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
+    router.push('/admin/login');
+  };
 
   // Search & Filter state
   const [recipeSearch, setRecipeSearch] = useState('');
@@ -222,16 +228,19 @@ export default function ReportedReviewsPage() {
             </div>
           </div>
 
-          {/* User Profile Header */}
-          <div className="flex items-center gap-6">
-            <Bell className="text-gray-400 h-6 w-6 cursor-pointer hover:text-[#149984]" />
-            <div className="flex items-center gap-3 border-l pl-6 border-gray-200">
-              <div className="text-right">
-                <p className="text-sm font-bold text-[#23262f]">Admin User</p>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Super Admin</p>
-              </div>
-              <div className="h-10 w-10 bg-[#149984] rounded-full flex items-center justify-center text-white font-bold">AU</div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-sm font-bold text-[#23262f]">Admin User</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase">Super Admin</p>
             </div>
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              className="group relative h-10 w-10 bg-[#149984] rounded-full flex items-center justify-center text-white font-bold hover:bg-red-500 transition-colors duration-200"
+            >
+              <span className="group-hover:hidden">AU</span>
+              <LogOut className="hidden group-hover:block h-4 w-4" />
+            </button>
           </div>
         </header>
 
