@@ -21,7 +21,8 @@ export default function ExploreChefsPage() {
         // Fetch all sellers and count their recipes
         const { data, error } = await supabase
           .from("sellers")
-          .select("user_id, display_name, full_name, profile_photo, nationality, verify_badge_status, recipes(count), followers_count");
+          .select("user_id, display_name, full_name, profile_photo, nationality, verify_badge_status, recipes(count), followers_count")
+          .eq("verification_status", "approved");
 
         if (error) {
           throw error;
