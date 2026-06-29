@@ -3,7 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect, useRef } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { Recipe, Ingredient,Instructions } from '@/lib/types/Recipe';
+import { Recipe, Ingredient,Instructions } from '@/lib/types/recipe';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
