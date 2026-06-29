@@ -55,7 +55,7 @@ const ChefProfileCard = () => {
                         }
                     }
                 }
-                
+
                 if (parsedSocials) {
                     setSocialLinks(parsedSocials);
                 } else if (profile.socials) {
@@ -79,7 +79,7 @@ const ChefProfileCard = () => {
 
             try {
                 const response = await followChef(chefId, currentBuyerId);
-                
+
                 // Get the real count from the backend response instead of hardcoding prev + 1
                 if (response && response.data && typeof response.data.followers_count === 'number') {
                     setFollowerCount(response.data.followers_count);
@@ -91,7 +91,7 @@ const ChefProfileCard = () => {
                 // Simultaneous notifications on success
                 addNotification("You started following this chef.", "success");
                 addNotification("New buyer started following you.", "info");
-                
+
                 if (sellerData) {
                     await followChefLocally({
                         user_id: chefId,
@@ -121,16 +121,16 @@ const ChefProfileCard = () => {
 
     const formatSocialLink = (link: string, platform: string) => {
         if (!link) return "#";
-        
+
         if (platform === 'tiktok' && !link.includes('tiktok.com') && !link.includes('http')) {
             const username = link.startsWith('@') ? link : `@${link}`;
             return `https://www.tiktok.com/${username}`;
         }
-        
+
         if (!link.startsWith('http://') && !link.startsWith('https://')) {
             return `https://${link}`;
         }
-        
+
         return link;
     };
 
@@ -158,8 +158,8 @@ const ChefProfileCard = () => {
                 {isVerified && (
                     <div className="absolute bottom-1 right-1 translate-x-2 translate-y-1 bg-[#008080] rounded-full border-[4px] border-white w-12 h-12 flex items-center justify-center shadow-sm">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M9 12l2 2 4-4" stroke="#008080" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M9 12l2 2 4-4" stroke="#008080" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     </div>
                 )}

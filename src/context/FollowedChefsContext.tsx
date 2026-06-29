@@ -40,15 +40,15 @@ export function FollowedChefsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const fetchInitialData = async () => {
       try {
         setIsLoading(true);
 
-        // First, check localStorage for persisted state
+        // Check localStorage for persisted state
         const savedChefs = localStorage.getItem('followedChefs');
         const savedRecipes = localStorage.getItem('followedRecipes');
-        
+
         if (savedChefs && savedRecipes) {
           try {
             const parsedChefs = JSON.parse(savedChefs);
@@ -59,8 +59,8 @@ export function FollowedChefsProvider({ children }: { children: ReactNode }) {
                 setFollowedRecipes(parsedRecipes);
                 setIsLoading(false);
               }
-              // Still fetch in the background to get latest updates if needed, 
-              // but we won't overwrite unless the API actually returns data.
+              // Prevent backend fetch from overwriting locally followed/unfollowed chefs
+              return;
             }
           } catch (e) {
             console.error("Error parsing localStorage data", e);
@@ -87,7 +87,7 @@ export function FollowedChefsProvider({ children }: { children: ReactNode }) {
     };
 
     fetchInitialData();
-    
+
     return () => {
       isMounted = false;
     };
@@ -124,23 +124,16 @@ export function FollowedChefsProvider({ children }: { children: ReactNode }) {
   const unfollowChefLocally = (chefId: string | number) => {
     // Remove from chefs list
     setFollowedChefs((prev) => prev.filter((c) => String(c.user_id) !== String(chefId)));
-    
-    // Remove their recipes (only in frontend)
+
+    // Remove their recipeS
     setFollowedRecipes((prev) => prev.filter((r) => {
-       // if recipe has chef_id, we can filter. 
-       // If the backend returns `chef_id` inside recipe, use it.
-       // Some backend might return it nested or as something else.
-       // For safety, assuming `r.chef_id` exists (we inject it in followChefLocally, or hope backend provides it).
-       if (r.chef_id) return String(r.chef_id) !== String(chefId);
-       
-       // Fallback: If we don't have chef_id, we might not be able to perfectly remove it, 
-       // but we'll try removing based on chef_name if available
-       const chefToRemove = followedChefs.find(c => String(c.user_id) === String(chefId));
-       if (chefToRemove && r.chef_name) {
-          const name1 = chefToRemove.display_name || chefToRemove.full_name;
-          return r.chef_name !== name1;
-       }
-       return true; 
+      if (r.chef_id) return String(r.chef_id) !== String(chefId);
+      const chefToRemove = followedChefs.find(c => String(c.user_id) === String(chefId));
+      if (chefToRemove && r.chef_name) {
+        const name1 = chefToRemove.display_name || chefToRemove.full_name;
+        return r.chef_name !== name1;
+      }
+      return true;
     }));
   };
 

@@ -1,17 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import RecipeCard from '@/components/RecipeCard';
 import { Search } from 'lucide-react';
 
 const API_BASE_URL = 'http://localhost:4000/api/recipes';
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('q') || '';
+
   const [recipes, setRecipes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const categories = [
     { id: 'all', label: 'All Recipes' },
@@ -85,18 +88,6 @@ export default function Home() {
               {cat.label}
             </button>
           ))}
-        </div>
-
-        {/* Search bar */}
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
-          <input
-            type="text"
-            placeholder="Search recipes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-full text-[13px] text-slate-600 focus:outline-none focus:border-[#008080] focus:ring-2 focus:ring-[#008080]/10 w-[220px] transition-all"
-          />
         </div>
       </div>
 

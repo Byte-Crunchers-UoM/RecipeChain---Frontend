@@ -2,14 +2,17 @@
 
 import React, { useEffect, useState } from "react";
 import { Search, Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/services/supabaseClient";
 import ChefDirectoryCard from "@/components/ChefDirectoryCard";
 
 export default function ExploreChefsPage() {
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get("q") || "";
+
   const [chefs, setChefs] = useState<any[]>([]);
   const [filteredChefs, setFilteredChefs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchChefs = async () => {
@@ -66,19 +69,6 @@ export default function ExploreChefsPage() {
           <div>
             <h1 className="text-4xl font-bold text-slate-900 font-outfit mb-2">Explore Chefs</h1>
             <p className="text-slate-500 text-lg">Explore Our Community of Culinary Experts</p>
-          </div>
-
-          <div className="relative w-full md:w-[350px]">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search size={18} className="text-[#a0aabf]" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search culinary experts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-2.5 bg-white border border-[#e2e8f0] rounded-full text-slate-700 placeholder-[#a0aabf] focus:outline-none focus:ring-1 focus:ring-slate-300 transition-all text-[15px]"
-            />
           </div>
         </div>
 

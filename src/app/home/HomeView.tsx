@@ -28,7 +28,6 @@ import {
 export default function HomeView(): React.ReactElement {
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900">
-      <Navbar />
       <main>
         <HeroSection />
         <FeaturesSection />

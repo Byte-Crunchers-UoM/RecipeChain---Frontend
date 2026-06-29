@@ -60,11 +60,11 @@ const AboutSpecialties = () => {
                   }
                 });
               } else if (typeof parsedTags === 'string') {
-                  const cleanTag = String(parsedTags).replace(/[\[\]"']/g, '').trim();
-                  if (cleanTag && !seenTags.has(cleanTag)) {
-                    seenTags.add(cleanTag);
-                    allTags.push(cleanTag);
-                  }
+                const cleanTag = String(parsedTags).replace(/[\[\]"']/g, '').trim();
+                if (cleanTag && !seenTags.has(cleanTag)) {
+                  seenTags.add(cleanTag);
+                  allTags.push(cleanTag);
+                }
               }
             }
           });

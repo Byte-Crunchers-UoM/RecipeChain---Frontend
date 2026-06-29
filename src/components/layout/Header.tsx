@@ -27,7 +27,10 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
   const { isAuthenticated, isLoading } = useAuth();
 
   const isMarketplacePage = pathname === "/recipes";
-  const isCookbookPage = pathname === "/buyer/cookbook";
+  const isCookbookPage = pathname === "/buyer/cookbook" || pathname === "/cookbook";
+  const isTrendingPage = pathname === "/trending";
+  const isExploreChefsPage = pathname === "/chefs/explore";
+  const isFollowedChefsPage = pathname === "/chefs/followed";
 
   const renderSearchArea = () => {
     if (isMarketplacePage) {
@@ -41,7 +44,31 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
     if (isCookbookPage) {
       return (
         <Suspense fallback={<SearchFallback />}>
-          <CookbookTopSearch />
+          <CookbookTopSearch placeholder="Search your cookbook" fallbackPath="/buyer/cookbook" />
+        </Suspense>
+      );
+    }
+
+    if (isTrendingPage) {
+      return (
+        <Suspense fallback={<SearchFallback />}>
+          <CookbookTopSearch placeholder="Search recipes..." fallbackPath="/trending" />
+        </Suspense>
+      );
+    }
+
+    if (isExploreChefsPage) {
+      return (
+        <Suspense fallback={<SearchFallback />}>
+          <CookbookTopSearch placeholder="Search culinary experts..." fallbackPath="/chefs/explore" />
+        </Suspense>
+      );
+    }
+
+    if (isFollowedChefsPage) {
+      return (
+        <Suspense fallback={<SearchFallback />}>
+          <CookbookTopSearch placeholder="Search chefs or recipes..." fallbackPath="/chefs/followed" />
         </Suspense>
       );
     }
@@ -65,7 +92,6 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
             priority
             className="h-10 w-10 object-contain"
           />
-
           <span className="text-xl font-bold tracking-tight text-slate-800">
             RecipeChain
           </span>

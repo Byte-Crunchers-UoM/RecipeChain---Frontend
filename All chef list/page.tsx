@@ -43,7 +43,6 @@ export default function ExploreChefsPage() {
     fetchChefs();
   }, []);
 
-  // Filter chefs locally when search query changes
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredChefs(chefs);

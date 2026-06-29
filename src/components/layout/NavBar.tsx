@@ -27,7 +27,7 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="relative z-50 flex items-center justify-between border-b border-green-100/50 bg-white/50 px-8 py-5 backdrop-blur-sm">
+    <nav className="relative z-50 flex items-center justify-between border-b border-slate-200 bg-white shadow-sm px-8 py-5">
       <Link href="/" className="flex items-center gap-2 cursor-pointer">
         <Image
           src="/Logo.png"

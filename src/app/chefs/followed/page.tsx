@@ -3,13 +3,16 @@
 import React, { useMemo, useState } from 'react';
 import RecipeCard from '@/components/RecipeCard';
 import Image from 'next/image';
-import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2, Search, Check, User, MoreHorizontal, Users } from 'lucide-react';
 import { useFollowedChefs, Chef } from '@/context/FollowedChefsContext';
 
 export default function FollowedChefsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get("q") || "";
+  
   const { followedChefs, followedRecipes, isLoading, unfollowChefLocally } = useFollowedChefs();
-  const [searchQuery, setSearchQuery] = useState("");
 
   // Filter chefs based on search query
   const filteredChefs = useMemo(() => {
@@ -36,7 +39,7 @@ export default function FollowedChefsPage() {
       }
       return recipe;
     });
-    
+
     if (searchQuery.trim()) {
       const lowerQuery = searchQuery.toLowerCase();
       recipes = recipes.filter(recipe => {
@@ -55,33 +58,20 @@ export default function FollowedChefsPage() {
 
   return (
     <div className="p-8 lg:p-10 max-w-[1400px] mx-auto w-full min-h-screen bg-slate-50">
-      
+
       {/* Header Section */}
       <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 text-left">
         <div>
           <h1 className="text-[28px] font-bold font-outfit text-slate-800">Followed Chefs</h1>
           <p className="text-slate-500 text-[14px] mt-1">Stay inspired by the chefs behind your favorite flavors.</p>
         </div>
-        
-        <div className="relative w-full md:w-[350px]">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search size={18} className="text-[#a0aabf]" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search chefs or recipes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-white border border-[#e2e8f0] rounded-full text-slate-700 placeholder-[#a0aabf] focus:outline-none focus:ring-1 focus:ring-[#008080] focus:border-transparent transition-all text-[15px]"
-          />
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        
+
         {/* Left Side: Uploaded Recipes */}
         <div className="lg:col-span-2">
-          
+
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-100 shadow-sm">
               <Loader2 className="animate-spin text-[#008080] mb-4" size={40} />
@@ -116,68 +106,65 @@ export default function FollowedChefsPage() {
             </p>
 
             {isLoading ? (
-               <div className="flex justify-center py-8">
-                 <Loader2 className="animate-spin text-slate-300" size={24} />
-               </div>
+              <div className="flex justify-center py-8">
+                <Loader2 className="animate-spin text-slate-300" size={24} />
+              </div>
             ) : filteredChefs.length === 0 ? (
-               <div className="text-center py-10 text-slate-400">
-                  <p className="text-sm">{searchQuery ? 'No chefs found matching your search.' : 'You are not following anyone yet.'}</p>
-               </div>
+              <div className="text-center py-10 text-slate-400">
+                <p className="text-sm">{searchQuery ? 'No chefs found matching your search.' : 'You are not following anyone yet.'}</p>
+              </div>
             ) : (
-               <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                 {filteredChefs.map((chef: Chef) => {
-                   const name = chef.display_name || chef.full_name || "Unknown Chef";
-                   const isVerified = chef.verify_badge_status === "verified";
-                   
-                   return (
-                     <div key={chef.user_id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
-                       <div className="flex items-center gap-3">
-                         <div className="relative">
-                            <div className="relative w-12 h-12 rounded-full overflow-hidden bg-slate-50 border-2 border-[#008080] flex items-center justify-center shrink-0">
-                                {chef.profile_photo ? (
-                                   <Image 
-                                     src={chef.profile_photo} 
-                                     alt={name} 
-                                     fill 
-                                     className="object-cover"
-                                   />
-                                ) : (
-                                   <User className="text-slate-400" size={24} strokeWidth={1.5} />
-                                )}
+              <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                {filteredChefs.map((chef: Chef) => {
+                  const name = chef.display_name || chef.full_name || "Unknown Chef";
+                  const isVerified = chef.verify_badge_status === "verified";
+
+                  return (
+                    <div key={chef.user_id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+                      <div 
+                        className="flex items-center gap-3 cursor-pointer"
+                        onDoubleClick={() => router.push(`/chefs/profile?id=${chef.user_id}`)}
+                        title="Double-click to view profile"
+                      >
+                        <div className="relative">
+                          <div className="relative w-12 h-12 rounded-full overflow-hidden bg-slate-50 border-2 border-[#008080] flex items-center justify-center shrink-0">
+                            {chef.profile_photo ? (
+                              <Image
+                                src={chef.profile_photo}
+                                alt={name}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <User className="text-slate-400" size={24} strokeWidth={1.5} />
+                            )}
+                          </div>
+                          {isVerified && (
+                            <div className="absolute -bottom-1 -right-1 bg-[#008080] rounded-full w-5 h-5 flex items-center justify-center border-2 border-white shadow-sm">
+                              <Check size={10} strokeWidth={3} className="text-white" />
                             </div>
-                            {isVerified && (
-                              <div className="absolute -bottom-1 -right-1 bg-[#008080] rounded-full w-5 h-5 flex items-center justify-center border-2 border-white shadow-sm">
-                                <Check size={10} strokeWidth={3} className="text-white" />
-                              </div>
-                            )}
-                         </div>
-                         <div>
-                            <h3 className="font-semibold text-slate-800 text-[14px] leading-tight max-w-[120px] truncate" title={name}>{name}</h3>
-                            {chef.followers_count !== undefined && (
-                               <p className="text-[12px] text-slate-500 mt-0.5">{chef.followers_count} followers</p>
-                            )}
-                         </div>
-                       </div>
-                       
-                       <div className="flex items-center gap-2 shrink-0">
-                         <button 
-                           onClick={() => unfollowChefLocally(chef.user_id)}
-                           className="px-3 py-1.5 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-500 rounded-full text-[12px] font-semibold transition-colors"
-                         >
-                           Unfollow
-                         </button>
-                         <Link 
-                           href={`/chefs/profile?id=${chef.user_id}`}
-                           className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
-                           title="View Profile"
-                         >
-                           <MoreHorizontal size={18} />
-                         </Link>
-                       </div>
-                     </div>
-                   );
-                 })}
-               </div>
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-slate-800 text-[14px] leading-tight max-w-[120px] truncate" title={name}>{name}</h3>
+                          {chef.followers_count !== undefined && (
+                            <p className="text-[12px] text-slate-500 mt-0.5">{chef.followers_count} followers</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => unfollowChefLocally(chef.user_id)}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-500 rounded-full text-[12px] font-semibold transition-colors"
+                        >
+                          Unfollow
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
