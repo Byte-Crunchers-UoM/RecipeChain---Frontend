@@ -29,6 +29,8 @@ const QUICK_PROMPTS = [
   "Suggest substitutes for buttermilk.",
 ];
 
+const MAX_TEXTAREA_HEIGHT = 112;
+
 function getMessageBubbleClass(role: AIChatMessage["role"]) {
   if (role === "user") {
     return "ml-auto bg-teal-600 text-white";
@@ -37,8 +39,27 @@ function getMessageBubbleClass(role: AIChatMessage["role"]) {
   return "mr-auto border border-slate-200 bg-white text-slate-700";
 }
 
+/**
+ * Cleans model output before rendering.
+ * This protects the UI even if Gemini still returns markdown or internal paths.
+ */
+function cleanAssistantOutput(text: string) {
+  return text
+    .replace(/\*\*/g, "")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\s*-\s*\/recipes\/[a-zA-Z0-9-]+/g, "")
+    .replace(/\/recipes\/[a-zA-Z0-9-]+/g, "")
+    .replace(/\(\s*\)/g, "")
+    .replace(/\[\s*\]/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function formatAssistantText(text: string) {
-  const lines = text.split("\n");
+  const cleanedText = cleanAssistantOutput(text);
+  const lines = cleanedText.split("\n");
 
   return lines.map((line, index) => (
     <span key={`${line}-${index}`}>
@@ -46,6 +67,22 @@ function formatAssistantText(text: string) {
       {index < lines.length - 1 ? <br /> : null}
     </span>
   ));
+}
+
+/**
+ * Auto-resizes the message textarea.
+ * This fixes the issue where the first line becomes hidden when the input wraps.
+ */
+function resizeTextarea(textarea: HTMLTextAreaElement | null) {
+  if (!textarea) return;
+
+  textarea.style.height = "auto";
+
+  const nextHeight = Math.min(textarea.scrollHeight, MAX_TEXTAREA_HEIGHT);
+
+  textarea.style.height = `${nextHeight}px`;
+  textarea.style.overflowY =
+    textarea.scrollHeight > MAX_TEXTAREA_HEIGHT ? "auto" : "hidden";
 }
 
 export default function AIShoppingAssistant() {
@@ -62,10 +99,15 @@ export default function AIShoppingAssistant() {
 
     const timeout = window.setTimeout(() => {
       inputRef.current?.focus();
+      resizeTextarea(inputRef.current);
     }, 100);
 
     return () => window.clearTimeout(timeout);
   }, [open]);
+
+  useEffect(() => {
+    resizeTextarea(inputRef.current);
+  }, [input]);
 
   useEffect(() => {
     if (!open) return;
@@ -75,6 +117,12 @@ export default function AIShoppingAssistant() {
       block: "end",
     });
   }, [messages, loading, open]);
+
+  const resetTextareaHeight = () => {
+    window.requestAnimationFrame(() => {
+      resizeTextarea(inputRef.current);
+    });
+  };
 
   const sendPrompt = async (rawPrompt: string) => {
     const prompt = rawPrompt.trim();
@@ -90,6 +138,7 @@ export default function AIShoppingAssistant() {
 
     setMessages((current) => [...current, userMessage]);
     setInput("");
+    resetTextareaHeight();
     setLoading(true);
 
     try {
@@ -102,7 +151,7 @@ export default function AIShoppingAssistant() {
         ...current,
         {
           role: "assistant",
-          content: reply,
+          content: cleanAssistantOutput(reply),
         },
       ]);
     } catch (error) {
@@ -117,7 +166,7 @@ export default function AIShoppingAssistant() {
         ...current,
         {
           role: "assistant",
-          content: message,
+          content: cleanAssistantOutput(message),
         },
       ]);
     } finally {
@@ -255,7 +304,10 @@ export default function AIShoppingAssistant() {
                   maxLength={1200}
                   placeholder="Ask for a shopping list, scaling, or substitutes..."
                   disabled={loading}
-                  className="max-h-28 min-h-6 flex-1 resize-none bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
+                  className="min-h-[24px] max-h-28 flex-1 resize-none overflow-hidden bg-transparent text-sm leading-6 text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
+                  style={{
+                    height: "24px",
+                  }}
                 />
               </div>
 
@@ -273,7 +325,7 @@ export default function AIShoppingAssistant() {
               </button>
             </div>
 
-            <p className="mt-2 text-center text-[11px] text-slate-400">
+            <p className="mt-2 truncate text-center text-[11px] text-slate-400">
               Premium locked recipes are suggested for unlock instead of
               revealing paid content.
             </p>
