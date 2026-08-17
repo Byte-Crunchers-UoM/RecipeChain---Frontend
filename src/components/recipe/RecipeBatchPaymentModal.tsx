@@ -6,7 +6,7 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWeb3Auth } from '@web3auth/modal/react';
 import { ArrowRight, CheckCircle, Coins, Lock, PartyPopper, ShieldCheck, X } from 'lucide-react';
-import { Recipe } from '@/lib/types/Recipe';
+import { Recipe } from '@/lib/types/recipe';
 import { useRecipeBatchPurchase } from '@/hooks/useRecipeBatchPurchase';
 
 interface RecipeBatchPaymentModalProps {

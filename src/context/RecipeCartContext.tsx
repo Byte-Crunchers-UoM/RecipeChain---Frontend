@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useMemo } from 'react';
-import { Recipe } from '../lib/types/Recipe';
+import { Recipe } from '../lib/types/recipe';
 import { useAuth } from '@/context/AuthContext';
 import { fetchCart, addToCart as apiAddToCart, removeFromCart as apiRemoveFromCart } from '@/services/savedRecipeService';
 

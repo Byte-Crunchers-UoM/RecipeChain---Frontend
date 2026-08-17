@@ -69,7 +69,10 @@ export default async function middleware(request: NextRequest) {
     pathname.startsWith("/select-role")
 
   const isSellerRoute = pathname.startsWith("/seller")
-  const isBuyerRoute = pathname.startsWith("/buyer")
+  const isBuyerRoute =
+    pathname.startsWith("/buyer") ||
+    pathname.startsWith("/chefs") ||
+    pathname.startsWith("/trending")
   const isProtected = isSellerRoute || isBuyerRoute
 
   if (isProtected && authed !== "1") {
@@ -110,5 +113,13 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/seller/:path*", "/buyer/:path*", "/login", "/signup", "/select-role"],
+  matcher: [
+    "/seller/:path*",
+    "/buyer/:path*",
+    "/chefs/:path*",
+    "/trending",
+    "/login",
+    "/signup",
+    "/select-role",
+  ],
 };

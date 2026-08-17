@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FullRecipeView } from '@/components/recipe/FullRecipeView';
-import { Recipe } from '@/lib/types/Recipe';
+import { Recipe } from '@/lib/types/recipe';
 
 // Mock Next.js Image to prevent loading real images and suppress React warnings
 jest.mock('next/image', () => ({

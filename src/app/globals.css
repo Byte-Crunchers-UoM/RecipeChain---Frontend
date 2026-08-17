@@ -4,12 +4,92 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+  /* Primary brand colors */
+  --primary: #0d9488;
+  --primary-light: #e6f2f2;
+
+  /* Layout colors */
+  --background: #f8fafb;
+  --bg-main: #f8fafc;
+  --bg-sidebar: #ffffff;
+  --secondary: #e0f2f1;
+  --white: #ffffff;
+
+  /* Text colors */
+  --text: #1a2632;
+  --text-main: #1e293b;
+  --muted: #64748b;
+  --text-muted: #64748b;
+
+  /* Shadow tokens */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* Border radius */
+  --radius: 20px;
+  --transition: all 0.3s ease;
+
+  /* Typography scale */
+  --font-heading: 24px;
+  --font-subheading: 16px;
+  --font-description: 12px;
+}
+
+@theme {
+  --font-roboto: var(--font-roboto);
+  --font-inter: var(--font-inter);
+  --font-outfit: var(--font-outfit);
+  --color-primary: var(--primary);
+  --color-background: var(--background);
+  --color-secondary: var(--secondary);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
 }
 
 /* Force Light Mode styles */
 body {
-  color: #1f2937; /* Gray-800 */
-  background: #f9fafb; /* Gray-50 */
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-inter), var(--font-roboto), sans-serif;
+}
+
+/* ── Typography utilities ───────────────────────────── */
+.heading {
+  font-size: var(--font-heading);
+  font-weight: 700;
+}
+
+.sub-heading {
+  font-size: var(--font-subheading);
+  font-weight: 600;
+}
+
+.description {
+  font-size: var(--font-description);
+}
+
+/* ── Glassmorphism utility ──────────────────────────── */
+.glass {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+/* ── Notification slide-in animation ───────────────── */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Custom Scrollbar */
@@ -17,13 +97,16 @@ body {
   width: 8px;
   height: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }

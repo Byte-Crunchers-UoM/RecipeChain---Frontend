@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRecipeCart } from '@/context/RecipeCartContext';
-import { Recipe } from '@/lib/types/Recipe';
+import { Recipe } from '@/lib/types/recipe';
 
 interface SaveRecipeButtonProps {
     recipe: Recipe;
