@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { SearchBar } from "@/components/layout/marcketplace/SearchBar";
@@ -12,17 +12,13 @@ import { useAuth } from "@/context/AuthContext";
 import CookbookTopSearch from "@/components/layout/CookbookTopSearch";
 import TopNavProfileMenu from "@/components/layout/TopNavProfileMenu";
 
-interface HeaderProps {
-  notificationCount?: number;
-}
-
 function SearchFallback() {
   return (
     <div className="h-12 w-full max-w-3xl animate-pulse rounded-full bg-slate-100" />
   );
 }
 
-export default function Header({ notificationCount = 0 }: HeaderProps) {
+export default function Header() {
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -108,20 +104,6 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
             </div>
           ) : isAuthenticated ? (
             <>
-              <button
-                type="button"
-                className="relative flex h-11 w-11 items-center justify-center rounded-full transition hover:bg-slate-100"
-                aria-label="Notifications"
-              >
-                <Bell size={22} className="text-slate-700" />
-
-                {notificationCount > 0 ? (
-                  <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-teal-600 px-1 text-[10px] font-semibold text-white">
-                    {notificationCount}
-                  </span>
-                ) : null}
-              </button>
-
               <CartBadge />
 
               <TopNavProfileMenu />

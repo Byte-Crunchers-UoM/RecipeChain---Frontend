@@ -3,7 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect, useRef } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { Recipe, Ingredient, Instruction } from '@/lib/types/recipe';
+import { Recipe, Ingredient,Instructions } from '@/lib/types/recipe';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -32,12 +32,13 @@ export default function AddRecipeForm() {
   
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
+  type FormRecipeData = Omit<Recipe, 'recipe_id' | 'sellers' | 'rating' | 'rating_avg' | 'reviews_count'>;
   
-  const [formData, setFormData] = useState<Recipe>({
+  const [formData, setFormData] = useState<FormRecipeData>({
     chef_id: '',
     title: '',
     description: '',
-    category: '',
     cuisine: '',
     dietary_tags: '',
     goal: '',
@@ -45,13 +46,14 @@ export default function AddRecipeForm() {
     occasion: '',
     image_url: '',
     difficulty_level: '',
-    prep_time: '',
-    cook_time: '',
-    servings: '',
-    price: '',
+    category: '',
+    prep_time: 0,
+    cook_time: 0,
+    servings: 0,
+    price: 0,
     ingredients: [{ id: '1', name: '', quantity: '', unit: '' }],
     instructions: [{ id: '1', step: 1, description: '' }],
-    chef_note: '',
+    chef_note: ''
   });
 
  useEffect(() => {
@@ -124,10 +126,10 @@ export default function AddRecipeForm() {
             occasion: cleanVal(tagRecord?.occasion || data.occasion),
             image_url: data.image_url || '',
             difficulty_level: data.difficulty_level || '',
-            prep_time: data.prep_time !== null ? String(data.prep_time) : '',
-            cook_time: data.cook_time !== null ? String(data.cook_time) : '',
-            servings: data.servings !== null ? String(data.servings) : '',
-            price: data.price !== null ? String(data.price) : '',
+            prep_time: data.prep_time !== null ? Number(data.prep_time) : 0,
+            cook_time: data.cook_time !== null ? Number(data.cook_time) : 0,
+            servings: data.servings !== null ? Number(data.servings) : 0,
+            price: data.price !== null ? Number(data.price) : 0,
             ingredients: parsedIngredients,
             instructions: parsedInstructions,
             chef_note: data.chef_note || '',
@@ -303,9 +305,6 @@ export default function AddRecipeForm() {
         if (!ing.quantity || (typeof ing.quantity === 'string' && ing.quantity.trim() === '')) {
           errors[`ingredient_${ing.id}_quantity`] = 'quantity is required';
         }
-        if (!ing.unit || (typeof ing.unit === 'string' && ing.unit.trim() === '')) {
-          errors[`ingredient_${ing.id}_unit`] = 'unit is required';
-        }
       });
     }
 
@@ -327,11 +326,11 @@ export default function AddRecipeForm() {
   const handleCuisineSearch = (value: string) => {
     setCuisineSearch(value);
     setShowCuisineDropdown(true);
-    setFormData((prev: Recipe) => ({ ...prev, cuisine: value }));
+    setFormData((prev: FormRecipeData) => ({ ...prev, cuisine: value }));
   };
 
   const handleCuisineSelect = (cuisine: string) => {
-    setFormData((prev: Recipe) => ({ ...prev, cuisine }));
+    setFormData((prev: FormRecipeData) => ({ ...prev, cuisine }));
     setCuisineSearch(cuisine);
     setShowCuisineDropdown(false);
   };
@@ -343,11 +342,11 @@ export default function AddRecipeForm() {
   const handleDietaryTagsSearch = (value: string) => {
     setDietaryTagsSearch(value);
     setShowDietaryTagsDropdown(true);
-    setFormData((prev: Recipe) => ({ ...prev, dietary_tags: value }));
+    setFormData((prev: FormRecipeData) => ({ ...prev, dietary_tags: value }));
   };
 
   const handleDietaryTagsSelect = (tag: string) => {
-    setFormData((prev: Recipe) => ({ ...prev, dietary_tags: tag }));
+    setFormData((prev: FormRecipeData) => ({ ...prev, dietary_tags: tag }));
     setDietaryTagsSearch(tag);
     setShowDietaryTagsDropdown(false);
   };
@@ -366,14 +365,14 @@ export default function AddRecipeForm() {
       updatedMealTypes = [...currentMealTypes, mealType];
     }
 
-    setFormData((prev: Recipe) => ({ ...prev, meal_type: updatedMealTypes.join(', ') }));
+    setFormData((prev: FormRecipeData) => ({ ...prev, meal_type: updatedMealTypes.join(', ') }));
     setMealTypeSearch('');
   };
 
   const removeMealType = (typeToRemove: string) => {
     const currentMealTypes = formData.meal_type ? formData.meal_type.split(',').map((m) => m.trim()) : [];
     const updatedMealTypes = currentMealTypes.filter((m) => m !== typeToRemove);
-    setFormData((prev: Recipe) => ({ ...prev, meal_type: updatedMealTypes.join(', ') }));
+    setFormData((prev: FormRecipeData) => ({ ...prev, meal_type: updatedMealTypes.join(', ') }));
   };
 
   const filteredMealTypes = MEAL_TYPE_OPTIONS.filter((mealType) =>
@@ -383,11 +382,11 @@ export default function AddRecipeForm() {
   const handleGoalSearch = (value: string) => {
     setGoalSearch(value);
     setShowGoalDropdown(true);
-    setFormData((prev: Recipe) => ({ ...prev, goal: value }));
+    setFormData((prev: FormRecipeData) => ({ ...prev, goal: value }));
   };
 
   const handleGoalSelect = (goal: string) => {
-    setFormData((prev: Recipe) => ({ ...prev, goal }));
+    setFormData((prev: FormRecipeData) => ({ ...prev, goal }));
     setGoalSearch(goal);
     setShowGoalDropdown(false);
   };
@@ -406,14 +405,14 @@ export default function AddRecipeForm() {
       updatedOccasions = [...currentOccasions, occasion];
     }
 
-    setFormData((prev: Recipe) => ({ ...prev, occasion: updatedOccasions.join(', ') }));
+    setFormData((prev: FormRecipeData) => ({ ...prev, occasion: updatedOccasions.join(', ') }));
     setOccasionSearch('');
   };
 
   const removeOccasion = (occasionToRemove: string) => {
     const currentOccasions = formData.occasion ? formData.occasion.split(',').map((o) => o.trim()) : [];
     const updatedOccasions = currentOccasions.filter((o) => o !== occasionToRemove);
-    setFormData((prev: Recipe) => ({ ...prev, occasion: updatedOccasions.join(', ') }));
+    setFormData((prev: FormRecipeData) => ({ ...prev, occasion: updatedOccasions.join(', ') }));
   };
 
   const filteredOccasions = OCCASION_OPTIONS.filter((occasion) =>
@@ -448,7 +447,7 @@ export default function AddRecipeForm() {
   ) => {
     const { name, value } = e.target;
     const numericFields = ['prep_time', 'cook_time', 'servings', 'price'];
-    setFormData((prev: Recipe) => ({
+    setFormData((prev: FormRecipeData) => ({
       ...prev,
       [name]: numericFields.includes(name) ? value : value,
     }));
@@ -464,7 +463,7 @@ export default function AddRecipeForm() {
     field: keyof Ingredient,
     value: string
   ) => {
-    setFormData((prev: Recipe) => ({
+    setFormData((prev: FormRecipeData) => ({
       ...prev,
       ingredients: prev.ingredients.map((ing: Ingredient) =>
         ing.id === id ? { ...ing, [field]: value } : ing
@@ -479,7 +478,7 @@ export default function AddRecipeForm() {
 
   const addIngredient = () => {
     const newId = Date.now().toString();
-    setFormData((prev: Recipe) => ({
+    setFormData((prev: FormRecipeData) => ({
       ...prev,
       ingredients: [
         ...prev.ingredients,
@@ -489,16 +488,16 @@ export default function AddRecipeForm() {
   };
 
   const removeIngredient = (id: string) => {
-    setFormData((prev: Recipe) => ({
+    setFormData((prev: FormRecipeData) => ({
       ...prev,
       ingredients: prev.ingredients.filter((ing: Ingredient) => ing.id !== id),
     }));
   };
 
   const handleInstructionChange = (id: string, value: string) => {
-    setFormData((prev: Recipe) => ({
+    setFormData((prev: FormRecipeData) => ({
       ...prev,
-      instructions: prev.instructions.map((inst: Instruction) =>
+      instructions: prev.instructions.map((inst: Instructions) =>
         inst.id === id ? { ...inst, description: value } : inst
       ),
     }));
@@ -512,7 +511,7 @@ export default function AddRecipeForm() {
   const addInstruction = () => {
     const newId = Date.now().toString();
     const step = formData.instructions.length + 1;
-    setFormData((prev: Recipe) => ({
+    setFormData((prev: FormRecipeData) => ({
       ...prev,
       instructions: [
         ...prev.instructions,
@@ -522,11 +521,11 @@ export default function AddRecipeForm() {
   };
 
   const removeInstruction = (id: string) => {
-    setFormData((prev: Recipe) => {
-      const filtered = prev.instructions.filter((inst: Instruction) => inst.id !== id);
+    setFormData((prev: FormRecipeData) => {
+      const filtered = prev.instructions.filter((inst: Instructions) => inst.id !== id);
       return {
         ...prev,
-        instructions: filtered.map((inst: Instruction, index: number) => ({
+        instructions: filtered.map((inst: Instructions, index: number) => ({
           ...inst,
           step: index + 1,
         })),
@@ -617,7 +616,7 @@ export default function AddRecipeForm() {
         throw new Error(errorMessage);
       }
 
-      router.push('/recipes/submitted');
+      router.push('/seller/recipes/submitted');
       localStorage.removeItem('recipeDraftForm'); 
 
     } catch (err: any) {
@@ -1086,7 +1085,7 @@ export default function AddRecipeForm() {
                     setImagePreview(null);
                     setImageFileName('');
                     setImageFile(null);
-                    setFormData((prev: Recipe) => ({ ...prev, image_url: '' }));
+                    setFormData((prev: FormRecipeData) => ({ ...prev, image_url: '' }));
                   }}
                   disabled={isUploadingImage}
                   className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 rounded-full text-white text-xs"
@@ -1477,19 +1476,19 @@ export default function AddRecipeForm() {
                   description: formData.description ? formData.description.trim() : null,
                   image_url: draftImageUrl,
                   difficulty_level: formData.difficulty_level || null,
-                  prep_time: formData.prep_time !== '' ? Number(formData.prep_time) : null,
-                  cook_time: formData.cook_time !== '' ? Number(formData.cook_time) : null,
-                  servings: formData.servings !== '' ? Number(formData.servings) : null,
-                  price: formData.price !== '' ? Number(formData.price) : null,
+                  prep_time: formData.prep_time !== 0 ? Number(formData.prep_time) : null,
+                  cook_time: formData.cook_time !== 0 ? Number(formData.cook_time) : null,
+                  servings: formData.servings !== 0 ? Number(formData.servings) : null,
+                  price: formData.price !== 0 ? Number(formData.price) : null,
                   ingredients: cleanIngredients.length > 0 ? cleanIngredients : [],
                   instructions: cleanInstructions.length > 0 ? cleanInstructions : [],
                   chef_note: formData.chef_note ? formData.chef_note.trim() : null,
                   status: 'draft',
                   approval_status: 'draft',
                   tags: {
-                    dietary_tags: formData.dietary_tags 
-                    ? formData.dietary_tags.split(',').map(t => t.trim()).filter(t => t !== '') 
-                    : [],
+                    dietary_tags: typeof formData.dietary_tags === 'string' 
+  ? formData.dietary_tags.split(',').map((t: string) => t.trim()).filter((t: string) => t !== '') 
+  : [],
                     cuisine: formData.cuisine || '',
                     goal: formData.goal || '',
                     meal_type: formData.meal_type || '',

@@ -1,6 +1,6 @@
 export interface Recipe {
-    difficulty_level: any;
     recipe_id: string;
+    chef_id: string;
     title: string;
     sellers: {
         full_name: string;
@@ -13,11 +13,18 @@ export interface Recipe {
     prep_time: number;
     cook_time:number;
     servings: number;
-    difficdifficulty_level?: string;
+    difficulty_level?: string;
     image_url: string;
     price: number;
     blockchainHash?: string;
     description : string;
+    cuisine: string;
+    dietary_tags: string;
+    goal: string;
+    meal_type: string;
+    category: string;
+    occasion: string;
+    chef_note?: string;
     is_premium_locked?: boolean;
     is_purchased?: boolean;
 }
@@ -28,13 +35,14 @@ export interface RecipeApiResponsed {
     data: Recipe[]
 }
 export interface Ingredient {
+  id:string;
   name: string;
   quantity: string;
   unit: string;
 }
 export interface Instructions {
   id: string;
-  step: string;
+  step: number;
   description: string;
 }
 
@@ -46,6 +54,14 @@ export interface FilterState{
   dietary_tags:string;
   goal:string;
 
-
 }
 
+
+export interface PaginationMeta {
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  limit: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}

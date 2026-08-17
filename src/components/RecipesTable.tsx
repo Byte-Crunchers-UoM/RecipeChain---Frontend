@@ -92,7 +92,7 @@ const RecipesTable: React.FC<RecipesTableProps> = ({ recipes }) => {
                 <tr
               key={recipe.recipe_id || index}
               className="border-b border-[#e5e7eb] hover:bg-[#f8fafb] transition cursor-pointer"
-              onClick={() => router.push(`/recipes/${recipe.recipe_id}`)}
+              onClick={() => router.push(`/seller/recipes/${recipe.recipe_id}`)}
             >
                   {/* Recipe Column */}
                   <td className="px-6 py-2">

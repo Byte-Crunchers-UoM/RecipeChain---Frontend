@@ -1,10 +1,10 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import { Inter, Geist_Mono, Geist, Outfit, Roboto } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/context/Providers";
 import RecipeCartOverlay from "@/components/recipe/RecipeCartOverlay";
 import AppShell from "@/components/layout/AppShell";
+import AiChatbot from "@/components/chat/AiChatbot";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -39,6 +39,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           {/* The cart overlay lives at the root so it can pop open over any page */}
           <RecipeCartOverlay />
         </Providers>
+
+        {/* Rendered at the absolute root to prevent clipping */}
+        <AiChatbot />
       </body>
     </html>
   );

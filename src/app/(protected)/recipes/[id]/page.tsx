@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { FullRecipeView } from '@/components/recipe/FullRecipeView';
 import RecipePaymentModal from '@/components/recipe/RecipePaymentModel';
-import { Recipe } from '@/lib/types/Recipe';
+import { Recipe } from '@/lib/types/recipe';
 import { fetchRecipeById } from '@/services/recipeService';
 import { Loader2, Lock, ArrowLeft } from 'lucide-react'; // <-- Imported ArrowLeft
 
