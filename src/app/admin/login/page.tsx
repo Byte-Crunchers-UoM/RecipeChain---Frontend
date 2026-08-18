@@ -114,15 +114,23 @@ export default function AdminLogin() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <input
-              type="checkbox"
-              id="remember"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 accent-[#149984] cursor-pointer"
-            />
-            <label htmlFor="remember" className="text-gray-500 font-medium cursor-pointer select-none">Remember me</label>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <input
+                type="checkbox"
+                id="remember"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 accent-[#149984] cursor-pointer"
+              />
+              <label htmlFor="remember" className="text-gray-500 font-medium cursor-pointer select-none">Remember me</label>
+            </div>
+            <a
+              href={`/admin/forgot-password?email=${encodeURIComponent(email)}`}
+              className="text-sm text-[#149984] hover:text-[#0f7d6d] hover:underline font-medium transition-colors"
+            >
+              Forgot Password?
+            </a>
           </div>
 
           <button 
