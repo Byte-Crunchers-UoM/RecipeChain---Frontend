@@ -362,7 +362,7 @@ export default function RecipeDetailsPage() {
               {recipe.chef_note && (
                 <div className="mt-12 p-6 bg-amber-50 rounded-2xl border border-amber-100 border-l-4 border-l-amber-400">
                   <p className="text-amber-900 text-sm italic leading-relaxed">
-                    <span className="font-bold not-italic text-amber-950 uppercase text-[10px] tracking-widest block mb-2">Chef's Note</span>
+                    <span className="font-bold not-italic text-amber-950 uppercase text-[10px] tracking-widest block mb-2">Chef&apos;s Note</span>
                     {recipe.chef_note}
                   </p>
                 </div>

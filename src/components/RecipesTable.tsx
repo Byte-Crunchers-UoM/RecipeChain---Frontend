@@ -146,9 +146,9 @@ const RecipesTable: React.FC<RecipesTableProps> = ({ recipes }) => {
         </table>
       </div>
       <div className="px-6 py-4 border-t border-[#e5e7eb] flex justify-end">
-        <a href="/recipes" className="text-[12px] text-[#0d9488] hover:text-[#0d9488] opacity-80 font-medium font-roboto">
+        <Link href="/recipes" className="text-[12px] text-[#0d9488] hover:text-[#0d9488] opacity-80 font-medium font-roboto">
           View all recipes →
-        </a>
+        </Link>
       </div>
     </div>
   );

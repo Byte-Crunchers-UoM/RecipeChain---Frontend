@@ -27,7 +27,7 @@ export default function ChefProfilePage() {
     <div className="p-8 lg:p-10 min-h-screen bg-slate-50">
       <div className="max-w-[1400px] mx-auto mb-8">
         <h1 className="text-[28px] font-bold font-outfit text-slate-800">Chef Profile</h1>
-        <p className="text-slate-400 text-[14px] mt-1">Discover the chef's story, explore their signature recipes, and follow their culinary journey.</p>
+        <p className="text-slate-400 text-[14px] mt-1">Discover the chef&apos;s story, explore their signature recipes, and follow their culinary journey.</p>
       </div>
       <Suspense fallback={<div className="p-12 text-center text-gray-500">Loading chef profile...</div>}>
         <ChefProfileContent />

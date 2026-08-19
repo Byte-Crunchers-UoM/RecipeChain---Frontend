@@ -56,6 +56,9 @@ export default function AddRecipeForm() {
     chef_note: ''
   });
 
+  const [loading, setLoading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
  useEffect(() => {
   if (recipeId) {
     async function fetchDraftRecipe() {
@@ -173,10 +176,8 @@ export default function AddRecipeForm() {
     }
   }, [user]); 
 
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string>('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -1403,7 +1404,7 @@ export default function AddRecipeForm() {
       </div>
 
       <div className="mb-8 p-6 rounded-lg shadow-sm border" style={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0' }}>
-        <h2 className="mb-4" style={{ color: '#1a2632', fontSize: '16px', fontWeight: '600' }}>Chef's Note</h2>
+        <h2 className="mb-4" style={{ color: '#1a2632', fontSize: '16px', fontWeight: '600' }}>Chef&apos;s Note</h2>
 
         <div className="mb-4">
           <label className="block mb-1" style={{ color: '#1a2632', fontSize: '12px', fontWeight: '500' }}>
@@ -1587,7 +1588,7 @@ export default function AddRecipeForm() {
                   fontWeight: '500'
                 }}
               >
-                Cancel, I'll recheck
+                Cancel, I&apos;ll recheck
               </button>
 
               <button 

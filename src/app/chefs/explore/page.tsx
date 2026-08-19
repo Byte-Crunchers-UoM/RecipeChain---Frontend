@@ -88,7 +88,7 @@ function ExploreChefsContent() {
           </div>
         ) : (
           <div className="text-center py-20 bg-white rounded-2xl border border-slate-100">
-            <p className="text-slate-500 text-lg">No chefs found matching "{searchQuery}"</p>
+            <p className="text-slate-500 text-lg">No chefs found matching &quot;{searchQuery}&quot;</p>
           </div>
         )}
       </div>

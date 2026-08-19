@@ -81,7 +81,7 @@ export default function RecipeReviews({ feedbacks = [] }: RecipeReviewsProps) {
               {/* Review Text */}
               {review.comment ? (
                 <p className="text-sm text-gray-700 leading-relaxed mb-3">
-                  "{review.comment}"
+                  &quot;{review.comment}&quot;
                 </p>
               ) : (
                 <p className="text-sm text-gray-400 italic mb-3">
