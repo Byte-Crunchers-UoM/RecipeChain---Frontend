@@ -1,7 +1,7 @@
 //src/context/RecipeFilterContext.tsx
 "use client"
 import { createContext, useContext, useState, ReactNode, useCallback, useRef } from 'react';
-import { FilterState, Recipe } from '@/lib/types/Recipe';
+import { FilterState, Recipe } from '@/lib/types/recipe';
 import { fetchFilteredRecipe } from '@/services/recipeService';
 
 interface FilterContextType {

@@ -17,7 +17,6 @@ export default async function HomePage() {
 
   if (role === "seller") redirect("/seller/dashboard");
   if (role === "buyer") redirect("/buyer/dashboard");
-  
-  return <HomeView/>;
-  
+
+  return <HomeView />;
 }

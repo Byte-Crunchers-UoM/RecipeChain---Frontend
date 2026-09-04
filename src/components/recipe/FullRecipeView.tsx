@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Recipe } from '@/lib/types/Recipe';
+import { Recipe } from '@/lib/types/recipe';
 import { 
   Clock, Users, Flame, Star, ChefHat, CheckCircle2, Circle 
 } from 'lucide-react';

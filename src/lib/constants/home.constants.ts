@@ -50,7 +50,7 @@ export const FEATURES: Feature[] = [
   },
   {
     icon: Bot,
-    title: 'AI Assistant',
+    title: 'AI Chatbot',
     description: 'Get personalized recipe recommendations based on your preferences',
   },
   {

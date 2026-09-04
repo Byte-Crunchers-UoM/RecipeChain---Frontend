@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation'; 
-import { Recipe } from '@/lib/types/Recipe';
+import { Recipe } from '@/lib/types/recipe';
 import { Flame, Clock, Coins, Users, Star, Lock } from 'lucide-react'; 
 import SaveRecipeButton from './SaveRecipeButton';
 import RecipeReviews from './RecipeReview'; // <-- Added Import

@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Clock, Users, ChefHat, Star, ArrowRight, Unlock, Lock } from 'lucide-react'; 
-import { Recipe } from '@/lib/types/Recipe';
+import { Recipe } from '@/lib/types/recipe';
 
 interface RecipeCardProps {
   recipe: Recipe;

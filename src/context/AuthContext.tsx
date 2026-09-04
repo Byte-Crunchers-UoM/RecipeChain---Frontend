@@ -153,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return me;
       }
 
-      const fallbackResp = await fetch(`${API_BASE}/buyer/me/profile`, {
+      const fallbackResp = await fetch(`${API_BASE}/buyers/me/profile`, {
         method: "GET",
         credentials: "include",
         headers: {

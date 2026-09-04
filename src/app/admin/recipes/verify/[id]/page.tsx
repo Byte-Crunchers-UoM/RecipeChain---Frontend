@@ -176,61 +176,62 @@ export default function RecipeVerificationDetail() {
                         <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-lg sticky top-8">
                             <h2 className="text-xl font-black text-[#23262f] mb-6">Review Decision</h2>
 
-                            {/* CONDITIONAL RENDERING STARTS HERE */}
-                            {!showRejectPanel ? (
-                                /* VIEW 1: CLEAN VIEW (Only 2 Buttons) */
-                                <div className="space-y-4">
-                                    <button
-                                        onClick={() => handleAction('published')}
-                                        disabled={isUpdating}
-                                        className="w-full py-4 bg-[#149984] text-white rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-[#11806e] transition-all disabled:opacity-50 shadow-sm"
-                                    >
-                                        {isUpdating ? <Loader2 className="animate-spin" /> : <><CheckCircle size={20} /> APPROVE RECIPE</>}
-                                    </button>
+                            {recipe.approval_status === 'pending' ? (
+                                !showRejectPanel ? (
+                                    /* VIEW 1: Clean View (Red Reject Button) */
+                                    <div className="space-y-4">
+                                        <button
+                                            onClick={() => handleAction('published')}
+                                            disabled={isUpdating}
+                                            className="w-full py-4 bg-[#149984] text-white rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-[#11806e] transition-all disabled:opacity-50 shadow-sm"
+                                        >
+                                            {isUpdating ? <Loader2 className="animate-spin" /> : <><CheckCircle size={20} /> APPROVE RECIPE</>}
+                                        </button>
 
-                                    <button
-                                        onClick={() => setShowRejectPanel(true)}
-                                        className="w-full py-4 bg-white text-red-600 border-2 border-red-100 rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-red-50 transition-all shadow-sm"
-                                    >
-                                        <XCircle size={20} /> REJECT RECIPE
-                                    </button>
-                                </div>
-                            ) : (
-                                /* VIEW 2: REJECTION FORM (Textarea, Cancel, Confirm) */
-                                <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
-                                    <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Feedback to Chef</label>
-                                        <div className="relative">
-                                            <MessageSquare size={16} className="absolute left-4 top-4 text-gray-300" />
-                                            <textarea
-                                                className="w-full pl-11 p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-medium text-gray-600 min-h-[150px] focus:bg-white focus:border-[#149984] outline-none transition-all placeholder:text-gray-300"
-                                                placeholder="Provide a reason if rejecting..."
+                                        <button
+                                            onClick={() => setShowRejectPanel(true)}
+                                            className="w-full py-4 bg-white text-red-600 border-2 border-red-600 rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-red-50 transition-all shadow-sm"
+                                        >
+                                            <XCircle size={20} /> REJECT RECIPE
+                                        </button>
+                                    </div>
+                                ) : (
+                                    /* VIEW 2: Rejection Form (Red Border Focus) */
+                                    <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Feedback to Chef</label>
+                                        <textarea
+                                            className="w-full p-4 bg-white border-2 border-red-300 rounded-2xl text-sm font-bold text-[#23262f] min-h-[150px] focus:border-red-600 focus:ring-2 focus:ring-red-100 outline-none transition-all placeholder:text-gray-400"
+                                                placeholder="Explain why this recipe needs improvement..."
                                                 value={adminNote}
                                                 onChange={(e) => setAdminNote(e.target.value)}
                                             />
                                         </div>
-                                    </div>
-
-                                    <div className="flex gap-3 pt-4 border-t border-gray-50">
-                                        <button
-                                            onClick={() => setShowRejectPanel(false)}
-                                            className="w-1/3 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs hover:bg-gray-200 transition-all"
-                                        >
-                                            CANCEL
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleAction('rejected')}
-                                            disabled={isUpdating}
-                                            className="w-2/3 py-3 bg-red-600 text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 hover:bg-red-700 transition-all disabled:opacity-50 shadow-sm"
-                                        >
-                                            {isUpdating ? <Loader2 className="animate-spin" /> : 'CONFIRM REJECT'}
-                                        </button>
-                                    </div>
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setShowRejectPanel(false)}
+                                                className="w-1/3 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs hover:bg-gray-200 transition-all"
+                                            >
+                                                CANCEL
+                                            </button>
+                                            <button
+                                                onClick={() => handleAction('rejected')}
+                                                disabled={isUpdating || !adminNote.trim()}
+                                                className="w-2/3 py-3 bg-red-600 text-white rounded-xl font-black text-xs hover:bg-red-700 transition-all disabled:opacity-50 shadow-sm"
+                                            >
+                                                {isUpdating ? 'PROCESSING...' : 'CONFIRM REJECT'}
+                                            </button>
+                                        </div>
+                                  </div>
+                                )
+                            ) : (
+                                /* VIEW 3: Already processed */
+                                <div className="p-4 bg-gray-50 rounded-2xl text-center border border-gray-100">
+                                    <p className="text-gray-500 font-bold text-sm">
+                                        Already <span className="uppercase">{recipe.approval_status}</span>.
+                                    </p>
                                 </div>
                             )}
-                            {/* CONDITIONAL RENDERING ENDS HERE */}
-
                         </div>
                     </div>
                 </div>

@@ -21,6 +21,7 @@ import type {
   CookbookRecipeDetails,
 } from "@/lib/types/cookbook";
 import RecipeQuickViewModal from "@/components/buyer/RecipeQuickViewModal";
+import AIShoppingAssistant from "@/components/buyer/AIShoppingAssistant";
 
 type ReviewFilter = "all" | "reviewed" | "pending";
 
@@ -766,6 +767,8 @@ function BuyerCookbookContent() {
           void handleToggleFavorite(recipeId);
         }}
       />
+
+      <AIShoppingAssistant />
     </>
   );
 }

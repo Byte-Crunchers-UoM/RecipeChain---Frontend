@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Recipe } from '@/lib/types/Recipe';
+import { Recipe } from '@/lib/types/recipe';
 import { Trash2, Loader2, Clock } from 'lucide-react';
 
 interface RecipeCartItemProps {

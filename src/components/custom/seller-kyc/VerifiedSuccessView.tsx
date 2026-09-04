@@ -1,6 +1,5 @@
-'use client'
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+"use client";
+
 import {
   Check,
   CheckCircle2,
@@ -92,19 +91,6 @@ export default function VerifiedSuccessView({
   onCreateRecipeAction,
   isLoading = false,
 }: Props) {
-
-  const router = useRouter(); // Step 1: Initialize router
-  const [isNavigating, setIsNavigating] = useState(false);
-
-  const handleGoDashboard = async () => {
-    setIsNavigating(true);
-
-    if (onGoDashboard) {
-      await onGoDashboard();
-    }
-   window.location.href = '/seller/dashboard';
-  };
-
   const timelineSteps = [
     {
       label: "Submitted",
@@ -154,7 +140,7 @@ export default function VerifiedSuccessView({
               disabled={isLoading}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {initialLoading ? (
+              {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <LayoutDashboard className="h-4 w-4" />
@@ -260,7 +246,7 @@ export default function VerifiedSuccessView({
                   disabled={isLoading}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-4 text-[15px] font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {initialLoading ? (
+                  {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <LayoutDashboard className="h-4 w-4" />
@@ -276,12 +262,12 @@ export default function VerifiedSuccessView({
                   disabled={isLoading}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-[15px] font-semibold text-slate-800 transition-all duration-200 hover:border-teal-600 hover:bg-teal-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {initialLoading ? (
+                  {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <PlusCircle className="h-4 w-4" />
                   )}
-                  Create New Recipe
+                  Create Recipe
                 </button>
               </div>
             </div>

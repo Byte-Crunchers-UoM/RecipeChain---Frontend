@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { SearchBar } from "@/components/layout/marcketplace/SearchBar";
@@ -12,22 +12,21 @@ import { useAuth } from "@/context/AuthContext";
 import CookbookTopSearch from "@/components/layout/CookbookTopSearch";
 import TopNavProfileMenu from "@/components/layout/TopNavProfileMenu";
 
-interface HeaderProps {
-  notificationCount?: number;
-}
-
 function SearchFallback() {
   return (
     <div className="h-12 w-full max-w-3xl animate-pulse rounded-full bg-slate-100" />
   );
 }
 
-export default function Header({ notificationCount = 0 }: HeaderProps) {
+export default function Header() {
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
 
   const isMarketplacePage = pathname === "/recipes";
-  const isCookbookPage = pathname === "/buyer/cookbook";
+  const isCookbookPage = pathname === "/buyer/cookbook" || pathname === "/cookbook";
+  const isTrendingPage = pathname === "/trending";
+  const isExploreChefsPage = pathname === "/chefs/explore";
+  const isFollowedChefsPage = pathname === "/chefs/followed";
 
   const renderSearchArea = () => {
     if (isMarketplacePage) {
@@ -41,7 +40,31 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
     if (isCookbookPage) {
       return (
         <Suspense fallback={<SearchFallback />}>
-          <CookbookTopSearch />
+          <CookbookTopSearch placeholder="Search your cookbook" fallbackPath="/buyer/cookbook" />
+        </Suspense>
+      );
+    }
+
+    if (isTrendingPage) {
+      return (
+        <Suspense fallback={<SearchFallback />}>
+          <CookbookTopSearch placeholder="Search recipes..." fallbackPath="/trending" />
+        </Suspense>
+      );
+    }
+
+    if (isExploreChefsPage) {
+      return (
+        <Suspense fallback={<SearchFallback />}>
+          <CookbookTopSearch placeholder="Search culinary experts..." fallbackPath="/chefs/explore" />
+        </Suspense>
+      );
+    }
+
+    if (isFollowedChefsPage) {
+      return (
+        <Suspense fallback={<SearchFallback />}>
+          <CookbookTopSearch placeholder="Search chefs or recipes..." fallbackPath="/chefs/followed" />
         </Suspense>
       );
     }
@@ -65,7 +88,6 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
             priority
             className="h-10 w-10 object-contain"
           />
-
           <span className="text-xl font-bold tracking-tight text-slate-800">
             RecipeChain
           </span>
@@ -82,20 +104,6 @@ export default function Header({ notificationCount = 0 }: HeaderProps) {
             </div>
           ) : isAuthenticated ? (
             <>
-              <button
-                type="button"
-                className="relative flex h-11 w-11 items-center justify-center rounded-full transition hover:bg-slate-100"
-                aria-label="Notifications"
-              >
-                <Bell size={22} className="text-slate-700" />
-
-                {notificationCount > 0 ? (
-                  <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-teal-600 px-1 text-[10px] font-semibold text-white">
-                    {notificationCount}
-                  </span>
-                ) : null}
-              </button>
-
               <CartBadge />
 
               <TopNavProfileMenu />

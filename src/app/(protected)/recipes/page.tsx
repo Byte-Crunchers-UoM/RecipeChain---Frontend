@@ -7,7 +7,7 @@ import { RecipeCard } from '@/components/recipe/RecipeCard';
 import { RecipePreview } from '@/components/recipe/RecipePreview';
 import RecipePaymentModal from '@/components/recipe/RecipePaymentModel';
 import { Pagination } from '@/components/recipe/Pagination';
-import { Recipe } from '@/lib/types/Recipe';
+import { Recipe } from '@/lib/types/recipe';
 import { fetchRecipes } from '@/services/recipeService';
 import { useRecipeFilterContext } from '@/context/RecipeFilterContext';
 
