@@ -20,8 +20,8 @@ export default function BuyerProfile() {
     if (!id) return;
     const token = localStorage.getItem('adminToken');
     try {
-        // Inside fetchBuyerData in page.tsx
-        const res = await fetch(`http://localhost:4000/api/buyers/${id}`, {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+        const res = await fetch(`${apiBase}/buyers/${id}`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -57,7 +57,8 @@ export default function BuyerProfile() {
     const token = localStorage.getItem('adminToken');
 
     try {
-      const res = await fetch(`http://localhost:4000/api/buyers/${id}/status`, {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+      const res = await fetch(`${apiBase}/buyers/${id}/status`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',

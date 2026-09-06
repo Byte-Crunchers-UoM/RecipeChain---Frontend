@@ -42,8 +42,8 @@ export default function RecipesManagement() {
       if (!token) return router.push('/admin/login');
 
       try {
-        // Inside your fetchRecipes useEffect:
-const response = await fetch('http://localhost:4000/api/recipes/admin/all', {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+        const response = await fetch(`${apiBase}/recipes/admin/all`, {
     headers: { 'Authorization': `Bearer ${token}` }
 });
         const result = await response.json();

@@ -12,6 +12,8 @@ const panelStyles = {
   fontFamily: "'Roboto', 'Arial', sans-serif",
 };
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+
 export default function AdminApprovalPanel() {
   const [recipes, setRecipes] = useState<RecipeWithId[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ export default function AdminApprovalPanel() {
     const fetchPendingRecipes = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:4000/api/recipes?status=pending');
+        const response = await fetch(`${API_BASE_URL}/recipes?status=pending`);
         if (!response.ok) throw new Error('Failed to fetch pending recipes');
         const data = await response.json();
         setRecipes(data);
@@ -42,7 +44,7 @@ export default function AdminApprovalPanel() {
   const handleApprove = async (recipeId: string) => {
     setUpdating(true);
     try {
-      const response = await fetch(`http://localhost:4000/api/recipes/${recipeId}`, {
+      const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -67,7 +69,7 @@ export default function AdminApprovalPanel() {
   const handleReject = async (recipeId: string) => {
     setUpdating(true);
     try {
-      const response = await fetch(`http://localhost:4000/api/recipes/${recipeId}`, {
+      const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

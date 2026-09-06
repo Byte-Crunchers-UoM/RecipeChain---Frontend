@@ -40,7 +40,8 @@ export default function BuyerManagement() {
       if (!token) return router.push('/admin/login');
 
       try {
-        const response = await fetch('http://localhost:4000/api/buyers', {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+        const response = await fetch(`${apiBase}/buyers`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const result = await response.json();

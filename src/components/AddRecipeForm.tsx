@@ -22,6 +22,7 @@ const DIETARY_TAGS_OPTIONS = ['Vegan', 'Vegetarian', 'Keto', 'Paleo', 'Gluten-Fr
 const MEAL_TYPE_OPTIONS = ['Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Desserts', 'Beverages', 'Appetizers'];
 const GOAL_OPTIONS = ['Weight Loss', 'Weight Gain', 'Muscle Building', 'Heart Healthy', 'Budget Friendly'];
 const OCCASION_OPTIONS = ['Family Gathering', 'Party', 'Date Night', 'Meal Prep', 'Quick Weeknight', 'Holiday', 'Kids-Friendly'];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 export default function AddRecipeForm() {
   const router = useRouter();
@@ -593,13 +594,13 @@ export default function AddRecipeForm() {
 
       let response;
       if (recipeId) {
-        response = await fetch(`http://localhost:4000/api/recipes/${recipeId}`, {
+        response = await fetch(`${API_BASE_URL}/recipes/${recipeId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(recipePayload),
         });
       } else {
-        response = await fetch('http://localhost:4000/api/recipes', {
+        response = await fetch(`${API_BASE_URL}/recipes`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(recipePayload),
@@ -1498,13 +1499,13 @@ export default function AddRecipeForm() {
 
                 let response;
                 if (recipeId) {
-                  response = await fetch(`http://localhost:4000/api/recipes/${recipeId}`, {
+                  response = await fetch(`${API_BASE_URL}/recipes/${recipeId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(draftData),
                   });
                 } else {
-                  response = await fetch('http://localhost:4000/api/recipes', {
+                  response = await fetch(`${API_BASE_URL}/recipes`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(draftData),

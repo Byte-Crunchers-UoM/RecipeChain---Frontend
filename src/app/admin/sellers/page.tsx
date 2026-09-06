@@ -58,8 +58,8 @@ useEffect(() => {
   const fetchSellers = async () => {
     const token = localStorage.getItem('adminToken');
     try {
-      // We use the trailing slash to satisfy strict Express routing
-      const response = await fetch('http://localhost:4000/api/sellers/', {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+      const response = await fetch(`${apiBase}/sellers/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

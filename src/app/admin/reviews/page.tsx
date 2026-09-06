@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 const poppins = Poppins({ subsets: ["latin"], weight: ["500", "600", "700"] });
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
 type Review = {
   feedback_id: string;
@@ -134,7 +135,7 @@ export default function ReportedReviewsPage() {
 
     try {
       const response = await fetch(
-        "http://localhost:4000/api/admin/reviews/reported",
+        `${API_BASE_URL}/admin/reviews/reported`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -182,7 +183,7 @@ export default function ReportedReviewsPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:4000/api/admin/reviews/${id}/${action}`,
+        `${API_BASE_URL}/admin/reviews/${id}/${action}`,
         {
           method: "PATCH",
           headers: {

@@ -9,10 +9,27 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
-      // 🛠️ Add the Unsplash hostname here
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ui-avatars.com',
         port: '',
         pathname: '/**',
       },

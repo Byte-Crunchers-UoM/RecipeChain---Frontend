@@ -25,7 +25,8 @@ export default function RecipeVerificationDetail() {
         const fetchRecipe = async () => {
             const token = localStorage.getItem('adminToken');
             try {
-                const res = await fetch(`http://localhost:4000/api/recipes/${id}`, {
+                const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+                const res = await fetch(`${apiBase}/recipes/${id}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const result = await res.json();
@@ -47,7 +48,8 @@ export default function RecipeVerificationDetail() {
         const token = localStorage.getItem('adminToken');
 
         try {
-            const res = await fetch(`http://localhost:4000/api/recipes/${id}/verify`, {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+            const res = await fetch(`${apiBase}/recipes/${id}/verify`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',

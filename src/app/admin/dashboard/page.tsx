@@ -52,7 +52,8 @@ export default function AdminDashboard() {
 
       // Fetch the live data from the backend
       try {
-        const response = await fetch('http://localhost:4000/api/dashboard/stats', {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+        const response = await fetch(`${apiBase}/dashboard/stats`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
