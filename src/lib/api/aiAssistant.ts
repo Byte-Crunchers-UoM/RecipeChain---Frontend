@@ -12,8 +12,7 @@ type ApiMessageResponse = {
   reply?: string;
 };
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 async function parseJson<T>(response: Response): Promise<T> {
   const data = await response.json().catch(() => null);

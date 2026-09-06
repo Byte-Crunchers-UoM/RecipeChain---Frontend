@@ -42,7 +42,7 @@ export default function RecipesManagement() {
       if (!token) return router.push('/admin/login');
 
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+        const apiBase = process.env.NEXT_PUBLIC_API_URL;
         const response = await fetch(`${apiBase}/recipes/admin/all`, {
     headers: { 'Authorization': `Bearer ${token}` }
 });

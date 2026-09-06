@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 const poppins = Poppins({ subsets: ["latin"], weight: ["500", "600", "700"] });
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type Review = {
   feedback_id: string;

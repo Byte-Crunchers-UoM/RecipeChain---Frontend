@@ -17,8 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 
 type Role = "buyer" | "seller";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 const BUYER_HOME = "/buyer/profile";
 const SELLER_HOME = "/seller/kyc";

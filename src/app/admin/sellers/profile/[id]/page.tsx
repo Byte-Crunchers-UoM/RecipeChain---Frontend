@@ -17,7 +17,7 @@ export default function ActiveSellerProfile() {
   useEffect(() => {
     const fetchProfile = async () => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const res = await fetch(`${apiBase}/sellers/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });

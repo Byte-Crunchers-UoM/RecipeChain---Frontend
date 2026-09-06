@@ -22,7 +22,7 @@ function BuyerProfileContent() {
     if (!id) return;
     const token = localStorage.getItem('adminToken');
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const res = await fetch(`${apiBase}/buyers/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -72,7 +72,7 @@ function BuyerProfileContent() {
     }
     
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const res = await fetch(`${apiBase}/buyers/${id}/block`, {
         method: 'PATCH',
         headers: { 

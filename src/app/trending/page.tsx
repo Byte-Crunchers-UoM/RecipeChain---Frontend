@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import RecipeSummaryCard from '@/components/recipe/RecipeSummaryCard';
 import { Search } from 'lucide-react';
 
-const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/recipes`;
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL}/recipes`;
 
 function TrendingRecipesContent() {
   const searchParams = useSearchParams();

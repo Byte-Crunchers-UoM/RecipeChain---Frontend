@@ -55,8 +55,7 @@ type ApiMeResponse = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 async function safeJson<T = unknown>(response: Response): Promise<T | null> {
   const text = await response.text();

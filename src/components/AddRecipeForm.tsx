@@ -22,7 +22,7 @@ const DIETARY_TAGS_OPTIONS = ['Vegan', 'Vegetarian', 'Keto', 'Paleo', 'Gluten-Fr
 const MEAL_TYPE_OPTIONS = ['Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Desserts', 'Beverages', 'Appetizers'];
 const GOAL_OPTIONS = ['Weight Loss', 'Weight Gain', 'Muscle Building', 'Heart Healthy', 'Budget Friendly'];
 const OCCASION_OPTIONS = ['Family Gathering', 'Party', 'Date Night', 'Meal Prep', 'Quick Weeknight', 'Holiday', 'Kids-Friendly'];
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AddRecipeForm() {
   const router = useRouter();

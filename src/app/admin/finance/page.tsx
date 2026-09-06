@@ -36,7 +36,7 @@ export default function FinanceDashboard() {
         const fetchFinanceData = async () => {
             try {
                 const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-                const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+                const apiBase = process.env.NEXT_PUBLIC_API_URL;
                 const res = await fetch(`${apiBase}/dashboard/finance`, {
                     method: 'GET',
                     // Note: If your middleware is still not picking up the token, 

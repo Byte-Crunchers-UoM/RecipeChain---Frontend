@@ -920,8 +920,7 @@ export default function SellerKycForm() {
        * Clear the backend HTTP-only session cookie first.
        * localStorage cleanup alone cannot remove rc_session because it is HTTP-only.
        */
-      const apiBase =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
 
       await fetch(`${apiBase}/auth/logout`, {
         method: "POST",

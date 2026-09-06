@@ -124,7 +124,7 @@ export function useRecipePurchase() {
       }
 
       // 5. Backend Verification
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await fetch(`${apiUrl}/recipes/unlock`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

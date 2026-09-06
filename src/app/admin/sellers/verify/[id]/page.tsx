@@ -29,7 +29,7 @@ export default function SellerVerificationDetail() {
     const fetchDetails = async () => {
       const token = localStorage.getItem('adminToken');
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
         const res = await fetch(`${apiBase}/sellers/${id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -91,7 +91,7 @@ export default function SellerVerificationDetail() {
     }
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
       const res = await fetch(`${apiBase}/sellers/${id}/verify`, {
         method: 'PATCH',
         headers: { 
