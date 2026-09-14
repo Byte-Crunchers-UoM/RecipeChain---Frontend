@@ -1,0 +1,123 @@
+
+.formContainer {
+  max-width: 56rem; /* max-w-4xl */
+  margin: 0 auto;
+  padding: 1.5rem;
+  background-color: #f8fafb;
+  font-family: 'Roboto', 'Arial', sans-serif;
+}
+
+.title {
+  margin-bottom: 2rem;
+  text-align: center;
+  color: #1a2632;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.sectionTitle {
+  margin-bottom: 1rem;
+  color: #1a2632;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #1a2632;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.requiredStar {
+  color: #ef4444;
+}
+
+.input, .textarea, .select {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #cbd5e1;
+  color: #1a2632;
+  transition: all 0.2s;
+}
+
+.input:focus, .textarea:focus, .select:focus {
+  outline: none;
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+.errorText {
+  color: #ef4444;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.errorBanner {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #fca5a5;
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.successBanner {
+  flex: 1;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #86efac;
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.stepBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2rem;
+  width: 2rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  background-color: #e0f2f1;
+  color: #0d9488;
+}
+
+.addButton {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #0d9488;
+  border-radius: 0.5rem;
+  color: #0d9488;
+  background: transparent;
+  cursor: pointer;
+}
+
+.addButton:hover {
+  background-color: rgba(13, 148, 136, 0.05);
+}
+
+.submitButton {
+  padding: 0.5rem 1.5rem;
+  color: white;
+  border-radius: 0.5rem;
+  background-color: #0d9488;
+  border: none;
+  cursor: pointer;
+}
+
+.submitButton:disabled {
+  background-color: #64748b;
+  cursor: not-allowed;
+}
